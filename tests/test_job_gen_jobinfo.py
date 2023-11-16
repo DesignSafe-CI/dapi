@@ -39,7 +39,7 @@ class TestGenerateJobInfo(unittest.TestCase):
         """Test with default values."""
         result = jobs.generate_job_info(self.ag_mock, self.appid_valid)
         self.assertEqual(result["name"], "dsjob")
-        self.assertEqual(result["batchQueue"], "skx-dev")
+        self.assertEqual(result["batchQueue"], "development")
         self.assertEqual(result["nodeCount"], 1)
         self.assertEqual(result["processorsPerNode"], 1)
         self.assertEqual(result["maxRunTime"], "00:10:00")

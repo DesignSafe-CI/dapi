@@ -133,7 +133,7 @@ def generate_job_info(
     ag,
     appid: str,
     jobname: str = "dsjob",
-    queue: str = "skx-dev",
+    queue: str = "development",
     nnodes: int = 1,
     nprocessors: int = 1,
     runtime: str = "00:10:00",
