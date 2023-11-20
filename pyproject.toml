@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dsjobs"
-version = "0.1.4"
+version = "0.1.5"
 description = "DSJobs simplifies accessing TAPIS on DesignSafe"
 authors = [
     "Krishna Kumar <krishnak@utexas.edu>",
@@ -12,7 +12,7 @@ packages = [{include = "dsjobs"}]
 [tool.poetry.dependencies]
 python = "^3.8"
 tqdm = "^4.66.1"
-agavepy = "^0.9.5"
+agavepy = ">0.9.5"
 exceptiongroup = "^1.1.3"
 
 
