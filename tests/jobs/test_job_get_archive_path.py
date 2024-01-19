@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock
-from dsjobs import get_archive_path
+from dapi.jobs import get_archive_path
 
 
 class TestGetArchivePath(unittest.TestCase):

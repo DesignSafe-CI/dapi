@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from dsjobs import get_ds_path_uri
+from dapi.jobs import get_ds_path_uri
 
 
 class TestGetDsPathUri(unittest.TestCase):

@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "dsjobs"
+name = "dapi"
 version = "0.1.5"
-description = "DSJobs simplifies accessing TAPIS on DesignSafe"
+description = "dapi simplifies accessing TAPIS on DesignSafe"
 authors = [
     "Krishna Kumar <krishnak@utexas.edu>",
     "Pedro Arduino <parduino@uw.edu>"
 ]
 readme = "README.md"
-packages = [{include = "dsjobs"}]
+packages = [{include = "dapi"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"

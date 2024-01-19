@@ -1,7 +1,7 @@
 import time
 import unittest
 from unittest.mock import Mock, patch
-import dsjobs as ds
+import dapi as ds
 
 
 class TestGetStatus(unittest.TestCase):
@@ -24,7 +24,7 @@ class TestGetStatus(unittest.TestCase):
         mock_agave.jobs.get.return_value = {"maxHours": 0.01}
 
         # Call get_status
-        status = ds.get_status(mock_agave, "some_job_id", time_lapse=1)
+        status = ds.jobs.get_status(mock_agave, "some_job_id", time_lapse=1)
 
         # Assert that the final status is "FINISHED"
         self.assertEqual(status, "FINISHED")

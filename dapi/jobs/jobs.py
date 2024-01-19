@@ -8,7 +8,6 @@ import logging
 #     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 # )
 
-
 def get_status(ag, job_id, time_lapse=15):
     """
     Retrieves and monitors the status of a job from Agave.

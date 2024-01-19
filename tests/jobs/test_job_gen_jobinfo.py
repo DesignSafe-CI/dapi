@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch
-from dsjobs import jobs
+from dapi.jobs import jobs
 
 
 class TestGenerateJobInfo(unittest.TestCase):

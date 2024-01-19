@@ -4,7 +4,7 @@ from io import StringIO
 import sys
 from datetime import datetime, timedelta
 
-import dsjobs as ds
+import dapi as ds
 
 
 class TestRuntimeSummary(unittest.TestCase):
@@ -59,7 +59,7 @@ class TestRuntimeSummary(unittest.TestCase):
         try:
             out = StringIO()
             sys.stdout = out
-            ds.runtime_summary(ag_mock, job_id, verbose)
+            ds.jobs.runtime_summary(ag_mock, job_id, verbose)
             return out.getvalue().strip()
         finally:
             sys.stdout = saved_stdout

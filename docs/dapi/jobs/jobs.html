@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>dapi.jobs.jobs API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>dapi.jobs.jobs</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import time
+from datetime import datetime, timedelta, timezone
+from tqdm import tqdm
+import logging
+
+# Configuring the logging system
+# logging.basicConfig(
+#     level=logging.INFO, format=&#34;%(asctime)s - %(levelname)s - %(message)s&#34;
+# )
+
+def get_status(ag, job_id, time_lapse=15):
+    &#34;&#34;&#34;
+    Retrieves and monitors the status of a job from Agave.
+
+    This function initially waits for the job to start, displaying its progress using
+    a tqdm progress bar. Once the job starts, it monitors the job&#39;s status up to
+    a maximum duration specified by the job&#39;s &#34;maxHours&#34;. If the job completes or fails
+    before reaching this maximum duration, it returns the job&#39;s final status.
+
+    Args:
+      ag (object): The Agave job object used to interact with the job.
+      job_id (str): The unique identifier of the job to monitor.
+      time_lapse (int, optional): Time interval, in seconds, to wait between status
+        checks. Defaults to 15 seconds.
+
+    Returns:
+      str: The final status of the job. Typical values include &#34;FINISHED&#34;, &#34;FAILED&#34;,
+           and &#34;STOPPED&#34;.
+
+    Raises:
+      No exceptions are explicitly raised, but potential exceptions raised by the Agave
+      job object or other called functions/methods will propagate.
+    &#34;&#34;&#34;
+
+    previous_status = None
+    # Initially check if the job is already running
+    status = ag.jobs.getStatus(jobId=job_id)[&#34;status&#34;]
+
+    job_details = ag.jobs.get(jobId=job_id)
+    max_hours = job_details[&#34;maxHours&#34;]
+
+    # Using tqdm to provide visual feedback while waiting for job to start
+    with tqdm(desc=&#34;Waiting for job to start&#34;, dynamic_ncols=True) as pbar:
+        while status not in [&#34;RUNNING&#34;, &#34;FINISHED&#34;, &#34;FAILED&#34;, &#34;STOPPED&#34;]:
+            time.sleep(time_lapse)
+            status = ag.jobs.getStatus(jobId=job_id)[&#34;status&#34;]
+            pbar.update(1)
+            pbar.set_postfix_str(f&#34;Status: {status}&#34;)
+
+    # Once the job is running, monitor it for up to maxHours
+    max_iterations = int(max_hours * 3600 // time_lapse)
+
+    # Using tqdm for progress bar
+    for _ in tqdm(range(max_iterations), desc=&#34;Monitoring job&#34;, ncols=100):
+        status = ag.jobs.getStatus(jobId=job_id)[&#34;status&#34;]
+
+        # Print status if it has changed
+        if status != previous_status:
+            tqdm.write(f&#34;\tStatus: {status}&#34;)
+            previous_status = status
+
+        # Break the loop if job reaches one of these statuses
+        if status in [&#34;FINISHED&#34;, &#34;FAILED&#34;, &#34;STOPPED&#34;]:
+            break
+
+        time.sleep(time_lapse)
+    else:
+        # This block will execute if the for loop completes without a &#39;break&#39;
+        logging.warn(&#34;Warning: Maximum monitoring time reached!&#34;)
+
+    return status
+
+
+def runtime_summary(ag, job_id, verbose=False):
+    &#34;&#34;&#34;Get the runtime of a job.
+
+    Args:
+        ag (object): The Agave object that has the job details.
+        job_id (str): The ID of the job for which the runtime needs to be determined.
+        verbose (bool): If True, prints all statuses. Otherwise, prints only specific statuses.
+
+    Returns:
+        None: This function doesn&#39;t return a value, but it prints the runtime details.
+
+    &#34;&#34;&#34;
+
+    print(&#34;Runtime Summary&#34;)
+    print(&#34;---------------&#34;)
+
+    job_history = ag.jobs.getHistory(jobId=job_id)
+    total_time = job_history[-1][&#34;created&#34;] - job_history[0][&#34;created&#34;]
+
+    status_times = {}
+
+    for i in range(len(job_history) - 1):
+        current_status = job_history[i][&#34;status&#34;]
+        elapsed_time = job_history[i + 1][&#34;created&#34;] - job_history[i][&#34;created&#34;]
+
+        # Aggregate times for each status
+        if current_status in status_times:
+            status_times[current_status] += elapsed_time
+        else:
+            status_times[current_status] = elapsed_time
+
+    # Filter the statuses if verbose is False
+    if not verbose:
+        filtered_statuses = {
+            &#34;PENDING&#34;,
+            &#34;QUEUED&#34;,
+            &#34;RUNNING&#34;,
+            &#34;FINISHED&#34;,
+            &#34;FAILED&#34;,
+        }
+        status_times = {
+            status: time
+            for status, time in status_times.items()
+            if status in filtered_statuses
+        }
+
+    # Determine the max width of status names for alignment
+    max_status_width = max(len(status) for status in status_times.keys())
+
+    # Print the aggregated times for each unique status in a table format
+    for status, time in status_times.items():
+        print(f&#34;{status.upper():&lt;{max_status_width + 2}} time: {time}&#34;)
+
+    print(f&#34;{&#39;TOTAL&#39;:&lt;{max_status_width + 2}} time: {total_time}&#34;)
+    print(&#34;---------------&#34;)
+
+
+def generate_job_info(
+    ag,
+    appid: str,
+    jobname: str = &#34;dsjob&#34;,
+    queue: str = &#34;development&#34;,
+    nnodes: int = 1,
+    nprocessors: int = 1,
+    runtime: str = &#34;00:10:00&#34;,
+    inputs=None,
+    parameters=None,
+) -&gt; dict:
+    &#34;&#34;&#34;Generate a job information dictionary based on provided arguments.
+
+    Args:
+        ag (object): The Agave object to interact with the platform.
+        appid (str): The application ID for the job.
+        jobname (str, optional): The name of the job. Defaults to &#39;dsjob&#39;.
+        queue (str, optional): The batch queue name. Defaults to &#39;skx-dev&#39;.
+        nnodes (int, optional): The number of nodes required. Defaults to 1.
+        nprocessors (int, optional): The number of processors per node. Defaults to 1.
+        runtime (str, optional): The maximum runtime in the format &#39;HH:MM:SS&#39;. Defaults to &#39;00:10:00&#39;.
+        inputs (dict, optional): The inputs for the job. Defaults to None.
+        parameters (dict, optional): The parameters for the job. Defaults to None.
+
+    Returns:
+        dict: A dictionary containing the job information.
+
+    Raises:
+        ValueError: If the provided appid is not valid.
+    &#34;&#34;&#34;
+
+    try:
+        app = ag.apps.get(appId=appid)
+    except Exception:
+        raise ValueError(f&#34;Invalid app ID: {appid}&#34;)
+
+    job_info = {
+        &#34;appId&#34;: appid,
+        &#34;name&#34;: jobname,
+        &#34;batchQueue&#34;: queue,
+        &#34;nodeCount&#34;: nnodes,
+        &#34;processorsPerNode&#34;: nprocessors,
+        &#34;memoryPerNode&#34;: &#34;1&#34;,
+        &#34;maxRunTime&#34;: runtime,
+        &#34;archive&#34;: True,
+        &#34;inputs&#34;: inputs,
+        &#34;parameters&#34;: parameters,
+    }
+
+    return job_info
+
+
+def get_archive_path(ag, job_id):
+    &#34;&#34;&#34;
+    Get the archive path for a given job ID and modifies the user directory
+    to &#39;/home/jupyter/MyData&#39;.
+
+    Args:
+        ag (object): The Agave object to interact with the platform.
+        job_id (str): The job ID to retrieve the archive path for.
+
+    Returns:
+        str: The modified archive path.
+
+    Raises:
+        ValueError: If the archivePath format is unexpected.
+    &#34;&#34;&#34;
+
+    # Fetch the job info.
+    job_info = ag.jobs.get(jobId=job_id)
+
+    # Try to split the archive path to extract the user.
+    try:
+        user, _ = job_info.archivePath.split(&#34;/&#34;, 1)
+    except ValueError:
+        raise ValueError(f&#34;Unexpected archivePath format for jobId={job_id}&#34;)
+
+    # Construct the new path.
+    new_path = job_info.archivePath.replace(user, &#34;/home/jupyter/MyData&#34;)
+
+    return new_path</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="dapi.jobs.jobs.generate_job_info"><code class="name flex">
+<span>def <span class="ident">generate_job_info</span></span>(<span>ag, appid: str, jobname: str = 'dsjob', queue: str = 'development', nnodes: int = 1, nprocessors: int = 1, runtime: str = '00:10:00', inputs=None, parameters=None) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate a job information dictionary based on provided arguments.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>ag</code></strong> :&ensp;<code>object</code></dt>
+<dd>The Agave object to interact with the platform.</dd>
+<dt><strong><code>appid</code></strong> :&ensp;<code>str</code></dt>
+<dd>The application ID for the job.</dd>
+<dt><strong><code>jobname</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>The name of the job. Defaults to 'dsjob'.</dd>
+<dt><strong><code>queue</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>The batch queue name. Defaults to 'skx-dev'.</dd>
+<dt><strong><code>nnodes</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The number of nodes required. Defaults to 1.</dd>
+<dt><strong><code>nprocessors</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>The number of processors per node. Defaults to 1.</dd>
+<dt><strong><code>runtime</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>The maximum runtime in the format 'HH:MM:SS'. Defaults to '00:10:00'.</dd>
+<dt><strong><code>inputs</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>The inputs for the job. Defaults to None.</dd>
+<dt><strong><code>parameters</code></strong> :&ensp;<code>dict</code>, optional</dt>
+<dd>The parameters for the job. Defaults to None.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>A dictionary containing the job information.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the provided appid is not valid.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_job_info(
+    ag,
+    appid: str,
+    jobname: str = &#34;dsjob&#34;,
+    queue: str = &#34;development&#34;,
+    nnodes: int = 1,
+    nprocessors: int = 1,
+    runtime: str = &#34;00:10:00&#34;,
+    inputs=None,
+    parameters=None,
+) -&gt; dict:
+    &#34;&#34;&#34;Generate a job information dictionary based on provided arguments.
+
+    Args:
+        ag (object): The Agave object to interact with the platform.
+        appid (str): The application ID for the job.
+        jobname (str, optional): The name of the job. Defaults to &#39;dsjob&#39;.
+        queue (str, optional): The batch queue name. Defaults to &#39;skx-dev&#39;.
+        nnodes (int, optional): The number of nodes required. Defaults to 1.
+        nprocessors (int, optional): The number of processors per node. Defaults to 1.
+        runtime (str, optional): The maximum runtime in the format &#39;HH:MM:SS&#39;. Defaults to &#39;00:10:00&#39;.
+        inputs (dict, optional): The inputs for the job. Defaults to None.
+        parameters (dict, optional): The parameters for the job. Defaults to None.
+
+    Returns:
+        dict: A dictionary containing the job information.
+
+    Raises:
+        ValueError: If the provided appid is not valid.
+    &#34;&#34;&#34;
+
+    try:
+        app = ag.apps.get(appId=appid)
+    except Exception:
+        raise ValueError(f&#34;Invalid app ID: {appid}&#34;)
+
+    job_info = {
+        &#34;appId&#34;: appid,
+        &#34;name&#34;: jobname,
+        &#34;batchQueue&#34;: queue,
+        &#34;nodeCount&#34;: nnodes,
+        &#34;processorsPerNode&#34;: nprocessors,
+        &#34;memoryPerNode&#34;: &#34;1&#34;,
+        &#34;maxRunTime&#34;: runtime,
+        &#34;archive&#34;: True,
+        &#34;inputs&#34;: inputs,
+        &#34;parameters&#34;: parameters,
+    }
+
+    return job_info</code></pre>
+</details>
+</dd>
+<dt id="dapi.jobs.jobs.get_archive_path"><code class="name flex">
+<span>def <span class="ident">get_archive_path</span></span>(<span>ag, job_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the archive path for a given job ID and modifies the user directory
+to '/home/jupyter/MyData'.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>ag</code></strong> :&ensp;<code>object</code></dt>
+<dd>The Agave object to interact with the platform.</dd>
+<dt><strong><code>job_id</code></strong> :&ensp;<code>str</code></dt>
+<dd>The job ID to retrieve the archive path for.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>The modified archive path.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If the archivePath format is unexpected.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_archive_path(ag, job_id):
+    &#34;&#34;&#34;
+    Get the archive path for a given job ID and modifies the user directory
+    to &#39;/home/jupyter/MyData&#39;.
+
+    Args:
+        ag (object): The Agave object to interact with the platform.
+        job_id (str): The job ID to retrieve the archive path for.
+
+    Returns:
+        str: The modified archive path.
+
+    Raises:
+        ValueError: If the archivePath format is unexpected.
+    &#34;&#34;&#34;
+
+    # Fetch the job info.
+    job_info = ag.jobs.get(jobId=job_id)
+
+    # Try to split the archive path to extract the user.
+    try:
+        user, _ = job_info.archivePath.split(&#34;/&#34;, 1)
+    except ValueError:
+        raise ValueError(f&#34;Unexpected archivePath format for jobId={job_id}&#34;)
+
+    # Construct the new path.
+    new_path = job_info.archivePath.replace(user, &#34;/home/jupyter/MyData&#34;)
+
+    return new_path</code></pre>
+</details>
+</dd>
+<dt id="dapi.jobs.jobs.get_status"><code class="name flex">
+<span>def <span class="ident">get_status</span></span>(<span>ag, job_id, time_lapse=15)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves and monitors the status of a job from Agave.</p>
+<p>This function initially waits for the job to start, displaying its progress using
+a tqdm progress bar. Once the job starts, it monitors the job's status up to
+a maximum duration specified by the job's "maxHours". If the job completes or fails
+before reaching this maximum duration, it returns the job's final status.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>ag</code></strong> :&ensp;<code>object</code></dt>
+<dd>The Agave job object used to interact with the job.</dd>
+<dt><strong><code>job_id</code></strong> :&ensp;<code>str</code></dt>
+<dd>The unique identifier of the job to monitor.</dd>
+<dt><strong><code>time_lapse</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Time interval, in seconds, to wait between status
+checks. Defaults to 15 seconds.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>The final status of the job. Typical values include "FINISHED", "FAILED",
+and "STOPPED".</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<p>No exceptions are explicitly raised, but potential exceptions raised by the Agave
+job object or other called functions/methods will propagate.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_status(ag, job_id, time_lapse=15):
+    &#34;&#34;&#34;
+    Retrieves and monitors the status of a job from Agave.
+
+    This function initially waits for the job to start, displaying its progress using
+    a tqdm progress bar. Once the job starts, it monitors the job&#39;s status up to
+    a maximum duration specified by the job&#39;s &#34;maxHours&#34;. If the job completes or fails
+    before reaching this maximum duration, it returns the job&#39;s final status.
+
+    Args:
+      ag (object): The Agave job object used to interact with the job.
+      job_id (str): The unique identifier of the job to monitor.
+      time_lapse (int, optional): Time interval, in seconds, to wait between status
+        checks. Defaults to 15 seconds.
+
+    Returns:
+      str: The final status of the job. Typical values include &#34;FINISHED&#34;, &#34;FAILED&#34;,
+           and &#34;STOPPED&#34;.
+
+    Raises:
+      No exceptions are explicitly raised, but potential exceptions raised by the Agave
+      job object or other called functions/methods will propagate.
+    &#34;&#34;&#34;
+
+    previous_status = None
+    # Initially check if the job is already running
+    status = ag.jobs.getStatus(jobId=job_id)[&#34;status&#34;]
+
+    job_details = ag.jobs.get(jobId=job_id)
+    max_hours = job_details[&#34;maxHours&#34;]
+
+    # Using tqdm to provide visual feedback while waiting for job to start
+    with tqdm(desc=&#34;Waiting for job to start&#34;, dynamic_ncols=True) as pbar:
+        while status not in [&#34;RUNNING&#34;, &#34;FINISHED&#34;, &#34;FAILED&#34;, &#34;STOPPED&#34;]:
+            time.sleep(time_lapse)
+            status = ag.jobs.getStatus(jobId=job_id)[&#34;status&#34;]
+            pbar.update(1)
+            pbar.set_postfix_str(f&#34;Status: {status}&#34;)
+
+    # Once the job is running, monitor it for up to maxHours
+    max_iterations = int(max_hours * 3600 // time_lapse)
+
+    # Using tqdm for progress bar
+    for _ in tqdm(range(max_iterations), desc=&#34;Monitoring job&#34;, ncols=100):
+        status = ag.jobs.getStatus(jobId=job_id)[&#34;status&#34;]
+
+        # Print status if it has changed
+        if status != previous_status:
+            tqdm.write(f&#34;\tStatus: {status}&#34;)
+            previous_status = status
+
+        # Break the loop if job reaches one of these statuses
+        if status in [&#34;FINISHED&#34;, &#34;FAILED&#34;, &#34;STOPPED&#34;]:
+            break
+
+        time.sleep(time_lapse)
+    else:
+        # This block will execute if the for loop completes without a &#39;break&#39;
+        logging.warn(&#34;Warning: Maximum monitoring time reached!&#34;)
+
+    return status</code></pre>
+</details>
+</dd>
+<dt id="dapi.jobs.jobs.runtime_summary"><code class="name flex">
+<span>def <span class="ident">runtime_summary</span></span>(<span>ag, job_id, verbose=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the runtime of a job.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>ag</code></strong> :&ensp;<code>object</code></dt>
+<dd>The Agave object that has the job details.</dd>
+<dt><strong><code>job_id</code></strong> :&ensp;<code>str</code></dt>
+<dd>The ID of the job for which the runtime needs to be determined.</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If True, prints all statuses. Otherwise, prints only specific statuses.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>None</code></dt>
+<dd>This function doesn't return a value, but it prints the runtime details.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def runtime_summary(ag, job_id, verbose=False):
+    &#34;&#34;&#34;Get the runtime of a job.
+
+    Args:
+        ag (object): The Agave object that has the job details.
+        job_id (str): The ID of the job for which the runtime needs to be determined.
+        verbose (bool): If True, prints all statuses. Otherwise, prints only specific statuses.
+
+    Returns:
+        None: This function doesn&#39;t return a value, but it prints the runtime details.
+
+    &#34;&#34;&#34;
+
+    print(&#34;Runtime Summary&#34;)
+    print(&#34;---------------&#34;)
+
+    job_history = ag.jobs.getHistory(jobId=job_id)
+    total_time = job_history[-1][&#34;created&#34;] - job_history[0][&#34;created&#34;]
+
+    status_times = {}
+
+    for i in range(len(job_history) - 1):
+        current_status = job_history[i][&#34;status&#34;]
+        elapsed_time = job_history[i + 1][&#34;created&#34;] - job_history[i][&#34;created&#34;]
+
+        # Aggregate times for each status
+        if current_status in status_times:
+            status_times[current_status] += elapsed_time
+        else:
+            status_times[current_status] = elapsed_time
+
+    # Filter the statuses if verbose is False
+    if not verbose:
+        filtered_statuses = {
+            &#34;PENDING&#34;,
+            &#34;QUEUED&#34;,
+            &#34;RUNNING&#34;,
+            &#34;FINISHED&#34;,
+            &#34;FAILED&#34;,
+        }
+        status_times = {
+            status: time
+            for status, time in status_times.items()
+            if status in filtered_statuses
+        }
+
+    # Determine the max width of status names for alignment
+    max_status_width = max(len(status) for status in status_times.keys())
+
+    # Print the aggregated times for each unique status in a table format
+    for status, time in status_times.items():
+        print(f&#34;{status.upper():&lt;{max_status_width + 2}} time: {time}&#34;)
+
+    print(f&#34;{&#39;TOTAL&#39;:&lt;{max_status_width + 2}} time: {total_time}&#34;)
+    print(&#34;---------------&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="dapi.jobs" href="index.html">dapi.jobs</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="dapi.jobs.jobs.generate_job_info" href="#dapi.jobs.jobs.generate_job_info">generate_job_info</a></code></li>
+<li><code><a title="dapi.jobs.jobs.get_archive_path" href="#dapi.jobs.jobs.get_archive_path">get_archive_path</a></code></li>
+<li><code><a title="dapi.jobs.jobs.get_status" href="#dapi.jobs.jobs.get_status">get_status</a></code></li>
+<li><code><a title="dapi.jobs.jobs.runtime_summary" href="#dapi.jobs.jobs.runtime_summary">runtime_summary</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
