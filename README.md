@@ -1,6 +1,6 @@
 # DesignSafe API (dapi)
 
-![dapi](dapi.png)
+![dapi](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png)
 
 [![build and test](https://github.com/DesignSafe-CI/dapi/actions/workflows/build-test.yml/badge.svg)](https://github.com/DesignSafe-CI/dapi/actions/workflows/build-test.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
