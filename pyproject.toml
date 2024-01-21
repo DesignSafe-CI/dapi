@@ -11,7 +11,7 @@ readme = "README.md"
 packages = [{include = "dapi"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "3.9.*"
 tqdm = "^4.66.1"
 agavepy = ">0.9.5"
 exceptiongroup = "^1.1.3"

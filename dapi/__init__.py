@@ -15,4 +15,6 @@ pip3 install dapi
 ```
 
 """
+from . import auth
+from . import db
 from . import jobs

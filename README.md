@@ -122,6 +122,10 @@ To run the unit test
 poetry run pytest -v
 ```
 
+## Known Issues
+
+The project only works on `Python 3.9` due to AgavePy Issue [#125](https://github.com/TACC/agavepy/issues/125).
+
 
 ## License
 
