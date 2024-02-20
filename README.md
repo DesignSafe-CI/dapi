@@ -82,9 +82,9 @@ dir(dapi)
 
 ### Database
 ```python
-import dapi
+from dapi.db import DSDatabase
 
-db = dapi.DSDatabase("ngl")
+db = DSDatabase("ngl")
 sql = 'SELECT * FROM SITE'
 df = db.read_sql(sql)
 print(df)
