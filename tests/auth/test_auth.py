@@ -4,41 +4,70 @@ from dapi.auth.auth import init
 
 
 class TestAuthInit(unittest.TestCase):
-    @patch("dapi.auth.auth.Agave")
-    def test_init_success(self, mock_agave):
+    @patch("dapi.auth.auth.Tapis")
+    @patch("dapi.auth.auth.os.environ")
+    def test_init_with_env_variables(self, mock_environ, mock_tapis):
         # Setup
-        username = "test_user"
-        password = "test_password"
-        mock_agave_obj = MagicMock()
-        mock_agave.return_value = mock_agave_obj
-        mock_agave_obj.clients_create.return_value = {
-            "api_key": "test_api_key",
-            "api_secret": "test_api_secret",
-        }
+        mock_environ.get.side_effect = {
+            "DS_USER_NAME": "test_user",
+            "DS_PASSWORD": "test_password",
+        }.get
+        mock_tapis_obj = MagicMock()
+        mock_tapis.return_value = mock_tapis_obj
 
         # Execute
-        result = init(username, password)
+        result = init()
 
         # Verify
-        mock_agave.assert_called_with(
-            base_url="https://agave.designsafe-ci.org",
-            username=username,
-            password=password,
-            api_key="test_api_key",
-            api_secret="test_api_secret",
+        mock_tapis.assert_called_with(
+            base_url="https://designsafe.tapis.io",
+            username="test_user",
+            password="test_password",
         )
-        self.assertIsInstance(result, MagicMock)
+        mock_tapis_obj.get_tokens.assert_called_once()
+        self.assertEqual(result, mock_tapis_obj)
 
-    @patch("dapi.auth.auth.Agave")
-    def test_init_invalid_credentials(self, mock_agave):
+    @patch("dapi.auth.auth.Tapis")
+    @patch("dapi.auth.auth.os.environ")
+    @patch("dapi.auth.auth.input")
+    @patch("dapi.auth.auth.getpass")
+    def test_init_with_user_input(
+        self, mock_getpass, mock_input, mock_environ, mock_tapis
+    ):
         # Setup
-        username = "invalid_user"
-        password = "invalid_password"
-        mock_agave.side_effect = Exception("Invalid credentials")
+        mock_environ.get.return_value = None
+        mock_input.return_value = "test_user"
+        mock_getpass.return_value = "test_password"
+        mock_tapis_obj = MagicMock()
+        mock_tapis.return_value = mock_tapis_obj
+
+        # Execute
+        result = init()
+
+        # Verify
+        mock_tapis.assert_called_with(
+            base_url="https://designsafe.tapis.io",
+            username="test_user",
+            password="test_password",
+        )
+        mock_tapis_obj.get_tokens.assert_called_once()
+        self.assertEqual(result, mock_tapis_obj)
+
+    @patch("dapi.auth.auth.Tapis")
+    @patch("dapi.auth.auth.os.environ")
+    def test_init_authentication_failure(self, mock_environ, mock_tapis):
+        # Setup
+        mock_environ.get.side_effect = {
+            "DS_USER_NAME": "invalid_user",
+            "DS_PASSWORD": "invalid_password",
+        }.get
+        mock_tapis_obj = MagicMock()
+        mock_tapis.return_value = mock_tapis_obj
+        mock_tapis_obj.get_tokens.side_effect = Exception("Authentication failed")
 
         # Execute & Verify
         with self.assertRaises(Exception):
-            init(username, password)
+            init()
 
 
 # This allows running the test from the command line

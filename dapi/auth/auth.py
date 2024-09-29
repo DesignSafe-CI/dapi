@@ -1,30 +1,36 @@
-from agavepy.agave import Agave
-from collections.abc import Mapping
+import os
+from getpass import getpass
+from tapipy.tapis import Tapis
+from dotenv import load_dotenv
 
 
-def init(username, password):
+def init():
     """
-    Initialize an Agave object with a new client and an active token.
-
-    Args:
-        username (str): The username.
-        password (str): The password.
+    Initialize a Tapis object with authentication.
+    Tries to read credentials from environment variables first.
+    If not found, prompts the user for input.
 
     Returns:
-        object: The Agave object.
+        object: The authenticated Tapis object.
     """
-    # Authenticate with Agave
-    ag = Agave(
-        base_url="https://agave.designsafe-ci.org", username=username, password=password
-    )
-    # Create a new client
-    new_client = ag.clients_create()
-    # create a new ag object with the new client, at this point ag will have a new token
-    ag = Agave(
-        base_url="https://agave.designsafe-ci.org",
-        username=username,
-        password=password,
-        api_key=new_client["api_key"],
-        api_secret=new_client["api_secret"],
-    )
-    return ag
+    base_url = "https://designsafe.tapis.io"
+
+    # Load environment variables from .env file
+    load_dotenv()
+
+    # Try to get credentials from environment variables
+    username = os.getenv("DS_USER_NAME")
+    password = os.getenv("DS_PASSWORD")
+
+    # If environment variables are not set, prompt user for input
+    if not username:
+        username = input("Enter username: ")
+    if not password:
+        password = getpass("Enter password: ")
+
+    # Initialize Tapis object
+    t = Tapis(base_url=base_url, username=username, password=password)
+
+    t.get_tokens()
+
+    return t

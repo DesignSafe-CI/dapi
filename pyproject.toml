@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "dapi"
-version = "0.2.0"
-description = "dapi simplifies accessing TAPIS on DesignSafe"
+version = "1.0.0"
+description = "DesignSafe API"
 authors = [
     "Krishna Kumar <krishnak@utexas.edu>",
     "Pedro Arduino <parduino@uw.edu>",
@@ -11,14 +11,15 @@ readme = "README.md"
 packages = [{include = "dapi"}]
 
 [tool.poetry.dependencies]
-python = "3.9.*"
+python = "^3.9"
 tqdm = "^4.66.1"
-agavepy = ">0.9.5"
-exceptiongroup = "^1.1.3"
-pandas = "^2.1.3"
+exceptiongroup = "^1.2.0"
+pandas = "^2.1.4"
 pymysql = "^1.1.0"
 sqlalchemy = "^2.0.23"
-numpy = "^1.24.0"
+numpy = "^1.26.2"
+tapipy = "^1.6.1"
+python-dotenv = "^1.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
