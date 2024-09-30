@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional
 # )
 
 
-def generate_job_description(
+def generate_job_info(
     t: Any,  # Tapis client
     app_name: str,
     input_uri: str,
@@ -24,7 +24,7 @@ def generate_job_description(
     allocation: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Generates a job description dictionary based on the provided application name, job name, input URI, input file, and optional allocation.
+    Generates a job info dictionary based on the provided application name, job name, input URI, input file, and optional allocation.
 
     Args:
         t (object): The Tapis API client object.
@@ -39,7 +39,7 @@ def generate_job_description(
         allocation (str, optional): The allocation to use for the job. Defaults to None.
 
     Returns:
-        dict: The job description dictionary.
+        dict: The job info dictionary.
     """
 
     # Fetch the latest app information
@@ -49,8 +49,8 @@ def generate_job_description(
     if not job_name:
         job_name = f"{app_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-    # Create the base job description
-    job_description = {
+    # Create the base job info
+    job_info = {
         "name": job_name,
         "appId": app_info.id,
         "appVersion": app_info.version,
@@ -70,11 +70,11 @@ def generate_job_description(
 
     # Add TACC allocation if provided
     if allocation:
-        job_description["parameterSet"]["schedulerOptions"].append(
+        job_info["parameterSet"]["schedulerOptions"].append(
             {"name": "TACC Allocation", "arg": f"-A {allocation}"}
         )
 
-    return job_description
+    return job_info
 
 
 def get_status(t, mjobUuid, tlapse=15):
