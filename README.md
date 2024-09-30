@@ -53,6 +53,15 @@ pip install git+https://github.com/DesignSafe-CI/dapi.git --quiet
 
 ## Example usage:
 
+### Storing credentials
+
+Dapi uses the Tapis v3 SDK to authenticate with the DesignSafe API. To store your credentials, create a `.env` file in the root of your project with the following content:
+
+```shell
+DESIGNSAFE_USERNAME=<your_designsafe_username>
+DESIGNSAFE_PASSWORD=<your_designsafe_password>
+```
+
 ### Jobs
 
 * [Jupyter Notebook Templates](example-notebooks/template-mpm-run.ipynb) using dapi.
@@ -66,7 +75,7 @@ Install the latest version of `dapi` and restart the kernel (Kernel >> Restart K
 ```python
 # Remove any previous installations
 !pip uninstall dapi -y
-# Install 
+# Install
 !pip install dapi --quiet
 ```
 

@@ -19,8 +19,8 @@ def init():
     load_dotenv()
 
     # Try to get credentials from environment variables
-    username = os.getenv("DS_USER_NAME")
-    password = os.getenv("DS_PASSWORD")
+    username = os.getenv("DESIGNSAFE_USERNAME")
+    password = os.getenv("DESIGNSAFE_PASSWORD")
 
     # If environment variables are not set, prompt user for input
     if not username:

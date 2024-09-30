@@ -9,8 +9,8 @@ class TestAuthInit(unittest.TestCase):
     def test_init_with_env_variables(self, mock_environ, mock_tapis):
         # Setup
         mock_environ.get.side_effect = {
-            "DS_USER_NAME": "test_user",
-            "DS_PASSWORD": "test_password",
+            "DESIGNSAFE_USERNAME": "test_user",
+            "DESIGNSAFE_PASSWORD": "test_password",
         }.get
         mock_tapis_obj = MagicMock()
         mock_tapis.return_value = mock_tapis_obj
@@ -58,8 +58,8 @@ class TestAuthInit(unittest.TestCase):
     def test_init_authentication_failure(self, mock_environ, mock_tapis):
         # Setup
         mock_environ.get.side_effect = {
-            "DS_USER_NAME": "invalid_user",
-            "DS_PASSWORD": "invalid_password",
+            "DESIGNSAFE_USERNAME": "invalid_user",
+            "DESIGNSAFE_PASSWORD": "invalid_password",
         }.get
         mock_tapis_obj = MagicMock()
         mock_tapis.return_value = mock_tapis_obj
