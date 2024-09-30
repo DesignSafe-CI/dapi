@@ -129,89 +129,47 @@ def get_status(t, mjobUuid, tlapse=15):
     return status
 
 
-def runtime_summary(ag, job_id, verbose=False):
+def runtime_summary(t, job_uuid, verbose=False):
     """Get the runtime of a job.
-
     Args:
-        ag (object): The Agave object that has the job details.
-        job_id (str): The ID of the job for which the runtime needs to be determined.
-        verbose (bool): If True, prints all statuses. Otherwise, prints only specific statuses.
-
+    t (object): The Tapis v3 client object.
+    job_uuid (str): The UUID of the job for which the runtime needs to be determined.
+    verbose (bool): If True, prints all history events. Otherwise, prints only specific statuses.
     Returns:
-        None: This function doesn't return a value, but it prints the runtime details.
-
+    None: This function doesn't return a value, but it prints the runtime details.
     """
+    from datetime import datetime, timedelta
 
-    print("Runtime Summary")
+    print("\nRuntime Summary")
     print("---------------")
+    hist = t.jobs.getJobHistory(jobUuid=job_uuid)
 
-    job_history = ag.jobs.getHistory(jobId=job_id)
-    total_time = job_history[-1]["created"] - job_history[0]["created"]
+    def format_timedelta(td):
+        hours, remainder = divmod(td.total_seconds(), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
 
-    status_times = {}
+    time1 = datetime.strptime(hist[-1].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+    time0 = datetime.strptime(hist[0].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+    total_time = time1 - time0
 
-    for i in range(len(job_history) - 1):
-        current_status = job_history[i]["status"]
-        elapsed_time = job_history[i + 1]["created"] - job_history[i]["created"]
+    if verbose:
+        print("\nDetailed Job History:")
+        for event in hist:
+            print(
+                f"Event: {event.event}, Detail: {event.eventDetail}, Time: {event.created}"
+            )
+        print("\nSummary:")
 
-        # Aggregate times for each status
-        if current_status in status_times:
-            status_times[current_status] += elapsed_time
-        else:
-            status_times[current_status] = elapsed_time
+    for i in range(len(hist) - 1):
+        if hist[i].eventDetail == "RUNNING":
+            time1 = datetime.strptime(hist[i + 1].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+            time0 = datetime.strptime(hist[i].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+            print("RUNNING time:", format_timedelta(time1 - time0))
+        elif hist[i].eventDetail == "QUEUED":
+            time1 = datetime.strptime(hist[i + 1].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+            time0 = datetime.strptime(hist[i].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+            print("QUEUED  time:", format_timedelta(time1 - time0))
 
-    # Filter the statuses if verbose is False
-    if not verbose:
-        filtered_statuses = {
-            "PENDING",
-            "QUEUED",
-            "RUNNING",
-            "FINISHED",
-            "FAILED",
-        }
-        status_times = {
-            status: time
-            for status, time in status_times.items()
-            if status in filtered_statuses
-        }
-
-    # Determine the max width of status names for alignment
-    max_status_width = max(len(status) for status in status_times.keys())
-
-    # Print the aggregated times for each unique status in a table format
-    for status, time in status_times.items():
-        print(f"{status.upper():<{max_status_width + 2}} time: {time}")
-
-    print(f"{'TOTAL':<{max_status_width + 2}} time: {total_time}")
+    print("TOTAL   time:", format_timedelta(total_time))
     print("---------------")
-
-
-def get_archive_path(ag, job_id):
-    """
-    Get the archive path for a given job ID and modifies the user directory
-    to '/home/jupyter/MyData'.
-
-    Args:
-        ag (object): The Agave object to interact with the platform.
-        job_id (str): The job ID to retrieve the archive path for.
-
-    Returns:
-        str: The modified archive path.
-
-    Raises:
-        ValueError: If the archivePath format is unexpected.
-    """
-
-    # Fetch the job info.
-    job_info = ag.jobs.get(jobId=job_id)
-
-    # Try to split the archive path to extract the user.
-    try:
-        user, _ = job_info.archivePath.split("/", 1)
-    except ValueError:
-        raise ValueError(f"Unexpected archivePath format for jobId={job_id}")
-
-    # Construct the new path.
-    new_path = job_info.archivePath.replace(user, "/home/jupyter/MyData")
-
-    return new_path
