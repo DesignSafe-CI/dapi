@@ -16,10 +16,10 @@ tqdm = "^4.66.1"
 exceptiongroup = "^1.2.0"
 pymysql = "^1.1.0"
 sqlalchemy = "^2.0.23"
-tapipy = "^1.6.1"
 python-dotenv = "^1.0.1"
 numpy = "^2.1.1"
 pandas = "^2.2.3"
+tapipy = "^1.6.3"
 
 
 [tool.poetry.group.dev.dependencies]
