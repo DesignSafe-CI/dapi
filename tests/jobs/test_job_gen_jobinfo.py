@@ -10,7 +10,6 @@ class TestGenerateJobInfo(unittest.TestCase):
         self.app_name = "test-app"
         self.input_uri = "tapis://test-system/input/data"
         self.input_file = "input.txt"
-
         # Mock the getAppLatestVersion method
         self.app_info_mock = Mock()
         self.app_info_mock.id = self.app_name
@@ -24,11 +23,9 @@ class TestGenerateJobInfo(unittest.TestCase):
     @patch("dapi.jobs.jobs.datetime")
     def test_generate_job_info_default(self, mock_datetime):
         mock_datetime.now.return_value = datetime(2023, 5, 1, 12, 0, 0)
-
         result = jobs.generate_job_info(
             self.t_mock, self.app_name, self.input_uri, self.input_file
         )
-
         self.assertEqual(result["name"], f"{self.app_name}_20230501_120000")
         self.assertEqual(result["appId"], self.app_name)
         self.assertEqual(result["appVersion"], "1.0")
@@ -46,7 +43,7 @@ class TestGenerateJobInfo(unittest.TestCase):
             result["parameterSet"]["appArgs"],
             [{"name": "Input Script", "arg": self.input_file}],
         )
-        self.assertEqual(result["parameterSet"]["schedulerOptions"], [])
+        self.assertNotIn("schedulerOptions", result["parameterSet"])
 
     def test_generate_job_info_custom(self):
         custom_job_name = "custom-job"
@@ -55,7 +52,6 @@ class TestGenerateJobInfo(unittest.TestCase):
         custom_cores_per_node = 4
         custom_queue = "high-priority"
         custom_allocation = "project123"
-
         result = jobs.generate_job_info(
             self.t_mock,
             self.app_name,
@@ -68,7 +64,6 @@ class TestGenerateJobInfo(unittest.TestCase):
             queue=custom_queue,
             allocation=custom_allocation,
         )
-
         self.assertEqual(result["name"], custom_job_name)
         self.assertEqual(result["maxMinutes"], custom_max_minutes)
         self.assertEqual(result["nodeCount"], custom_node_count)
@@ -81,11 +76,23 @@ class TestGenerateJobInfo(unittest.TestCase):
 
     def test_generate_job_info_invalid_app(self):
         self.t_mock.apps.getAppLatestVersion.side_effect = Exception("Invalid app")
-
         with self.assertRaises(Exception):
             jobs.generate_job_info(
                 self.t_mock, "invalid-app", self.input_uri, self.input_file
             )
+
+    def test_generate_job_info_opensees(self):
+        opensees_app_name = "opensees-express"
+        result = jobs.generate_job_info(
+            self.t_mock, opensees_app_name, self.input_uri, self.input_file
+        )
+        self.assertIn("parameterSet", result)
+        self.assertIn("envVariables", result["parameterSet"])
+        self.assertEqual(
+            result["parameterSet"]["envVariables"],
+            [{"key": "tclScript", "value": self.input_file}],
+        )
+        self.assertNotIn("appArgs", result["parameterSet"])
 
 
 if __name__ == "__main__":

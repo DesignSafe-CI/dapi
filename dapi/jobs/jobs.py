@@ -62,14 +62,22 @@ def generate_job_info(
         or app_info.jobAttributes.execSystemLogicalQueue,
         "nodeCount": node_count or 1,  # Default to 1 if not specified
         "coresPerNode": cores_per_node or 1,  # Default to 1 if not specified
-        "parameterSet": {
-            "appArgs": [{"name": "Input Script", "arg": input_file}],
-            "schedulerOptions": [],
-        },
     }
+
+    # Handle input file based on app name
+    if "opensees" in app_name.lower():
+        job_info["parameterSet"] = {
+            "envVariables": [{"key": "tclScript", "value": input_file}]
+        }
+    else:
+        job_info["parameterSet"] = {
+            "appArgs": [{"name": "Input Script", "arg": input_file}]
+        }
 
     # Add TACC allocation if provided
     if allocation:
+        if "schedulerOptions" not in job_info["parameterSet"]:
+            job_info["parameterSet"]["schedulerOptions"] = []
         job_info["parameterSet"]["schedulerOptions"].append(
             {"name": "TACC Allocation", "arg": f"-A {allocation}"}
         )
