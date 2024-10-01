@@ -10,6 +10,12 @@ def init():
     Tries to read credentials from environment variables first.
     If not found, prompts the user for input.
 
+    Save the user credentials in the .env file.
+    ```
+    DESIGNSAFE_USERNAME=<username>
+    DESIGNSAFE_PASSWORD=<password>
+    ```
+
     Returns:
         object: The authenticated Tapis object.
     """

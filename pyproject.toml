@@ -17,8 +17,8 @@ exceptiongroup = "^1.2.0"
 pymysql = "^1.1.0"
 sqlalchemy = "^2.0.23"
 python-dotenv = "^1.0.1"
-numpy = "^2.1.1"
-pandas = "^2.2.3"
+numpy = ">=1.23,<2.0a0"
+pandas = ">=2.0,<2.2.2dev0"
 tapipy = "^1.6.3"
 
 
