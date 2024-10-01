@@ -8,7 +8,7 @@
 
 * Seamless Integration with DesignSafe Jupyter Notebooks: Launch DesignSafe applications directly from the Jupyter environment.
 
-## Installation
+# Installation
 
 ```shell
 pip3 install dapi
