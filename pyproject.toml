@@ -11,14 +11,15 @@ readme = "README.md"
 packages = [{include = "dapi"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 tqdm = "^4.66.1"
 exceptiongroup = "^1.2.0"
 pymysql = "^1.1.0"
 sqlalchemy = "^2.0.23"
 tapipy = "^1.6.1"
 python-dotenv = "^1.0.1"
-pandas = "~2.0.3"
+numpy = "^2.1.1"
+pandas = "^2.2.3"
 
 
 [tool.poetry.group.dev.dependencies]
