@@ -2,6 +2,8 @@ import time
 from datetime import datetime, timedelta, timezone
 from tqdm import tqdm
 import logging
+import json
+from typing import Dict, Any, Optional
 
 # Configuring the logging system
 # logging.basicConfig(
@@ -9,51 +11,112 @@ import logging
 # )
 
 
-def get_status(ag, job_id, time_lapse=15):
+def generate_job_info(
+    t: Any,  # Tapis client
+    app_name: str,
+    input_uri: str,
+    input_file: str,
+    job_name: str = None,
+    max_minutes: Optional[int] = None,
+    node_count: Optional[int] = None,
+    cores_per_node: Optional[int] = None,
+    queue: Optional[str] = None,
+    allocation: Optional[str] = None,
+) -> Dict[str, Any]:
     """
-    Retrieves and monitors the status of a job from Agave.
-
-    This function initially waits for the job to start, displaying its progress using
-    a tqdm progress bar. Once the job starts, it monitors the job's status up to
-    a maximum duration specified by the job's "maxHours". If the job completes or fails
-    before reaching this maximum duration, it returns the job's final status.
+    Generates a job info dictionary based on the provided application name, job name, input URI, input file, and optional allocation.
 
     Args:
-      ag (object): The Agave job object used to interact with the job.
-      job_id (str): The unique identifier of the job to monitor.
-      time_lapse (int, optional): Time interval, in seconds, to wait between status
-        checks. Defaults to 15 seconds.
+        t (object): The Tapis API client object.
+        app_name (str): The name of the application to use for the job.
+        input_uri (str): The URI of the input data for the job.
+        input_file (str): The local file path to the input data for the job.
+        job_name (str, optional): The name of the job to be created. Defaults to None.
+        max_minutes (int, optional): The maximum number of minutes the job can run. Defaults to None.
+        node_count (int, optional): The number of nodes to use for the job. Defaults to None.
+        cores_per_node (int, optional): The number of cores per node for the job. Defaults to None.
+        queue (str, optional): The queue to use for the job. Defaults to None.
+        allocation (str, optional): The allocation to use for the job. Defaults to None.
 
     Returns:
-      str: The final status of the job. Typical values include "FINISHED", "FAILED",
-           and "STOPPED".
-
-    Raises:
-      No exceptions are explicitly raised, but potential exceptions raised by the Agave
-      job object or other called functions/methods will propagate.
+        dict: The job info dictionary.
     """
 
+    # Fetch the latest app information
+    app_info = t.apps.getAppLatestVersion(appId=app_name)
+
+    # If job_name is not provided, use the app name and date
+    if not job_name:
+        job_name = f"{app_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    # Create the base job info
+    job_info = {
+        "name": job_name,
+        "appId": app_info.id,
+        "appVersion": app_info.version,
+        "execSystemId": app_info.jobAttributes.execSystemId,
+        "maxMinutes": max_minutes or app_info.jobAttributes.maxMinutes,
+        "archiveOnAppError": app_info.jobAttributes.archiveOnAppError,
+        "fileInputs": [{"name": "Input Directory", "sourceUrl": input_uri}],
+        "execSystemLogicalQueue": queue
+        or app_info.jobAttributes.execSystemLogicalQueue,
+        "nodeCount": node_count or 1,  # Default to 1 if not specified
+        "coresPerNode": cores_per_node or 1,  # Default to 1 if not specified
+    }
+
+    # Handle input file based on app name
+    if "opensees" in app_name.lower():
+        job_info["parameterSet"] = {
+            "envVariables": [{"key": "tclScript", "value": input_file}]
+        }
+    else:
+        job_info["parameterSet"] = {
+            "appArgs": [{"name": "Input Script", "arg": input_file}]
+        }
+
+    # Add TACC allocation if provided
+    if allocation:
+        if "schedulerOptions" not in job_info["parameterSet"]:
+            job_info["parameterSet"]["schedulerOptions"] = []
+        job_info["parameterSet"]["schedulerOptions"].append(
+            {"name": "TACC Allocation", "arg": f"-A {allocation}"}
+        )
+
+    return job_info
+
+
+def get_status(t, mjobUuid, tlapse=15):
+    """
+    Retrieves and monitors the status of a job using Tapis API.
+    This function waits for the job to start, then monitors it for up to maxMinutes.
+
+    Args:
+    t (object): The Tapis API client object.
+    mjobUuid (str): The unique identifier of the job to monitor.
+    tlapse (int, optional): Time interval, in seconds, to wait between status checks. Defaults to 15 seconds.
+
+    Returns:
+    str: The final status of the job (FINISHED, FAILED, or STOPPED).
+    """
     previous_status = None
     # Initially check if the job is already running
-    status = ag.jobs.getStatus(jobId=job_id)["status"]
-
-    job_details = ag.jobs.get(jobId=job_id)
-    max_hours = job_details["maxHours"]
+    status = t.jobs.getJobStatus(jobUuid=mjobUuid).status
+    max_minutes = t.jobs.getJob(jobUuid=mjobUuid).maxMinutes
 
     # Using tqdm to provide visual feedback while waiting for job to start
     with tqdm(desc="Waiting for job to start", dynamic_ncols=True) as pbar:
         while status not in ["RUNNING", "FINISHED", "FAILED", "STOPPED"]:
-            time.sleep(time_lapse)
-            status = ag.jobs.getStatus(jobId=job_id)["status"]
+            time.sleep(tlapse)
+            status = t.jobs.getJobStatus(jobUuid=mjobUuid).status
             pbar.update(1)
             pbar.set_postfix_str(f"Status: {status}")
 
-    # Once the job is running, monitor it for up to maxHours
-    max_iterations = int(max_hours * 3600 // time_lapse)
+    # Once the job is running, monitor it for up to maxMinutes
+    max_iterations = int(max_minutes * 60 // tlapse)
 
     # Using tqdm for progress bar
     for _ in tqdm(range(max_iterations), desc="Monitoring job", ncols=100):
-        status = ag.jobs.getStatus(jobId=job_id)["status"]
+        status = t.jobs.getJobStatus(jobUuid=mjobUuid).status
 
         # Print status if it has changed
         if status != previous_status:
@@ -64,149 +127,57 @@ def get_status(ag, job_id, time_lapse=15):
         if status in ["FINISHED", "FAILED", "STOPPED"]:
             break
 
-        time.sleep(time_lapse)
+        time.sleep(tlapse)
     else:
         # This block will execute if the for loop completes without a 'break'
-        logging.warn("Warning: Maximum monitoring time reached!")
+        logging.warning(
+            f"Warning: Maximum monitoring time of {max_minutes} minutes reached!"
+        )
 
     return status
 
 
-def runtime_summary(ag, job_id, verbose=False):
+def runtime_summary(t, job_uuid, verbose=False):
     """Get the runtime of a job.
-
     Args:
-        ag (object): The Agave object that has the job details.
-        job_id (str): The ID of the job for which the runtime needs to be determined.
-        verbose (bool): If True, prints all statuses. Otherwise, prints only specific statuses.
-
+    t (object): The Tapis v3 client object.
+    job_uuid (str): The UUID of the job for which the runtime needs to be determined.
+    verbose (bool): If True, prints all history events. Otherwise, prints only specific statuses.
     Returns:
-        None: This function doesn't return a value, but it prints the runtime details.
-
+    None: This function doesn't return a value, but it prints the runtime details.
     """
+    from datetime import datetime, timedelta
 
-    print("Runtime Summary")
+    print("\nRuntime Summary")
     print("---------------")
+    hist = t.jobs.getJobHistory(jobUuid=job_uuid)
 
-    job_history = ag.jobs.getHistory(jobId=job_id)
-    total_time = job_history[-1]["created"] - job_history[0]["created"]
+    def format_timedelta(td):
+        hours, remainder = divmod(td.total_seconds(), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
 
-    status_times = {}
+    time1 = datetime.strptime(hist[-1].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+    time0 = datetime.strptime(hist[0].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+    total_time = time1 - time0
 
-    for i in range(len(job_history) - 1):
-        current_status = job_history[i]["status"]
-        elapsed_time = job_history[i + 1]["created"] - job_history[i]["created"]
+    if verbose:
+        print("\nDetailed Job History:")
+        for event in hist:
+            print(
+                f"Event: {event.event}, Detail: {event.eventDetail}, Time: {event.created}"
+            )
+        print("\nSummary:")
 
-        # Aggregate times for each status
-        if current_status in status_times:
-            status_times[current_status] += elapsed_time
-        else:
-            status_times[current_status] = elapsed_time
+    for i in range(len(hist) - 1):
+        if hist[i].eventDetail == "RUNNING":
+            time1 = datetime.strptime(hist[i + 1].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+            time0 = datetime.strptime(hist[i].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+            print("RUNNING time:", format_timedelta(time1 - time0))
+        elif hist[i].eventDetail == "QUEUED":
+            time1 = datetime.strptime(hist[i + 1].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+            time0 = datetime.strptime(hist[i].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+            print("QUEUED  time:", format_timedelta(time1 - time0))
 
-    # Filter the statuses if verbose is False
-    if not verbose:
-        filtered_statuses = {
-            "PENDING",
-            "QUEUED",
-            "RUNNING",
-            "FINISHED",
-            "FAILED",
-        }
-        status_times = {
-            status: time
-            for status, time in status_times.items()
-            if status in filtered_statuses
-        }
-
-    # Determine the max width of status names for alignment
-    max_status_width = max(len(status) for status in status_times.keys())
-
-    # Print the aggregated times for each unique status in a table format
-    for status, time in status_times.items():
-        print(f"{status.upper():<{max_status_width + 2}} time: {time}")
-
-    print(f"{'TOTAL':<{max_status_width + 2}} time: {total_time}")
+    print("TOTAL   time:", format_timedelta(total_time))
     print("---------------")
-
-
-def generate_job_info(
-    ag,
-    appid: str,
-    jobname: str = "dsjob",
-    queue: str = "development",
-    nnodes: int = 1,
-    nprocessors: int = 1,
-    runtime: str = "00:10:00",
-    inputs=None,
-    parameters=None,
-) -> dict:
-    """Generate a job information dictionary based on provided arguments.
-
-    Args:
-        ag (object): The Agave object to interact with the platform.
-        appid (str): The application ID for the job.
-        jobname (str, optional): The name of the job. Defaults to 'dsjob'.
-        queue (str, optional): The batch queue name. Defaults to 'skx-dev'.
-        nnodes (int, optional): The number of nodes required. Defaults to 1.
-        nprocessors (int, optional): The number of processors per node. Defaults to 1.
-        runtime (str, optional): The maximum runtime in the format 'HH:MM:SS'. Defaults to '00:10:00'.
-        inputs (dict, optional): The inputs for the job. Defaults to None.
-        parameters (dict, optional): The parameters for the job. Defaults to None.
-
-    Returns:
-        dict: A dictionary containing the job information.
-
-    Raises:
-        ValueError: If the provided appid is not valid.
-    """
-
-    try:
-        app = ag.apps.get(appId=appid)
-    except Exception:
-        raise ValueError(f"Invalid app ID: {appid}")
-
-    job_info = {
-        "appId": appid,
-        "name": jobname,
-        "batchQueue": queue,
-        "nodeCount": nnodes,
-        "processorsPerNode": nprocessors,
-        "memoryPerNode": "1",
-        "maxRunTime": runtime,
-        "archive": True,
-        "inputs": inputs,
-        "parameters": parameters,
-    }
-
-    return job_info
-
-
-def get_archive_path(ag, job_id):
-    """
-    Get the archive path for a given job ID and modifies the user directory
-    to '/home/jupyter/MyData'.
-
-    Args:
-        ag (object): The Agave object to interact with the platform.
-        job_id (str): The job ID to retrieve the archive path for.
-
-    Returns:
-        str: The modified archive path.
-
-    Raises:
-        ValueError: If the archivePath format is unexpected.
-    """
-
-    # Fetch the job info.
-    job_info = ag.jobs.get(jobId=job_id)
-
-    # Try to split the archive path to extract the user.
-    try:
-        user, _ = job_info.archivePath.split("/", 1)
-    except ValueError:
-        raise ValueError(f"Unexpected archivePath format for jobId={job_id}")
-
-    # Construct the new path.
-    new_path = job_info.archivePath.replace(user, "/home/jupyter/MyData")
-
-    return new_path

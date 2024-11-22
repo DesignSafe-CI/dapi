@@ -6,13 +6,13 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 [![Docs](https://img.shields.io/badge/view-docs-8A2BE2?color=8A2BE2)](https://designsafe-ci.github.io/dapi/dapi/index.html)
 
-`dapi` is a library that simplifies the process of submitting, running, and monitoring [TAPIS v2 / AgavePy](https://agavepy.readthedocs.io/en/latest/index.html) jobs on [DesignSafe](https://designsafe-ci.org) via [Jupyter Notebooks](https://jupyter.designsafe-ci.org).
+`dapi` is a library that simplifies the process of submitting, running, and monitoring [TAPIS v3](https://tapis.readthedocs.io/en/latest/) jobs on [DesignSafe](https://designsafe-ci.org) via [Jupyter Notebooks](https://jupyter.designsafe-ci.org).
 
 ## Features
 
 ### Jobs
 
-* Simplified TAPIS v2 Calls: No need to fiddle with complex API requests. `dapi` abstracts away the complexities.
+* Get TAPIS v3 templates for jobs: No need to fiddle with complex API requests. `dapi` abstracts away the complexities.
 
 * Seamless Integration with DesignSafe Jupyter Notebooks: Launch DesignSafe applications directly from the Jupyter environment.
 
@@ -53,6 +53,15 @@ pip install git+https://github.com/DesignSafe-CI/dapi.git --quiet
 
 ## Example usage:
 
+### Storing credentials
+
+Dapi uses the Tapis v3 SDK to authenticate with the DesignSafe API. To store your credentials, create a `.env` file in the root of your project with the following content:
+
+```shell
+DESIGNSAFE_USERNAME=<your_designsafe_username>
+DESIGNSAFE_PASSWORD=<your_designsafe_password>
+```
+
 ### Jobs
 
 * [Jupyter Notebook Templates](example-notebooks/template-mpm-run.ipynb) using dapi.
@@ -66,7 +75,7 @@ Install the latest version of `dapi` and restart the kernel (Kernel >> Restart K
 ```python
 # Remove any previous installations
 !pip uninstall dapi -y
-# Install 
+# Install
 !pip install dapi --quiet
 ```
 
@@ -121,10 +130,6 @@ To run the unit test
 ```shell
 poetry run pytest -v
 ```
-
-## Known Issues
-
-The project only works on `Python 3.9` due to AgavePy Issue [#125](https://github.com/TACC/agavepy/issues/125).
 
 
 ## License
