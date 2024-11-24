@@ -36,7 +36,11 @@ pip3 install dapi
 ```
 
 """
-from . import apps
-from . import auth
-from . import db
-from . import jobs
+# from . import apps
+# from . import auth
+# from . import db
+# from . import jobs
+
+from .core import DesignSafeAPI
+
+__all__ = ["DesignSafeAPI", "apps", "auth", "db", "jobs", "core"]
