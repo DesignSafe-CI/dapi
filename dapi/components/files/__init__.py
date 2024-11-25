@@ -109,145 +109,76 @@ class FilesComponent(BaseComponent):
 
         raise ValueError(f"Could not determine storage system for path: {path}")
 
-    def list(self, path: str, recursive: bool = False) -> List[FileInfo]:
-        """List contents of a directory.
+    def list(
+        self, path: str = None, recursive: bool = False, system: str = None
+    ) -> List[FileInfo]:
+        """List contents of a directory."""
+        if system is None:
+            system = StorageSystem.MY_DATA.value
 
-        Args:
-            path: Path to list
-            recursive: Whether to list contents recursively
-
-        Returns:
-            List of FileInfo objects
-
-        Raises:
-            Exception: If listing fails
-        """
-        uri = self.get_uri(path)
+        if path is None:
+            # Only set default path with username for default storage
+            if system == StorageSystem.MY_DATA.value:
+                path = f"/{self.tapis.username}"
+            else:
+                path = "/"
+        else:
+            path = f"/{path.strip('/')}"
+            # Only prepend username for default storage
+            if system == StorageSystem.MY_DATA.value and not path.startswith(
+                f"/{self.tapis.username}"
+            ):
+                path = f"/{self.tapis.username}/{path.strip('/')}"
 
         try:
-            system_id, path = uri.replace("tapis://", "").split("/", 1)
-
             listing = self.tapis.files.listFiles(
-                systemId=system_id, path=path, recursive=recursive
+                systemId=system, path=path, recursive=recursive
             )
 
-            return [
+            files = [
                 FileInfo(
                     name=item.name,
                     path=item.path,
-                    type="dir" if item.type == "dir" else "file",
-                    size=item.size,
-                    last_modified=item.lastModified,
-                    uri=f"tapis://{system_id}/{item.path}",
-                    permissions={
-                        "read": item.permissions.read,
-                        "write": item.permissions.write,
-                        "execute": item.permissions.execute,
-                    },
+                    type="dir" if getattr(item, "type", None) == "dir" else "file",
+                    size=getattr(item, "size", None),
+                    last_modified=getattr(item, "lastModified", None),
+                    uri=f"tapis://{system}/{item.path}",
+                    permissions={"read": True, "write": True, "execute": True},
                 )
                 for item in listing
             ]
+
+            def format_size(size):
+                if size is None:
+                    return "N/A"
+                for unit in ["B", "KB", "MB", "GB"]:
+                    if size < 1024:
+                        return f"{size:.1f} {unit}"
+                    size /= 1024
+                return f"{size:.1f} GB"
+
+            # Format the output as a table
+            if files:
+                name_width = max(len(f.name) for f in files) + 2
+                type_width = 6
+                size_width = 10
+                date_width = 20
+
+                print(
+                    f"{'Name':<{name_width}} {'Type':<{type_width}} {'Size':<{size_width}} {'Last Modified':<{date_width}}"
+                )
+                print("-" * (name_width + type_width + size_width + date_width + 3))
+
+                for f in sorted(
+                    files, key=lambda x: (x.type == "file", x.name.lower())
+                ):
+                    print(
+                        f"{f.name:<{name_width}} "
+                        f"{f.type:<{type_width}} "
+                        f"{format_size(f.size):<{size_width}} "
+                        f"{f.last_modified[:19]}"
+                    )
+
+            return files
         except Exception as e:
             raise Exception(f"Error listing {path}: {str(e)}")
-
-    def upload(
-        self, local_path: Union[str, Path], remote_path: str, progress: bool = True
-    ) -> FileInfo:
-        """Upload a file or directory to DesignSafe.
-
-        Args:
-            local_path: Path to local file/directory to upload
-            remote_path: Destination path on DesignSafe
-            progress: Whether to show progress bar
-
-        Returns:
-            FileInfo object for the uploaded file
-
-        Raises:
-            FileNotFoundError: If local path doesn't exist
-            Exception: If upload fails
-        """
-        local_path = Path(local_path)
-        if not local_path.exists():
-            raise FileNotFoundError(f"Local path not found: {local_path}")
-
-        uri = self.get_uri(remote_path)
-        system_id, path = uri.replace("tapis://", "").split("/", 1)
-
-        try:
-            result = self.tapis.files.upload(
-                systemId=system_id,
-                sourcePath=str(local_path),
-                targetPath=path,
-                progress=progress,
-            )
-
-            # Return info about the uploaded file
-            return FileInfo(
-                name=local_path.name,
-                path=path,
-                type="dir" if local_path.is_dir() else "file",
-                size=local_path.stat().st_size if local_path.is_file() else None,
-                last_modified=result.lastModified,
-                uri=uri,
-                permissions={"read": True, "write": True, "execute": False},
-            )
-        except Exception as e:
-            raise Exception(f"Error uploading {local_path} to {remote_path}: {str(e)}")
-
-    def download(
-        self,
-        remote_path: str,
-        local_path: Optional[Union[str, Path]] = None,
-        progress: bool = True,
-    ) -> Path:
-        """Download a file or directory from DesignSafe.
-
-        Args:
-            remote_path: Path on DesignSafe to download
-            local_path: Local destination path (default: current directory)
-            progress: Whether to show progress bar
-
-        Returns:
-            Path to downloaded file/directory
-
-        Raises:
-            Exception: If download fails
-        """
-        uri = self.get_uri(remote_path)
-        system_id, path = uri.replace("tapis://", "").split("/", 1)
-
-        # Default to current directory with remote filename
-        if local_path is None:
-            local_path = Path.cwd() / Path(path).name
-        local_path = Path(local_path)
-
-        try:
-            self.tapis.files.download(
-                systemId=system_id,
-                path=path,
-                targetPath=str(local_path),
-                progress=progress,
-            )
-            return local_path
-        except Exception as e:
-            raise Exception(
-                f"Error downloading {remote_path} to {local_path}: {str(e)}"
-            )
-
-    def delete(self, path: str) -> None:
-        """Delete a file or directory.
-
-        Args:
-            path: Path to delete
-
-        Raises:
-            Exception: If deletion fails
-        """
-        uri = self.get_uri(path)
-        system_id, path = uri.replace("tapis://", "").split("/", 1)
-
-        try:
-            self.tapis.files.delete(systemId=system_id, path=path)
-        except Exception as e:
-            raise Exception(f"Error deleting {path}: {str(e)}")
