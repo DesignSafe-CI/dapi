@@ -34,21 +34,20 @@ class FileInfo:
 class FilesComponent(BaseComponent):
     """Component for managing files and directories in DesignSafe."""
 
-    def get_uri(self, path: str, system: Optional[str] = None) -> str:
+    def get_storage_info(self, path: str) -> tuple[str, str]:
         """
-        Convert a path to a Tapis URI based on specific directory patterns.
+        Determine storage system and processed path based on path patterns.
 
         Args:
-            path (str): Path to convert to URI
-            system (str, optional): Storage system to use (ignored as system is determined by path)
+            path (str): Input path
 
         Returns:
-            str: Tapis URI for the given path
+            tuple: (storage_id, processed_path)
 
         Raises:
-            ValueError: If no matching directory pattern is found
+            ValueError: If no matching pattern is found
         """
-        # Define directory patterns and their corresponding storage systems and username requirements
+        # Define directory patterns and their corresponding storage systems
         directory_patterns = [
             ("jupyter/MyData", "designsafe.storage.default", True),
             ("jupyter/mydata", "designsafe.storage.default", True),
@@ -60,10 +59,10 @@ class FilesComponent(BaseComponent):
         # Check standard directory patterns
         for pattern, storage, use_username in directory_patterns:
             if pattern in path:
-                path = path.split(pattern, 1)[1].lstrip("/")
-                input_dir = f"{self.tapis.username}/{path}" if use_username else path
-                input_uri = f"tapis://{storage}/{input_dir}"
-                return input_uri.replace(" ", "%20")
+                processed_path = path.split(pattern, 1)[1].lstrip("/")
+                if use_username and not processed_path.startswith(self.tapis.username):
+                    processed_path = f"{self.tapis.username}/{processed_path}"
+                return storage, processed_path
 
         # Check project patterns
         project_patterns = [
@@ -75,20 +74,36 @@ class FilesComponent(BaseComponent):
             if pattern in path:
                 path = path.split(pattern, 1)[1].lstrip("/")
                 project_id, *rest = path.split("/", 1)
-                path = rest[0] if rest else ""
+                remaining_path = rest[0] if rest else ""
 
-                # Get project UUID using Tapis
+                # Get project UUID
                 try:
                     resp = self.tapis.get(
                         f"https://designsafe-ci.org/api/projects/v2/{project_id}"
                     )
                     project_uuid = resp.json()["baseProject"]["uuid"]
-                    input_uri = f"tapis://{prefix}{project_uuid}/{path}"
-                    return input_uri.replace(" ", "%20")
+                    return f"{prefix}{project_uuid}", remaining_path
                 except Exception as e:
                     raise ValueError(f"Could not resolve project UUID: {str(e)}")
 
         raise ValueError(f"No matching directory pattern found for: {path}")
+
+    def get_uri(self, path: str, system: Optional[str] = None) -> str:
+        """
+        Convert a path to a Tapis URI.
+
+        Args:
+            path (str): Path to convert
+            system (str, optional): Storage system to use (ignored as system is determined by path)
+
+        Returns:
+            str: Tapis URI for the given path
+
+        Raises:
+            ValueError: If path pattern is not recognized
+        """
+        storage_id, processed_path = self.get_storage_info(path)
+        return f"tapis://{storage_id}/{processed_path}".replace(" ", "%20")
 
     def list(
         self, path: str = None, recursive: bool = False, system: str = None
