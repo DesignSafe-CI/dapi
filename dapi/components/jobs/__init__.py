@@ -42,33 +42,18 @@ class JobsComponent(BaseComponent):
         ) -> Any:
             handler = self.handlers[app_name]()  # Remove app_name from instantiation
 
-            # Check if handler's generate_job_info expects app_name
-            if "app_name" in handler.generate_job_info.__code__.co_varnames:
-                job_info = handler.generate_job_info(
-                    self.tapis,
-                    input_uri or "tapis://example/input/",
-                    input_file,
-                    job_name,
-                    app_name,  # Pass app_name for handlers that expect it
-                    max_minutes,
-                    node_count,
-                    cores_per_node,
-                    queue,
-                    allocation,
-                )
-            else:
-                # For MPM-style handlers that don't expect app_name
-                job_info = handler.generate_job_info(
-                    self.tapis,
-                    input_uri or "tapis://example/input/",
-                    input_file,
-                    job_name,
-                    max_minutes,
-                    node_count,
-                    cores_per_node,
-                    queue,
-                    allocation,
-                )
+            job_info = handler.generate_job_info(
+                self.tapis,
+                input_uri or "tapis://example/input/",
+                input_file,
+                job_name,
+                app_name,
+                max_minutes,
+                node_count,
+                cores_per_node,
+                queue,
+                allocation,
+            )
 
             return job_info
 

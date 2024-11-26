@@ -5,12 +5,17 @@ from .base_job_handler import BaseJobHandler
 class MpmJobHandler(BaseJobHandler):
     """Custom handler for MPM (Material Point Method) jobs."""
 
+    def __init__(self):
+        """Initialize with fixed mpm app name."""
+        super().__init__(default_app_name="mpm")
+
     def generate_job_info(
         self,
         tapis_client,
         input_uri: str,
         input_file: str,
         job_name: Optional[str] = None,
+        app_name: Optional[str] = None,
         max_minutes: Optional[int] = None,
         node_count: Optional[int] = None,
         cores_per_node: Optional[int] = None,
