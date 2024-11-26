@@ -9,18 +9,13 @@ from ...core import BaseComponent
 
 
 class StorageSystem(Enum):
-    """Enumeration of DesignSafe storage systems."""
+    """Enumeration of available storage systems."""
 
     MY_DATA = "designsafe.storage.default"
-    COMMUNITY_DATA = "designsafe.storage.community"
-
-    @property
-    def base_path(self) -> str:
-        """Get the base Jupyter path for this storage system."""
-        return {
-            StorageSystem.MY_DATA: "jupyter/MyData",
-            StorageSystem.COMMUNITY_DATA: "jupyter/CommunityData",
-        }[self]
+    COMMUNITY = "designsafe.storage.community"
+    PUBLISHED = "designsafe.storage.published"
+    FRONTERA = "frontera.storage.default"
+    LS6 = "ls6.storage.default"
 
 
 @dataclass
@@ -39,75 +34,61 @@ class FileInfo:
 class FilesComponent(BaseComponent):
     """Component for managing files and directories in DesignSafe."""
 
-    def _get_project_uuid(self, project_id: str) -> str:
-        """Get the UUID for a project given its ID.
+    def get_uri(self, path: str, system: Optional[str] = None) -> str:
+        """
+        Convert a path to a Tapis URI based on specific directory patterns.
 
         Args:
-            project_id: The project ID
+            path (str): Path to convert to URI
+            system (str, optional): Storage system to use (ignored as system is determined by path)
 
         Returns:
-            The project UUID
+            str: Tapis URI for the given path
 
         Raises:
-            ValueError: If project not found
+            ValueError: If no matching directory pattern is found
         """
-        try:
-            resp = self.tapis.get(
-                f"https://designsafe-ci.org/api/projects/v2/{project_id}"
-            )
-            project_data = resp.json()
-            return project_data["baseProject"]["uuid"]
-        except Exception as e:
-            raise ValueError(f"Error getting project UUID for {project_id}: {str(e)}")
+        # Define directory patterns and their corresponding storage systems and username requirements
+        directory_patterns = [
+            ("jupyter/MyData", "designsafe.storage.default", True),
+            ("jupyter/mydata", "designsafe.storage.default", True),
+            ("jupyter/CommunityData", "designsafe.storage.community", False),
+            ("/MyData", "designsafe.storage.default", True),
+            ("/mydata", "designsafe.storage.default", True),
+        ]
 
-    def get_uri(self, path: str) -> str:
-        """Convert a local or Jupyter path to a Tapis URI.
+        # Check standard directory patterns
+        for pattern, storage, use_username in directory_patterns:
+            if pattern in path:
+                path = path.split(pattern, 1)[1].lstrip("/")
+                input_dir = f"{self.tapis.username}/{path}" if use_username else path
+                input_uri = f"tapis://{storage}/{input_dir}"
+                return input_uri.replace(" ", "%20")
 
-        Args:
-            path: Local filesystem or Jupyter path
+        # Check project patterns
+        project_patterns = [
+            ("jupyter/MyProjects", "project-"),
+            ("jupyter/projects", "project-"),
+        ]
 
-        Returns:
-            Tapis URI for the path
+        for pattern, prefix in project_patterns:
+            if pattern in path:
+                path = path.split(pattern, 1)[1].lstrip("/")
+                project_id, *rest = path.split("/", 1)
+                path = rest[0] if rest else ""
 
-        Examples:
-            >>> ds.files.get_uri("jupyter/MyData/test.txt")
-            'tapis://designsafe.storage.default/username/test.txt'
+                # Get project UUID using Tapis
+                try:
+                    resp = self.tapis.get(
+                        f"https://designsafe-ci.org/api/projects/v2/{project_id}"
+                    )
+                    project_uuid = resp.json()["baseProject"]["uuid"]
+                    input_uri = f"tapis://{prefix}{project_uuid}/{path}"
+                    return input_uri.replace(" ", "%20")
+                except Exception as e:
+                    raise ValueError(f"Could not resolve project UUID: {str(e)}")
 
-            >>> ds.files.get_uri("jupyter/CommunityData/test.txt")
-            'tapis://designsafe.storage.community/test.txt'
-
-            >>> ds.files.get_uri("jupyter/MyProjects/PRJ-1234/test.txt")
-            'tapis://project-uuid/test.txt'
-        """
-        path = str(path)  # Convert Path objects to string
-
-        # Handle MyData paths
-        if "MyData" in path or "mydata" in path:
-            # Extract the relative path after MyData
-            rel_path = path.split("MyData/")[-1]
-            return f"tapis://{StorageSystem.MY_DATA.value}/{self.tapis.username}/{rel_path}"
-
-        # Handle CommunityData paths
-        if "CommunityData" in path:
-            rel_path = path.split("CommunityData/")[-1]
-            return f"tapis://{StorageSystem.COMMUNITY_DATA.value}/{rel_path}"
-
-        # Handle Project paths
-        if "MyProjects" in path or "projects" in path:
-            # Extract project ID and relative path
-            parts = path.split("/")
-            for i, part in enumerate(parts):
-                if part in ("MyProjects", "projects"):
-                    project_id = parts[i + 1]
-                    rel_path = "/".join(parts[i + 2 :])
-                    break
-            else:
-                raise ValueError("Could not parse project path")
-
-            project_uuid = self._get_project_uuid(project_id)
-            return f"tapis://project-{project_uuid}/{rel_path}"
-
-        raise ValueError(f"Could not determine storage system for path: {path}")
+        raise ValueError(f"No matching directory pattern found for: {path}")
 
     def list(
         self, path: str = None, recursive: bool = False, system: str = None
