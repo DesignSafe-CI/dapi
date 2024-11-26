@@ -16,9 +16,12 @@ class JobsComponent(BaseComponent):
 
     def _register_default_handlers(self) -> None:
         """Register default job handlers."""
-        from .opensees_job_handler import OpenSeesJobHandler  # Import default handlers
+        # Import default handlers
+        from .opensees_job_handler import OpenSeesJobHandler
+        from .mpm_job_handler import MpmJobHandler
 
         self.register_handler("opensees", OpenSeesJobHandler)
+        self.register_handler("mpm", MpmJobHandler)
 
     def register_handler(
         self, app_name: str, handler_class: Type[BaseJobHandler]

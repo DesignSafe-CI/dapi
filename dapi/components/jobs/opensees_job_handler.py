@@ -22,7 +22,17 @@ class OpenSeesJobHandler(BaseJobHandler):
         additional_params = {
             "envVariables": [{"key": "tclScript", "value": input_file}]
         }
-        app_name
+
+        # Use default app if no app specified or if specified app doesn't contain 'opensees'
+        if not app_name or "opensees" not in app_name.lower():
+            app_name = "opensees-express"
+        else:
+            # List available OpenSees apps
+            apps = tapis_client.apps.getApps(search="opensees")
+            if not any(app.id == app_name for app in apps):
+                raise ValueError(
+                    f"App '{app_name}' not found in available OpenSees apps"
+                )
 
         # Call the generic generate_job_info with OpenSees-specific params
         return super().generate_job_info(
