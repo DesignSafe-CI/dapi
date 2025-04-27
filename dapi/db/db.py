@@ -8,33 +8,16 @@ from .config import db_config
 
 
 class DSDatabase:
-    """A database utility class for connecting to a DesignSafe SQL database.
-
-    This class provides functionality to connect to a MySQL database using
-    SQLAlchemy and PyMySQL. It supports executing SQL queries and returning
-    results in different formats.
-
-    Attributes:
-        user (str): Database username, defaults to 'dspublic'.
-        password (str): Database password, defaults to 'R3ad0nlY'.
-        host (str): Database host address, defaults to '129.114.52.174'.
-        port (int): Database port, defaults to 3306.
-        db (str): Database name, can be 'sjbrande_ngl_db', 'sjbrande_vpdb', or 'post_earthquake_recovery'.
-        recycle_time (int): Time in seconds to recycle database connections.
-        engine (Engine): SQLAlchemy engine for database connection.
-        Session (sessionmaker): SQLAlchemy session maker bound to the engine.
+    """
+    Manages connection and querying for a specific DesignSafe database.
+    Uses SQLAlchemy engine for connection pooling and session-per-query pattern.
     """
 
     def __init__(self, dbname="ngl"):
-        """Initializes the DSDatabase instance with environment variables and creates the database engine.
-
-        Args:
-            dbname (str): Shorthand for the database name. Must be one of 'ngl', 'vp', or 'eq'.
-        """
-
+        """Initializes the DSDatabase instance and creates the engine."""
         if dbname not in db_config:
             raise ValueError(
-                f"Invalid database shorthand '{dbname}'. Allowed shorthands are: {', '.join(db_config.keys())}"
+                f"Invalid db shorthand '{dbname}'. Allowed: {', '.join(db_config.keys())}"
             )
 
         config = db_config[dbname]
@@ -45,50 +28,71 @@ class DSDatabase:
         self.host = os.getenv(f"{env_prefix}DB_HOST", "129.114.52.174")
         self.port = os.getenv(f"{env_prefix}DB_PORT", 3306)
         self.db = config["dbname"]
+        self.dbname_short = dbname  # Store shorthand name for reference
 
-        # Setup the database connection
+        print(
+            f"Creating SQLAlchemy engine for database '{self.db}' ({self.dbname_short})..."
+        )
+        # Setup the database connection engine with pooling
         self.engine = create_engine(
             f"mysql+pymysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}",
-            pool_recycle=3600,  # 1 hour in seconds
+            pool_recycle=3600,  # Recycle connections older than 1 hour
+            pool_pre_ping=True,  # Check connection validity before use
         )
+        # Create a configured "Session" class
         self.Session = sessionmaker(bind=self.engine)
+        print(f"Engine for '{self.dbname_short}' created.")
 
     def read_sql(self, sql, output_type="DataFrame"):
-        """Executes a SQL query and returns the results.
+        """
+        Executes a SQL query using a dedicated session and returns the results.
 
-        Args:
-            sql (str): The SQL query string to be executed.
-            output_type (str, optional): The format for the query results. Defaults to 'DataFrame'.
-                Possible values are 'DataFrame' for a pandas DataFrame, or 'dict' for a list of dictionaries.
-
-        Returns:
-            pandas.DataFrame or list of dict: The result of the SQL query.
-
-        Raises:
-            ValueError: If the SQL query string is empty or if the output type is not valid.
-            SQLAlchemyError: If an error occurs during query execution.
+        Each call obtains a session (and underlying connection from the pool),
+        executes the query, and closes the session (returning the connection
+        to the pool).
         """
         if not sql:
             raise ValueError("SQL query string is required")
-
         if output_type not in ["DataFrame", "dict"]:
             raise ValueError('Output type must be either "DataFrame" or "dict"')
 
+        # Obtain a new session for this query
         session = self.Session()
-
+        print(f"Executing query on '{self.dbname_short}'...")
         try:
             if output_type == "DataFrame":
-                return pd.read_sql_query(sql, session.bind)
+                # pandas read_sql_query handles connection/session management implicitly sometimes,
+                # but using the session explicitly ensures consistency.
+                # Pass the engine bound to the session.
+                return pd.read_sql_query(
+                    sql, session.bind.connect()
+                )  # Get connection from engine
             else:
-                # Convert SQL string to a text object
                 sql_text = text(sql)
+                # Execute within the session context
                 result = session.execute(sql_text)
-                return [dict(row) for row in result]
+                # Fetch results before closing session
+                data = [
+                    dict(row._mapping) for row in result
+                ]  # Use ._mapping for modern SQLAlchemy
+                return data
         except exc.SQLAlchemyError as e:
-            raise Exception(f"SQLAlchemyError: {e}")
+            print(f"SQLAlchemyError executing query on '{self.dbname_short}': {e}")
+            raise  # Re-raise the exception
+        except Exception as e:
+            print(f"Unexpected error executing query on '{self.dbname_short}': {e}")
+            raise
         finally:
+            # Ensure the session is closed, returning the connection to the pool
             session.close()
+            # print(f"Session for '{self.dbname_short}' query closed.") # Can be noisy
 
     def close(self):
-        """Close the database connection."""
-        self.engine.dispose()
+        """Dispose of the engine and its connection pool for this database."""
+        if self.engine:
+            print(f"Disposing engine and closing pool for '{self.dbname_short}'...")
+            self.engine.dispose()
+            self.engine = None  # Mark as disposed
+            print(f"Engine for '{self.dbname_short}' disposed.")
+        else:
+            print(f"Engine for '{self.dbname_short}' already disposed.")

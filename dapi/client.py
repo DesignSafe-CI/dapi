@@ -4,6 +4,7 @@ from . import auth
 from . import apps as apps_module
 from . import files as files_module
 from . import jobs as jobs_module
+from .db.accessor import DatabaseAccessor
 
 # Import only the necessary classes/functions from jobs
 from .jobs import SubmittedJob  # JobDefinition is no longer needed
@@ -26,9 +27,12 @@ class DSClient:
             self.tapis = tapis_client
         else:
             self.tapis = auth.init(**auth_kwargs)
+
+        # Instantiate Accessors
         self.apps = AppMethods(self.tapis)
         self.files = FileMethods(self.tapis)
         self.jobs = JobMethods(self.tapis)
+        self.db = DatabaseAccessor()
 
 
 # --- AppMethods and FileMethods remain the same ---
