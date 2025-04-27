@@ -3,6 +3,7 @@ from tapipy.errors import BaseTapyException
 from typing import List, Any, Optional
 from .exceptions import AppDiscoveryError
 
+
 def find_apps(
     t: Tapis, search_term: str, list_type: str = "ALL", verbose: bool = True
 ) -> List[Tapis]:
@@ -24,11 +25,15 @@ def find_apps(
     try:
         # Use id.like for partial matching, ensure search term is handled
         search_query = f"(id.like.*{search_term}*)" if search_term else None
-        results = t.apps.getApps(search=search_query, listType=list_type, select="id,version,owner") # Select fewer fields for speed
+        results = t.apps.getApps(
+            search=search_query, listType=list_type, select="id,version,owner"
+        )  # Select fewer fields for speed
 
         if verbose:
             if not results:
-                print(f"No apps found matching '{search_term}' with listType '{list_type}'")
+                print(
+                    f"No apps found matching '{search_term}' with listType '{list_type}'"
+                )
             else:
                 print(f"\nFound {len(results)} matching apps:")
                 for app in results:
@@ -36,12 +41,18 @@ def find_apps(
                 print()
         return results
     except BaseTapyException as e:
-        raise AppDiscoveryError(f"Failed to search for apps matching '{search_term}': {e}") from e
+        raise AppDiscoveryError(
+            f"Failed to search for apps matching '{search_term}': {e}"
+        ) from e
     except Exception as e:
-        raise AppDiscoveryError(f"An unexpected error occurred while searching for apps: {e}") from e
+        raise AppDiscoveryError(
+            f"An unexpected error occurred while searching for apps: {e}"
+        ) from e
 
 
-def get_app_details(t: Tapis, app_id: str, app_version: Optional[str] = None, verbose: bool = True) -> Optional[Tapis]:
+def get_app_details(
+    t: Tapis, app_id: str, app_version: Optional[str] = None, verbose: bool = True
+) -> Optional[Tapis]:
     """
     Get detailed information for a specific app ID and version (or latest).
 
@@ -68,23 +79,31 @@ def get_app_details(t: Tapis, app_id: str, app_version: Optional[str] = None, ve
             print(f"  ID: {app_info.id}")
             print(f"  Version: {app_info.version}")
             print(f"  Owner: {app_info.owner}")
-            if hasattr(app_info, 'jobAttributes') and hasattr(app_info.jobAttributes, 'execSystemId'):
-                 print(f"  Execution System: {app_info.jobAttributes.execSystemId}")
+            if hasattr(app_info, "jobAttributes") and hasattr(
+                app_info.jobAttributes, "execSystemId"
+            ):
+                print(f"  Execution System: {app_info.jobAttributes.execSystemId}")
             else:
-                 print("  Execution System: Not specified in jobAttributes")
+                print("  Execution System: Not specified in jobAttributes")
             print(f"  Description: {app_info.description}")
         return app_info
     except BaseTapyException as e:
         # Check for 404 specifically
-        if hasattr(e, 'response') and e.response and e.response.status_code == 404:
-             print(f"App '{app_id}' (Version: {app_version or 'latest'}) not found.")
-             # Optionally, try searching for similar apps
-             # print("\nAttempting to find similar apps:")
-             # find_apps(t, app_id, verbose=True)
-             return None
+        if hasattr(e, "response") and e.response and e.response.status_code == 404:
+            print(f"App '{app_id}' (Version: {app_version or 'latest'}) not found.")
+            # Optionally, try searching for similar apps
+            # print("\nAttempting to find similar apps:")
+            # find_apps(t, app_id, verbose=True)
+            return None
         else:
-             print(f"Error getting app info for '{app_id}' (Version: {app_version or 'latest'}): {e}")
-             raise AppDiscoveryError(f"Failed to get details for app '{app_id}': {e}") from e
+            print(
+                f"Error getting app info for '{app_id}' (Version: {app_version or 'latest'}): {e}"
+            )
+            raise AppDiscoveryError(
+                f"Failed to get details for app '{app_id}': {e}"
+            ) from e
     except Exception as e:
         print(f"An unexpected error occurred getting app info for '{app_id}': {e}")
-        raise AppDiscoveryError(f"Unexpected error getting details for app '{app_id}': {e}") from e
+        raise AppDiscoveryError(
+            f"Unexpected error getting details for app '{app_id}': {e}"
+        ) from e

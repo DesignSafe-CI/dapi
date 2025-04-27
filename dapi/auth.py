@@ -5,10 +5,13 @@ from tapipy.errors import BaseTapyException
 from dotenv import load_dotenv
 from .exceptions import AuthenticationError
 
-def init(base_url: str = "https://designsafe.tapis.io",
-         username: str = None,
-         password: str = None,
-         env_file: str = None) -> Tapis:
+
+def init(
+    base_url: str = "https://designsafe.tapis.io",
+    username: str = None,
+    password: str = None,
+    env_file: str = None,
+) -> Tapis:
     """
     Initialize and authenticate a Tapis client for DesignSafe.
 
@@ -49,20 +52,21 @@ def init(base_url: str = "https://designsafe.tapis.io",
         try:
             final_password = getpass("Enter DesignSafe Password: ")
         except (EOFError, KeyboardInterrupt):
-             raise AuthenticationError("Password input cancelled.")
-        except Exception: # Fallback for non-terminal environments
-             final_password = input("Enter DesignSafe Password: ")
-
+            raise AuthenticationError("Password input cancelled.")
+        except Exception:  # Fallback for non-terminal environments
+            final_password = input("Enter DesignSafe Password: ")
 
     if not final_username or not final_password:
         raise AuthenticationError("Username and password are required.")
 
     # Initialize Tapis object
     try:
-        t = Tapis(base_url=base_url,
-                  username=final_username,
-                  password=final_password,
-                  download_latest_specs=False) # Avoid slow spec downloads by default
+        t = Tapis(
+            base_url=base_url,
+            username=final_username,
+            password=final_password,
+            download_latest_specs=False,
+        )  # Avoid slow spec downloads by default
 
         # Attempt to get tokens to verify credentials
         t.get_tokens()
@@ -74,4 +78,6 @@ def init(base_url: str = "https://designsafe.tapis.io",
         raise AuthenticationError(f"Tapis authentication failed: {e}") from e
     except Exception as e:
         # Catch other potential errors
-        raise AuthenticationError(f"An unexpected error occurred during authentication: {e}") from e
+        raise AuthenticationError(
+            f"An unexpected error occurred during authentication: {e}"
+        ) from e

@@ -1,19 +1,31 @@
 """
 Dapi - A Python wrapper for interacting with DesignSafe resources via the Tapis API.
 """
-# Import the renamed client class
 from .client import DSClient
-from .exceptions import DapiException, FileOperationError, JobSubmissionError, JobMonitorError
-# Import JobDefinition here too for easier access like dapi.JobDefinition
-from .jobs import JobDefinition
 
-__version__ = "1.1.0" # Example version
+# Import exceptions from the exceptions module
+# Make sure ALL exceptions you want to expose are listed here
+from .exceptions import (
+    DapiException,
+    AuthenticationError,
+    FileOperationError,
+    AppDiscoveryError,
+    JobSubmissionError,
+    JobMonitorError,
+)
 
+
+__version__ = "1.0.0"
+
+# Define what gets imported with 'from dapi import *'
+# Also helps linters and clarifies the public API
 __all__ = [
-    "DSClient", # Export the renamed class
-    "JobDefinition", # Export JobDefinition
+    "DSClient",
+    # List ALL exported exceptions here
     "DapiException",
+    "AuthenticationError",
     "FileOperationError",
+    "AppDiscoveryError",
     "JobSubmissionError",
     "JobMonitorError",
 ]

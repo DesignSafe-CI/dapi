@@ -1,109 +1,144 @@
+# dapi/client.py
 from tapipy.tapis import Tapis
 from . import auth
 from . import apps as apps_module
 from . import files as files_module
 from . import jobs as jobs_module
-from .jobs import JobDefinition, SubmittedJob # Make these easily accessible
-from typing import List, Optional
 
-# Renamed class from Client to DSClient
+# Import only the necessary classes/functions from jobs
+from .jobs import SubmittedJob  # JobDefinition is no longer needed
+from typing import List, Optional, Dict, Any
+
+
 class DSClient:
     """
     Main client for interacting with DesignSafe resources via Tapis V3 using dapi.
-
-    Provides abstracted methods for common operations (apps, files, jobs) and
-    direct access to the underlying tapipy.Tapis client via the `.tapis` attribute.
     """
+
     def __init__(self, tapis_client: Optional[Tapis] = None, **auth_kwargs):
-        """
-        Initializes the Dapi DSClient.
-
-        If an authenticated `tapis_client` (tapipy.Tapis object) is provided,
-        it uses that instance directly.
-
-        Otherwise, it calls dapi.auth.init() to create and authenticate
-        a new Tapis client, passing any additional `auth_kwargs` (like
-        base_url, username, password, env_file) to the init function.
-
-        Args:
-            tapis_client: An optional pre-authenticated tapipy.Tapis instance.
-            **auth_kwargs: Keyword arguments passed to dapi.auth.init() if
-                           tapis_client is not provided.
-        """
         if tapis_client:
             if not isinstance(tapis_client, Tapis):
                 raise TypeError("tapis_client must be an instance of tapipy.Tapis")
-            # Verify the provided client is likely authenticated (has a token)
             if not tapis_client.get_access_jwt():
-                 print("Warning: Provided tapis_client does not appear to be authenticated (no access token found).")
-            self.tapis = tapis_client # Store the raw client here
+                print(
+                    "Warning: Provided tapis_client does not appear to be authenticated."
+                )
+            self.tapis = tapis_client
         else:
-            # Initialize and store the raw client
             self.tapis = auth.init(**auth_kwargs)
-
-        # Provide access to abstracted modules/functionality
         self.apps = AppMethods(self.tapis)
         self.files = FileMethods(self.tapis)
         self.jobs = JobMethods(self.tapis)
 
-    # Expose JobDefinition for convenience as a class attribute
-    # This allows usage like: my_def = ds.JobDefinition(...)
-    JobDefinition = JobDefinition
 
-# --- Wrapper classes remain the same ---
+# --- AppMethods and FileMethods remain the same ---
 class AppMethods:
     def __init__(self, tapis_client: Tapis):
-        self._tapis = tapis_client # Keep internal reference
+        self._tapis = tapis_client
 
-    def find(self, search_term: str, list_type: str = "ALL", verbose: bool = True) -> List[Tapis]:
-        """Search for Tapis apps matching a search term."""
-        return apps_module.find_apps(self._tapis, search_term, list_type, verbose)
+    def find(self, *args, **kwargs) -> List[Tapis]:
+        return apps_module.find_apps(self._tapis, *args, **kwargs)
 
-    def get_details(self, app_id: str, app_version: Optional[str] = None, verbose: bool = True) -> Optional[Tapis]:
-        """Get details for a specific app ID and optionally version."""
-        return apps_module.get_app_details(self._tapis, app_id, app_version, verbose)
+    def get_details(self, *args, **kwargs) -> Optional[Tapis]:
+        return apps_module.get_app_details(self._tapis, *args, **kwargs)
+
 
 class FileMethods:
     def __init__(self, tapis_client: Tapis):
-        self._tapis = tapis_client # Keep internal reference
+        self._tapis = tapis_client
 
-    def translate_path_to_uri(self, path: str) -> str:
-        """Given a path on DesignSafe, determine the correct Tapis system URI."""
-        return files_module.get_ds_path_uri(self._tapis, path)
+    def translate_path_to_uri(self, *args, **kwargs) -> str:
+        return files_module.get_ds_path_uri(self._tapis, *args, **kwargs)
 
-    def upload(self, local_path: str, remote_uri: str):
-        """Uploads a local file to a Tapis system URI."""
-        return files_module.upload_file(self._tapis, local_path, remote_uri)
+    def upload(self, *args, **kwargs):
+        return files_module.upload_file(self._tapis, *args, **kwargs)
 
-    def download(self, remote_uri: str, local_path: str):
-        """Downloads a file from a Tapis system URI to a local path."""
-        return files_module.download_file(self._tapis, remote_uri, local_path)
+    def download(self, *args, **kwargs):
+        return files_module.download_file(self._tapis, *args, **kwargs)
 
-    def list(self, remote_uri: str, limit: int = 100, offset: int = 0) -> List[Tapis]:
-        """Lists files at a given Tapis system URI."""
-        return files_module.list_files(self._tapis, remote_uri, limit, offset)
+    def list(self, *args, **kwargs) -> List[Tapis]:
+        return files_module.list_files(self._tapis, *args, **kwargs)
 
+
+# --- JobMethods Updated ---
 class JobMethods:
     def __init__(self, tapis_client: Tapis):
-        self._tapis = tapis_client # Keep internal reference
+        self._tapis = tapis_client
 
-    def submit(self, definition: JobDefinition, allocation: Optional[str] = None) -> SubmittedJob:
-        """Submits a job based on a JobDefinition."""
-        # Pass the raw client from the DSClient instance
-        return jobs_module.submit_job(self._tapis, definition, allocation)
+    # Method to generate the request dictionary
+    def generate_request(
+        self,
+        app_id: str,
+        input_dir_uri: str,
+        script_filename: str,
+        # --- Optional Overrides ---
+        app_version: Optional[str] = None,
+        job_name: Optional[str] = None,
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        max_minutes: Optional[int] = None,
+        node_count: Optional[int] = None,
+        cores_per_node: Optional[int] = None,
+        memory_mb: Optional[int] = None,
+        queue: Optional[str] = None,
+        allocation: Optional[str] = None,
+        # --- Optional Extra Parameters ---
+        extra_file_inputs: Optional[List[Dict[str, Any]]] = None,
+        extra_app_args: Optional[List[Dict[str, Any]]] = None,
+        extra_env_vars: Optional[List[Dict[str, Any]]] = None,
+        extra_scheduler_options: Optional[List[Dict[str, Any]]] = None,
+        # --- Configuration ---
+        script_param_names: List[str] = ["Input Script", "Main Script", "tclScript"],
+        input_dir_param_name: str = "Input Directory",
+        allocation_param_name: str = "TACC Allocation",
+    ) -> Dict[str, Any]:
+        """
+        Generates a Tapis job request dictionary based on app definition and inputs.
 
+        This is a convenience wrapper around jobs.generate_job_request.
+        """
+        return jobs_module.generate_job_request(
+            tapis_client=self._tapis,
+            app_id=app_id,
+            input_dir_uri=input_dir_uri,
+            script_filename=script_filename,
+            app_version=app_version,
+            job_name=job_name,
+            description=description,
+            tags=tags,
+            max_minutes=max_minutes,
+            node_count=node_count,
+            cores_per_node=cores_per_node,
+            memory_mb=memory_mb,
+            queue=queue,
+            allocation=allocation,
+            extra_file_inputs=extra_file_inputs,
+            extra_app_args=extra_app_args,
+            extra_env_vars=extra_env_vars,
+            extra_scheduler_options=extra_scheduler_options,
+            script_param_names=script_param_names,
+            input_dir_param_name=input_dir_param_name,
+            allocation_param_name=allocation_param_name,
+        )
+
+    # Method to submit the generated request dictionary
+    def submit_request(self, job_request: Dict[str, Any]) -> SubmittedJob:
+        """
+        Submits a pre-generated job request dictionary to Tapis.
+
+        This is a convenience wrapper around jobs.submit_job_request.
+        """
+        return jobs_module.submit_job_request(self._tapis, job_request)
+
+    # --- Management methods remain the same ---
     def get(self, job_uuid: str) -> SubmittedJob:
         """Returns a SubmittedJob object for managing an existing job."""
-        # Pass the raw client from the DSClient instance
         return SubmittedJob(self._tapis, job_uuid)
 
-    # Optional: direct access to status/summary if needed without object
     def get_status(self, job_uuid: str) -> str:
-         """Gets the current status of a job by UUID."""
-         # Pass the raw client from the DSClient instance
-         return jobs_module.get_job_status(self._tapis, job_uuid)
+        """Gets the current status of a job by UUID."""
+        return jobs_module.get_job_status(self._tapis, job_uuid)
 
     def get_runtime_summary(self, job_uuid: str, verbose: bool = False):
-         """Prints the runtime summary for a job by UUID."""
-         # Pass the raw client from the DSClient instance
-         jobs_module.get_runtime_summary(self._tapis, job_uuid, verbose=verbose)
+        """Prints the runtime summary for a job by UUID."""
+        jobs_module.get_runtime_summary(self._tapis, job_uuid, verbose=verbose)
