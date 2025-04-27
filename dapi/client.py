@@ -7,7 +7,7 @@ from . import jobs as jobs_module
 from .db.accessor import DatabaseAccessor
 
 # Import only the necessary classes/functions from jobs
-from .jobs import SubmittedJob  # JobDefinition is no longer needed
+from .jobs import SubmittedJob, interpret_job_status
 from typing import List, Optional, Dict, Any
 
 
@@ -146,3 +146,7 @@ class JobMethods:
     def get_runtime_summary(self, job_uuid: str, verbose: bool = False):
         """Prints the runtime summary for a job by UUID."""
         jobs_module.get_runtime_summary(self._tapis, job_uuid, verbose=verbose)
+
+    def interpret_status(self, final_status: str, job_uuid: Optional[str] = None):
+        """Prints a user-friendly interpretation of the final job status."""
+        jobs_module.interpret_job_status(final_status, job_uuid)

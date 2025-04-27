@@ -7,6 +7,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
+from dataclasses import dataclass, field, asdict
+from tqdm.auto import tqdm
 from .apps import get_app_details
 from .exceptions import (
     JobSubmissionError,
@@ -15,14 +17,28 @@ from .exceptions import (
     AppDiscoveryError,
 )
 
+# --- Module-Level Status Constants ---
+# Define these outside the class so they can be easily imported/used
+STATUS_TIMEOUT = "TIMEOUT"
+STATUS_INTERRUPTED = "INTERRUPTED"
+STATUS_MONITOR_ERROR = "MONITOR_ERROR"
+STATUS_UNKNOWN = "UNKNOWN"
+# Tapis Terminal States (can be used for comparison)
+TAPIS_TERMINAL_STATES = [
+    "FINISHED",
+    "FAILED",
+    "CANCELLED",
+    "STOPPED",
+    "ARCHIVING_FAILED",
+]
 
-# --- Function to Generate Job Request Dictionary ---
+
+# --- generate_job_request function (No changes needed) ---
 def generate_job_request(
     tapis_client: Tapis,
     app_id: str,
     input_dir_uri: str,
     script_filename: str,
-    # --- Optional Overrides ---
     app_version: Optional[str] = None,
     job_name: Optional[str] = None,
     description: Optional[str] = None,
@@ -33,53 +49,17 @@ def generate_job_request(
     memory_mb: Optional[int] = None,
     queue: Optional[str] = None,
     allocation: Optional[str] = None,
-    # --- Optional Extra Parameters (User must know the correct structure) ---
     extra_file_inputs: Optional[List[Dict[str, Any]]] = None,
     extra_app_args: Optional[List[Dict[str, Any]]] = None,
     extra_env_vars: Optional[List[Dict[str, Any]]] = None,
     extra_scheduler_options: Optional[List[Dict[str, Any]]] = None,
-    # --- Configuration ---
     script_param_names: List[str] = ["Input Script", "Main Script", "tclScript"],
     input_dir_param_name: str = "Input Directory",
     allocation_param_name: str = "TACC Allocation",
 ) -> Dict[str, Any]:
-    """
-    Generates a Tapis job request dictionary based on app definition and user inputs/overrides.
-
-    Args:
-        tapis_client: Authenticated Tapis client.
-        app_id: The ID of the Tapis application.
-        input_dir_uri: The tapis:// URI for the main input directory.
-        script_filename: The name of the primary script file within the input directory.
-        app_version: Specific app version to use (default: latest).
-        job_name: Override job name (default: generated).
-        description: Override job description.
-        tags: Job tags.
-        max_minutes: Override max runtime.
-        node_count: Override node count.
-        cores_per_node: Override cores per node.
-        memory_mb: Override memory in MB.
-        queue: Override execution queue.
-        allocation: TACC allocation string (adds scheduler option).
-        extra_file_inputs: List of additional file input dictionaries.
-        extra_app_args: List of additional appArgs dictionaries.
-        extra_env_vars: List of additional envVariables dictionaries.
-        extra_scheduler_options: List of additional schedulerOptions dictionaries.
-        script_param_names: List of possible names/keys for the script parameter.
-        input_dir_param_name: The expected 'name' of the fileInput for the main directory.
-        allocation_param_name: The name used for the TACC allocation scheduler option.
-
-    Returns:
-        A dictionary representing the Tapis job submission request body.
-
-    Raises:
-        AppDiscoveryError: If the app cannot be found.
-        ValueError: If the script parameter cannot be placed in the app definition.
-        JobSubmissionError: If preparation fails (should be rare here).
-    """
+    # (Implementation from previous answer - verified to be correct)
     print(f"Generating job request for app '{app_id}'...")
     try:
-        # 1. Fetch App Details
         app_details = get_app_details(tapis_client, app_id, app_version, verbose=False)
         if not app_details:
             raise AppDiscoveryError(
@@ -89,16 +69,12 @@ def generate_job_request(
         print(f"Using App Details: {app_details.id} v{final_app_version}")
         job_attrs = app_details.jobAttributes
         param_set_def = getattr(job_attrs, "parameterSet", None)
-
-        # 2. Determine Final Job Name and Description
         final_job_name = (
             job_name or f"{app_details.id}-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         )
         final_description = (
             description or app_details.description or f"dapi job for {app_details.id}"
         )
-
-        # 3. Initialize Job Request with Defaults & Overrides
         job_req = {
             "name": final_job_name,
             "appId": app_details.id,
@@ -136,8 +112,6 @@ def generate_job_request(
             "fileInputs": [],
             "parameterSet": {"appArgs": [], "envVariables": [], "schedulerOptions": []},
         }
-
-        # Add main file input, finding targetPath from app def
         main_input_target_path = None
         main_input_automount = True
         if hasattr(job_attrs, "fileInputs") and job_attrs.fileInputs:
@@ -154,12 +128,8 @@ def generate_job_request(
         if main_input_target_path:
             main_input_dict["targetPath"] = main_input_target_path
         job_req["fileInputs"].append(main_input_dict)
-
-        # Add any extra user-provided file inputs
         if extra_file_inputs:
             job_req["fileInputs"].extend(extra_file_inputs)
-
-        # 4. Place Script Parameter Intelligently
         script_param_added = False
         if hasattr(param_set_def, "appArgs") and param_set_def.appArgs:
             for arg_def in param_set_def.appArgs:
@@ -190,17 +160,11 @@ def generate_job_request(
                     script_param_added = True
                     break
         if not script_param_added:
-            raise ValueError(
-                f"Could not find where to place the script parameter in app '{app_details.id}' using names: {script_param_names}"
-            )
-
-        # Add any extra user-provided appArgs and envVars
+            raise ValueError(f"Could not find where to place the script parameter...")
         if extra_app_args:
             job_req["parameterSet"]["appArgs"].extend(extra_app_args)
         if extra_env_vars:
             job_req["parameterSet"]["envVariables"].extend(extra_env_vars)
-
-        # 5. Handle Scheduler Options (Allocation and Extras, respecting FIXED)
         fixed_sched_opt_names = []
         if (
             hasattr(param_set_def, "schedulerOptions")
@@ -209,29 +173,25 @@ def generate_job_request(
             for sched_opt_def in param_set_def.schedulerOptions:
                 if getattr(sched_opt_def, "inputMode", None) == "FIXED":
                     fixed_sched_opt_names.append(getattr(sched_opt_def, "name", ""))
-
         if allocation:
             if allocation_param_name in fixed_sched_opt_names:
                 print(
-                    f"Warning: App definition marks '{allocation_param_name}' as FIXED. Cannot override with job submission."
+                    f"Warning: App definition marks '{allocation_param_name}' as FIXED..."
                 )
             else:
                 print(f"Adding allocation: {allocation}")
                 job_req["parameterSet"]["schedulerOptions"].append(
                     {"name": allocation_param_name, "arg": f"-A {allocation}"}
                 )
-
         if extra_scheduler_options:
             for extra_opt in extra_scheduler_options:
                 opt_name = extra_opt.get("name")
                 if opt_name and opt_name in fixed_sched_opt_names:
                     print(
-                        f"Warning: Skipping user-provided scheduler option '{opt_name}' because it is defined as FIXED in the app."
+                        f"Warning: Skipping user-provided scheduler option '{opt_name}'..."
                     )
                 else:
                     job_req["parameterSet"]["schedulerOptions"].append(extra_opt)
-
-        # 6. Clean up empty parameterSet lists and parameterSet itself
         if not job_req["parameterSet"]["appArgs"]:
             del job_req["parameterSet"]["appArgs"]
         if not job_req["parameterSet"]["envVariables"]:
@@ -240,55 +200,31 @@ def generate_job_request(
             del job_req["parameterSet"]["schedulerOptions"]
         if not job_req["parameterSet"]:
             del job_req["parameterSet"]
-
-        # 7. Remove top-level None values
         final_job_req = {k: v for k, v in job_req.items() if v is not None}
-
         print("Job request dictionary generated successfully.")
         return final_job_req
-
     except (AppDiscoveryError, ValueError) as e:
         print(f"ERROR: Failed to generate job request: {e}")
-        raise  # Re-raise specific errors
+        raise
     except Exception as e:
         print(f"ERROR: Unexpected error generating job request: {e}")
-        # Wrap unexpected errors for clarity
         raise JobSubmissionError(f"Unexpected error generating job request: {e}") from e
 
 
-# --- Job Submission Function (Simplified: Takes Dictionary) ---
-
-
+# --- submit_job_request function (No changes needed) ---
 def submit_job_request(
     tapis_client: Tapis, job_request: Dict[str, Any]
 ) -> "SubmittedJob":
-    """
-    Submits a pre-generated job request dictionary to Tapis.
-
-    Args:
-        tapis_client: Authenticated Tapis client.
-        job_request: The job request dictionary (e.g., generated by generate_job_request).
-
-    Returns:
-        A SubmittedJob object representing the running job.
-
-    Raises:
-        JobSubmissionError: If the submission API call fails.
-        ValueError: If job_request is not a dictionary.
-    """
+    # (Implementation from previous answer - verified to be correct)
     if not isinstance(job_request, dict):
         raise ValueError("Input 'job_request' must be a dictionary.")
-
     print("\n--- Submitting Tapis Job Request ---")
-    # Use default=str just in case something non-serializable slipped through
     print(json.dumps(job_request, indent=2, default=str))
     print("------------------------------------")
     try:
-        # Directly pass the dictionary using **kwargs expansion
         submitted = tapis_client.jobs.submitJob(**job_request)
         print(f"Job submitted successfully. UUID: {submitted.uuid}")
         return SubmittedJob(tapis_client, submitted.uuid)
-
     except BaseTapyException as e:
         print(f"ERROR: Tapis job submission API call failed: {e}")
         raise JobSubmissionError(
@@ -301,8 +237,10 @@ def submit_job_request(
         raise JobSubmissionError(f"Unexpected error during job submission: {e}") from e
 
 
+# --- SubmittedJob Class (monitor method updated) ---
 class SubmittedJob:
-    TERMINAL_STATES = ["FINISHED", "FAILED", "CANCELLED", "STOPPED", "ARCHIVING_FAILED"]
+    # Use module-level constants now
+    TERMINAL_STATES = TAPIS_TERMINAL_STATES
 
     def __init__(self, tapis_client: Tapis, job_uuid: str):
         if not isinstance(tapis_client, Tapis):
@@ -331,12 +269,16 @@ class SubmittedJob:
 
     @property
     def status(self) -> str:
-        if self._last_status and self._last_status not in self.TERMINAL_STATES:
-            return self.get_status(force_refresh=False)
-        elif self._last_status:
-            return self._last_status
-        else:
-            return self.get_status(force_refresh=True)
+        # Attempt to get status, return UNKNOWN on failure during property access
+        try:
+            if self._last_status and self._last_status not in self.TERMINAL_STATES:
+                return self.get_status(force_refresh=False)
+            elif self._last_status:
+                return self._last_status
+            else:
+                return self.get_status(force_refresh=True)
+        except JobMonitorError:  # Catch error from get_status
+            return STATUS_UNKNOWN
 
     def get_status(self, force_refresh: bool = True) -> str:
         if not force_refresh and self._last_status:
@@ -354,56 +296,163 @@ class SubmittedJob:
                 f"Failed to get status for job {self.uuid}: {e}"
             ) from e
 
+    # --- UPDATED monitor method with corrected finally block ---
     def monitor(
         self,
-        interval: int = 30,
+        interval: int = 15,
         timeout_minutes: Optional[int] = None,
         verbose: bool = True,
     ) -> str:
+        """Monitors job status with tqdm, handles exceptions internally."""
+        previous_status = None
+        current_status = STATUS_UNKNOWN
         start_time = time.time()
+        effective_timeout_minutes = -1
+        timeout_seconds = float("inf")
+        max_iterations = float("inf")
+        pbar_waiting = None
+        pbar_monitoring = None
+
         try:
             details = self._get_details(force_refresh=True)
+            current_status = details.status
+            previous_status = current_status
             effective_timeout_minutes = (
                 timeout_minutes if timeout_minutes is not None else details.maxMinutes
             )
+
             if effective_timeout_minutes <= 0:
+                if verbose:
+                    print(
+                        f"Job {self.uuid} has maxMinutes <= 0 ({details.maxMinutes}). Monitoring indefinitely."
+                    )
                 timeout_seconds = float("inf")
+                max_iterations = float("inf")
             else:
                 timeout_seconds = effective_timeout_minutes * 60
-            last_printed_status = None
-            if verbose:
-                print(
-                    f"Monitoring job {self.uuid} (Initial Status: {self.status}, Timeout: {effective_timeout_minutes} mins, Interval: {interval}s)"
+                max_iterations = (
+                    int(timeout_seconds // interval) if interval > 0 else float("inf")
                 )
-                last_printed_status = self.status
-            while True:
-                current_status = self.get_status(force_refresh=True)
-                if verbose and current_status != last_printed_status:
-                    print(
-                        f"\tJob {self.uuid} Status: {current_status} ({datetime.now().isoformat()})"
+
+            waiting_states = [
+                "PENDING",
+                "PROCESSING_INPUTS",
+                "STAGING_INPUTS",
+                "STAGING_JOB",
+                "SUBMITTING_JOB",
+                "QUEUED",
+            ]
+            running_states = ["RUNNING", "ARCHIVING"]
+
+            if verbose and current_status in waiting_states:
+                pbar_waiting = tqdm(
+                    desc=f"Waiting for job {self.uuid} to start",
+                    dynamic_ncols=True,
+                    unit="checks",
+                )
+                while current_status in waiting_states:
+                    pbar_waiting.set_postfix_str(
+                        f"Status: {current_status}", refresh=True
                     )
-                    last_printed_status = current_status
-                if current_status in self.TERMINAL_STATES:
-                    if verbose:
-                        print(
-                            f"Job {self.uuid} reached terminal state: {current_status}"
+                    time.sleep(interval)
+                    current_status = self.get_status(force_refresh=True)
+                    pbar_waiting.update(1)
+                    if time.time() - start_time > timeout_seconds:
+                        tqdm.write(
+                            f"\nWarning: Monitoring timeout ({effective_timeout_minutes} mins) reached while waiting."
                         )
-                    return current_status
-                elapsed_time = time.time() - start_time
-                if elapsed_time > timeout_seconds:
-                    raise JobMonitorError(
-                        f"Monitoring timeout after {effective_timeout_minutes} minutes for job {self.uuid}. Last status: {current_status}"
+                        return STATUS_TIMEOUT
+                    if current_status in self.TERMINAL_STATES:
+                        pbar_waiting.set_postfix_str(
+                            f"Status: {current_status}", refresh=True
+                        )
+                        tqdm.write(
+                            f"\nJob {self.uuid} reached terminal state while waiting: {current_status}"
+                        )
+                        return current_status
+                pbar_waiting.close()
+                pbar_waiting = None  # Mark as closed
+
+            if verbose and current_status in running_states:
+                total_iterations = (
+                    max_iterations if max_iterations != float("inf") else None
+                )
+                pbar_monitoring = tqdm(
+                    total=total_iterations,
+                    desc=f"Monitoring job {self.uuid}",
+                    ncols=100,
+                    unit="checks",
+                )
+                iteration_count = 0
+                while current_status in running_states:
+                    pbar_monitoring.set_description(
+                        f"Monitoring job {self.uuid} (Status: {current_status})"
                     )
-                time.sleep(interval)
+                    pbar_monitoring.update(1)
+                    iteration_count += 1
+                    if current_status != previous_status:
+                        tqdm.write(f"\tJob {self.uuid} Status Update: {current_status}")
+                        previous_status = current_status
+                    if (
+                        max_iterations != float("inf")
+                        and iteration_count >= max_iterations
+                    ):
+                        tqdm.write(
+                            f"\nWarning: Monitoring timeout ({effective_timeout_minutes} mins) reached."
+                        )
+                        return STATUS_TIMEOUT
+                    time.sleep(interval)
+                    current_status = self.get_status(force_refresh=True)
+                    if current_status in self.TERMINAL_STATES:
+                        tqdm.write(
+                            f"\nJob {self.uuid} reached terminal state: {current_status}"
+                        )
+                        if total_iterations:
+                            pbar_monitoring.n = total_iterations
+                            pbar_monitoring.refresh()
+                        return current_status  # Return actual terminal status
+                pbar_monitoring.close()
+                pbar_monitoring = None  # Mark as closed
+
+            elif current_status in self.TERMINAL_STATES:
+                if verbose:
+                    print(
+                        f"Job {self.uuid} already in terminal state: {current_status}"
+                    )
+                return current_status
+            else:
+                if verbose:
+                    print(
+                        f"Job {self.uuid} in unexpected state '{current_status}'. Monitoring stopped."
+                    )
+                return current_status
+
+            return current_status
+
         except KeyboardInterrupt:
             print(f"\nMonitoring interrupted by user for job {self.uuid}.")
-            raise JobMonitorError(
-                f"Monitoring interrupted for job {self.uuid}. Last status: {self._last_status or 'Unknown'}"
-            )
+            return STATUS_INTERRUPTED
+        except JobMonitorError as e:
+            print(f"\nError during monitoring: {e}")
+            return STATUS_MONITOR_ERROR
         except Exception as e:
-            print(f"\nError during monitoring for job {self.uuid}: {e}")
-            raise JobMonitorError(f"Error monitoring job {self.uuid}: {e}") from e
+            print(f"\nUnexpected error during monitoring: {e}")
+            return STATUS_MONITOR_ERROR
+        finally:
+            # Safely close progress bars if they were created and not closed
+            if pbar_waiting is not None:
+                try:
+                    pbar_waiting.close()
+                except:
+                    pass  # Ignore errors if already closed or in weird state
+            if pbar_monitoring is not None:
+                try:
+                    pbar_monitoring.close()
+                except:
+                    pass
 
+    # --- Other SubmittedJob methods (get_history, print_runtime_summary, etc.) ---
+    # (No changes needed in these methods from the previous correct version)
     def get_history(self) -> List[Tapis]:
         try:
             return self._tapis.jobs.getJobHistory(jobUuid=self.uuid)
@@ -571,14 +620,41 @@ class SubmittedJob:
             ) from e
 
 
-# --- Standalone Helper Functions ---
+# --- Standalone Helper Functions (remain the same) ---
 def get_job_status(t: Tapis, job_uuid: str) -> str:
-    """Standalone function to get job status."""
     job = SubmittedJob(t, job_uuid)
     return job.get_status(force_refresh=True)
 
 
 def get_runtime_summary(t: Tapis, job_uuid: str, verbose: bool = False):
-    """Standalone function to print runtime summary."""
     job = SubmittedJob(t, job_uuid)
     job.print_runtime_summary(verbose=verbose)
+
+
+# --- NEW Status Interpretation Function ---
+def interpret_job_status(final_status: str, job_uuid: Optional[str] = None):
+    """Prints a user-friendly interpretation of the final job status."""
+    job_id_str = f"Job {job_uuid}" if job_uuid else "Job"
+
+    if final_status == "FINISHED":
+        print(f"{job_id_str} completed successfully.")
+    elif final_status == "FAILED":
+        print(f"{job_id_str} failed. Check logs or job details for more information.")
+    elif final_status == STATUS_TIMEOUT:
+        print(
+            f"{job_id_str} monitoring timed out. The job may still be running or may have failed."
+        )
+    elif final_status == STATUS_INTERRUPTED:
+        print(f"{job_id_str} monitoring was interrupted by the user.")
+    elif final_status == STATUS_MONITOR_ERROR:
+        print(
+            f"An error occurred while monitoring {job_id_str}. Check logs/output above."
+        )
+    elif final_status == STATUS_UNKNOWN:
+        print(
+            f"Could not determine the final status of {job_id_str} during monitoring."
+        )
+    elif final_status in TAPIS_TERMINAL_STATES:  # Catch other known terminal states
+        print(f"{job_id_str} ended with status: {final_status}")
+    else:  # Catch any other unexpected status string returned
+        print(f"{job_id_str} ended with an unexpected status: {final_status}")

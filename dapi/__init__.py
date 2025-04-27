@@ -3,8 +3,7 @@ Dapi - A Python wrapper for interacting with DesignSafe resources via the Tapis 
 """
 from .client import DSClient
 
-# Import exceptions from the exceptions module
-# Make sure ALL exceptions you want to expose are listed here
+# Import exceptions
 from .exceptions import (
     DapiException,
     AuthenticationError,
@@ -14,14 +13,32 @@ from .exceptions import (
     JobMonitorError,
 )
 
+# Import key classes/functions from jobs module
+from .jobs import (
+    SubmittedJob,
+    interpret_job_status,
+    # Import status constants for user access if needed
+    STATUS_TIMEOUT,
+    STATUS_INTERRUPTED,
+    STATUS_MONITOR_ERROR,
+    STATUS_UNKNOWN,
+    TAPIS_TERMINAL_STATES,
+)
 
-__version__ = "1.0.0"
 
-# Define what gets imported with 'from dapi import *'
-# Also helps linters and clarifies the public API
+__version__ = "1.1.0"
+
 __all__ = [
     "DSClient",
-    # List ALL exported exceptions here
+    "SubmittedJob",
+    "interpret_job_status",
+    # Export status constants
+    "STATUS_TIMEOUT",
+    "STATUS_INTERRUPTED",
+    "STATUS_MONITOR_ERROR",
+    "STATUS_UNKNOWN",
+    "TAPIS_TERMINAL_STATES",
+    # Export exceptions
     "DapiException",
     "AuthenticationError",
     "FileOperationError",
