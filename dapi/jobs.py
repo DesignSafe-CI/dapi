@@ -3,6 +3,7 @@ import time
 import json
 import os
 import urllib.parse
+import logging  # Import logging for the timeout warning
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 from tapipy.tapis import Tapis
@@ -18,12 +19,10 @@ from .exceptions import (
 )
 
 # --- Module-Level Status Constants ---
-# Define these outside the class so they can be easily imported/used
 STATUS_TIMEOUT = "TIMEOUT"
 STATUS_INTERRUPTED = "INTERRUPTED"
 STATUS_MONITOR_ERROR = "MONITOR_ERROR"
 STATUS_UNKNOWN = "UNKNOWN"
-# Tapis Terminal States (can be used for comparison)
 TAPIS_TERMINAL_STATES = [
     "FINISHED",
     "FAILED",
@@ -33,7 +32,7 @@ TAPIS_TERMINAL_STATES = [
 ]
 
 
-# --- generate_job_request function (No changes needed) ---
+# --- generate_job_request function (Production Ready) ---
 def generate_job_request(
     tapis_client: Tapis,
     app_id: str,
@@ -57,7 +56,7 @@ def generate_job_request(
     input_dir_param_name: str = "Input Directory",
     allocation_param_name: str = "TACC Allocation",
 ) -> Dict[str, Any]:
-    # (Implementation from previous answer - verified to be correct)
+    """Generates a Tapis job request dictionary based on app definition and user inputs/overrides."""
     print(f"Generating job request for app '{app_id}'...")
     try:
         app_details = get_app_details(tapis_client, app_id, app_version, verbose=False)
@@ -211,11 +210,11 @@ def generate_job_request(
         raise JobSubmissionError(f"Unexpected error generating job request: {e}") from e
 
 
-# --- submit_job_request function (No changes needed) ---
+# --- submit_job_request function (Production Ready) ---
 def submit_job_request(
     tapis_client: Tapis, job_request: Dict[str, Any]
 ) -> "SubmittedJob":
-    # (Implementation from previous answer - verified to be correct)
+    """Submits a pre-generated job request dictionary to Tapis."""
     if not isinstance(job_request, dict):
         raise ValueError("Input 'job_request' must be a dictionary.")
     print("\n--- Submitting Tapis Job Request ---")
@@ -237,10 +236,11 @@ def submit_job_request(
         raise JobSubmissionError(f"Unexpected error during job submission: {e}") from e
 
 
-# --- SubmittedJob Class (monitor method updated) ---
+# --- SubmittedJob Class (Production Ready) ---
 class SubmittedJob:
-    # Use module-level constants now
-    TERMINAL_STATES = TAPIS_TERMINAL_STATES
+    """Represents a submitted Tapis job, providing methods for interaction."""
+
+    TERMINAL_STATES = TAPIS_TERMINAL_STATES  # Use module-level constant
 
     def __init__(self, tapis_client: Tapis, job_uuid: str):
         if not isinstance(tapis_client, Tapis):
@@ -253,6 +253,7 @@ class SubmittedJob:
         self._job_details: Optional[Tapis] = None
 
     def _get_details(self, force_refresh: bool = False) -> Tapis:
+        """Fetches and caches job details from Tapis."""
         if not self._job_details or force_refresh:
             try:
                 self._job_details = self._tapis.jobs.getJob(jobUuid=self.uuid)
@@ -265,11 +266,12 @@ class SubmittedJob:
 
     @property
     def details(self) -> Tapis:
+        """Returns the cached job details (fetches if not cached)."""
         return self._get_details()
 
     @property
     def status(self) -> str:
-        # Attempt to get status, return UNKNOWN on failure during property access
+        """Gets the current status of the job (potentially cached)."""
         try:
             if self._last_status and self._last_status not in self.TERMINAL_STATES:
                 return self.get_status(force_refresh=False)
@@ -277,10 +279,11 @@ class SubmittedJob:
                 return self._last_status
             else:
                 return self.get_status(force_refresh=True)
-        except JobMonitorError:  # Catch error from get_status
+        except JobMonitorError:
             return STATUS_UNKNOWN
 
     def get_status(self, force_refresh: bool = True) -> str:
+        """Gets the current status of the job from Tapis."""
         if not force_refresh and self._last_status:
             return self._last_status
         try:
@@ -296,14 +299,18 @@ class SubmittedJob:
                 f"Failed to get status for job {self.uuid}: {e}"
             ) from e
 
-    # --- UPDATED monitor method with corrected finally block ---
-    def monitor(
-        self,
-        interval: int = 15,
-        timeout_minutes: Optional[int] = None,
-        verbose: bool = True,
-    ) -> str:
-        """Monitors job status with tqdm, handles exceptions internally."""
+    def monitor(self, interval: int = 15, timeout_minutes: Optional[int] = None) -> str:
+        """
+        Monitors the job status with tqdm progress bars until completion,
+        failure, timeout, or interruption. Handles common exceptions internally.
+
+        Args:
+            interval: Check interval in seconds.
+            timeout_minutes: Optional timeout. If None, uses job's maxMinutes.
+
+        Returns:
+            The final job status string (e.g., "FINISHED", "FAILED", "TIMEOUT", etc.).
+        """
         previous_status = None
         current_status = STATUS_UNKNOWN
         start_time = time.time()
@@ -313,7 +320,10 @@ class SubmittedJob:
         pbar_waiting = None
         pbar_monitoring = None
 
+        print(f"\nMonitoring Job: {self.uuid}")  # Print Job ID once at the start
+
         try:
+            # Fetch initial details
             details = self._get_details(force_refresh=True)
             current_status = details.status
             previous_status = current_status
@@ -322,10 +332,9 @@ class SubmittedJob:
             )
 
             if effective_timeout_minutes <= 0:
-                if verbose:
-                    print(
-                        f"Job {self.uuid} has maxMinutes <= 0 ({details.maxMinutes}). Monitoring indefinitely."
-                    )
+                print(
+                    f"Job has maxMinutes <= 0 ({details.maxMinutes}). Monitoring indefinitely or until terminal state."
+                )
                 timeout_seconds = float("inf")
                 max_iterations = float("inf")
             else:
@@ -342,14 +351,19 @@ class SubmittedJob:
                 "SUBMITTING_JOB",
                 "QUEUED",
             ]
-            running_states = ["RUNNING", "ARCHIVING"]
+            running_states = [
+                "RUNNING",
+                "ARCHIVING",
+            ]  # Treat ARCHIVING as part of the active monitoring phase
 
-            if verbose and current_status in waiting_states:
+            # --- Waiting Phase ---
+            if current_status in waiting_states:
                 pbar_waiting = tqdm(
-                    desc=f"Waiting for job {self.uuid} to start",
+                    desc="Waiting for job to start",
                     dynamic_ncols=True,
-                    unit="checks",
-                )
+                    unit=" checks",
+                    leave=False,
+                )  # leave=False hides bar on completion
                 while current_status in waiting_states:
                     pbar_waiting.set_postfix_str(
                         f"Status: {current_status}", refresh=True
@@ -367,32 +381,41 @@ class SubmittedJob:
                             f"Status: {current_status}", refresh=True
                         )
                         tqdm.write(
-                            f"\nJob {self.uuid} reached terminal state while waiting: {current_status}"
+                            f"\nJob reached terminal state while waiting: {current_status}"
                         )
-                        return current_status
+                        return current_status  # Return actual terminal status
                 pbar_waiting.close()
-                pbar_waiting = None  # Mark as closed
+                pbar_waiting = None
 
-            if verbose and current_status in running_states:
+            # --- Monitoring Phase ---
+            if current_status in running_states:
                 total_iterations = (
                     max_iterations if max_iterations != float("inf") else None
                 )
                 pbar_monitoring = tqdm(
                     total=total_iterations,
-                    desc=f"Monitoring job {self.uuid}",
+                    desc="Monitoring job",
                     ncols=100,
-                    unit="checks",
-                )
+                    unit=" checks",
+                    leave=True,
+                )  # leave=True keeps bar after completion
                 iteration_count = 0
+                # Initial status print for this phase
+                tqdm.write(f"\tStatus: {current_status}")
+                previous_status = current_status
+
                 while current_status in running_states:
-                    pbar_monitoring.set_description(
-                        f"Monitoring job {self.uuid} (Status: {current_status})"
-                    )
+                    # Update description only if status changes within this phase (less noisy)
+                    if current_status != previous_status:
+                        pbar_monitoring.set_description(
+                            f"Monitoring job (Status: {current_status})"
+                        )
+                        tqdm.write(f"\tStatus: {current_status}")
+                        previous_status = current_status
+
                     pbar_monitoring.update(1)
                     iteration_count += 1
-                    if current_status != previous_status:
-                        tqdm.write(f"\tJob {self.uuid} Status Update: {current_status}")
-                        previous_status = current_status
+
                     if (
                         max_iterations != float("inf")
                         and iteration_count >= max_iterations
@@ -401,36 +424,33 @@ class SubmittedJob:
                             f"\nWarning: Monitoring timeout ({effective_timeout_minutes} mins) reached."
                         )
                         return STATUS_TIMEOUT
+
                     time.sleep(interval)
                     current_status = self.get_status(force_refresh=True)
+
                     if current_status in self.TERMINAL_STATES:
-                        tqdm.write(
-                            f"\nJob {self.uuid} reached terminal state: {current_status}"
-                        )
+                        tqdm.write(f"\tStatus: {current_status}")  # Write final status
                         if total_iterations:
                             pbar_monitoring.n = total_iterations
                             pbar_monitoring.refresh()
                         return current_status  # Return actual terminal status
                 pbar_monitoring.close()
-                pbar_monitoring = None  # Mark as closed
+                pbar_monitoring = None
 
+            # --- Handle Other Cases ---
             elif current_status in self.TERMINAL_STATES:
-                if verbose:
-                    print(
-                        f"Job {self.uuid} already in terminal state: {current_status}"
-                    )
+                print(f"Job already in terminal state: {current_status}")
                 return current_status
             else:
-                if verbose:
-                    print(
-                        f"Job {self.uuid} in unexpected state '{current_status}'. Monitoring stopped."
-                    )
+                print(
+                    f"Job in unexpected initial state '{current_status}'. Monitoring stopped."
+                )
                 return current_status
 
-            return current_status
+            return current_status  # Should be a terminal state if loops finished
 
         except KeyboardInterrupt:
-            print(f"\nMonitoring interrupted by user for job {self.uuid}.")
+            print(f"\nMonitoring interrupted by user.")
             return STATUS_INTERRUPTED
         except JobMonitorError as e:
             print(f"\nError during monitoring: {e}")
@@ -439,105 +459,67 @@ class SubmittedJob:
             print(f"\nUnexpected error during monitoring: {e}")
             return STATUS_MONITOR_ERROR
         finally:
-            # Safely close progress bars if they were created and not closed
+            # Safely close progress bars
             if pbar_waiting is not None:
                 try:
                     pbar_waiting.close()
                 except:
-                    pass  # Ignore errors if already closed or in weird state
+                    pass
             if pbar_monitoring is not None:
                 try:
                     pbar_monitoring.close()
                 except:
                     pass
 
-    # --- Other SubmittedJob methods (get_history, print_runtime_summary, etc.) ---
-    # (No changes needed in these methods from the previous correct version)
-    def get_history(self) -> List[Tapis]:
-        try:
-            return self._tapis.jobs.getJobHistory(jobUuid=self.uuid)
-        except BaseTapyException as e:
-            raise JobMonitorError(
-                f"Failed to get history for job {self.uuid}: {e}"
-            ) from e
-
     def print_runtime_summary(self, verbose: bool = False):
+        """Get the runtime of a job.
+        Args:
+        t (object): The Tapis v3 client object.
+        job_uuid (str): The UUID of the job for which the runtime needs to be determined.
+        verbose (bool): If True, prints all history events. Otherwise, prints only specific statuses.
+        Returns:
+        None: This function doesn't return a value, but it prints the runtime details.
+        """
+        from datetime import datetime, timedelta
+
+        t = self._tapis
+
         print("\nRuntime Summary")
         print("---------------")
-        try:
-            hist = self.get_history()
-            if not hist:
-                print("No history found.")
-                print("---------------")
-                return
+        hist = t.jobs.getJobHistory(jobUuid=self.uuid)
 
-            def format_timedelta(td):
-                if not isinstance(td, timedelta):
-                    return "N/A"
-                td_seconds = int(td.total_seconds())
-                hours, remainder = divmod(td_seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                return f"{hours:02d}:{int(minutes):02d}:{int(seconds):02d}"
+        def format_timedelta(td):
+            hours, remainder = divmod(td.total_seconds(), 3600)
+            minutes, seconds = divmod(remainder, 60)
+            return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
 
-            time_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-            alt_time_format = "%Y-%m-%dT%H:%M:%SZ"
+        time1 = datetime.strptime(hist[-1].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+        time0 = datetime.strptime(hist[0].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+        total_time = time1 - time0
 
-            def parse_time(time_str):
-                try:
-                    return datetime.strptime(time_str, time_format).replace(
-                        tzinfo=timezone.utc
-                    )
-                except ValueError:
-                    try:
-                        return datetime.strptime(time_str, alt_time_format).replace(
-                            tzinfo=timezone.utc
-                        )
-                    except ValueError:
-                        print(f"Warning: Could not parse timestamp '{time_str}'")
-                        return None
+        if verbose:
+            print("\nDetailed Job History:")
+            for event in hist:
+                print(
+                    f"Event: {event.event}, Detail: {event.eventDetail}, Time: {event.created}"
+                )
+            print("\nSummary:")
 
-            if len(hist) < 1:
-                print("Insufficient history data.")
-                print("---------------")
-                return
-            first_event_time = parse_time(hist[0].created)
-            last_event_time = parse_time(hist[-1].created)
-            if not first_event_time or not last_event_time:
-                print("Could not parse start or end times from history.")
-                total_time = timedelta(0)
-            else:
-                total_time = last_event_time - first_event_time
-            if verbose:
-                print("\nDetailed Job History:")
-                for event in hist:
-                    print(
-                        f"  Event: {getattr(event, 'event', 'N/A')}, Detail: {getattr(event, 'eventDetail', getattr(event, 'status', 'N/A'))}, Time: {getattr(event, 'created', 'N/A')}"
-                    )
-                print("\nSummary:")
-            stage_times = {}
-            valid_events = sorted(
-                [e for e in hist if parse_time(e.created)],
-                key=lambda x: parse_time(x.created),
-            )
-            for i in range(len(valid_events) - 1):
-                status = getattr(valid_events[i], "status", None)
-                if not status:
-                    continue
-                t0 = parse_time(valid_events[i].created)
-                t1 = parse_time(valid_events[i + 1].created)
-                if t0 and t1:
-                    duration = t1 - t0
-                    stage_times[status] = (
-                        stage_times.get(status, timedelta(0)) + duration
-                    )
-            for stage, duration in sorted(stage_times.items()):
-                print(f"{stage:<15} time: {format_timedelta(duration)}")
-            print(f"{'TOTAL':<15} time: {format_timedelta(total_time)}")
-            print("---------------")
-        except Exception as e:
-            print(f"Error calculating runtime summary: {e}")
-            print("---------------")
+        for i in range(len(hist) - 1):
+            if hist[i].eventDetail == "RUNNING":
+                time1 = datetime.strptime(hist[i + 1].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+                time0 = datetime.strptime(hist[i].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+                print("RUNNING time:", format_timedelta(time1 - time0))
+            elif hist[i].eventDetail == "QUEUED":
+                time1 = datetime.strptime(hist[i + 1].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+                time0 = datetime.strptime(hist[i].created, "%Y-%m-%dT%H:%M:%S.%fZ")
+                print("QUEUED  time:", format_timedelta(time1 - time0))
 
+        print("TOTAL   time:", format_timedelta(total_time))
+        print("---------------")
+
+    # --- Other SubmittedJob methods (archive_uri, list_outputs, etc.) ---
+    # (No changes needed in these methods from the previous correct version)
     @property
     def archive_uri(self) -> Optional[str]:
         details = self._get_details()
@@ -620,41 +602,35 @@ class SubmittedJob:
             ) from e
 
 
-# --- Standalone Helper Functions (remain the same) ---
+# --- Standalone Helper Functions (Production Ready) ---
 def get_job_status(t: Tapis, job_uuid: str) -> str:
+    """Standalone function to get job status."""
     job = SubmittedJob(t, job_uuid)
     return job.get_status(force_refresh=True)
 
 
 def get_runtime_summary(t: Tapis, job_uuid: str, verbose: bool = False):
+    """Standalone function to print runtime summary."""
     job = SubmittedJob(t, job_uuid)
     job.print_runtime_summary(verbose=verbose)
 
 
-# --- NEW Status Interpretation Function ---
 def interpret_job_status(final_status: str, job_uuid: Optional[str] = None):
     """Prints a user-friendly interpretation of the final job status."""
     job_id_str = f"Job {job_uuid}" if job_uuid else "Job"
-
     if final_status == "FINISHED":
         print(f"{job_id_str} completed successfully.")
     elif final_status == "FAILED":
-        print(f"{job_id_str} failed. Check logs or job details for more information.")
+        print(f"{job_id_str} failed. Check logs or job details.")
     elif final_status == STATUS_TIMEOUT:
-        print(
-            f"{job_id_str} monitoring timed out. The job may still be running or may have failed."
-        )
+        print(f"{job_id_str} monitoring timed out.")
     elif final_status == STATUS_INTERRUPTED:
-        print(f"{job_id_str} monitoring was interrupted by the user.")
+        print(f"{job_id_str} monitoring was interrupted.")
     elif final_status == STATUS_MONITOR_ERROR:
-        print(
-            f"An error occurred while monitoring {job_id_str}. Check logs/output above."
-        )
+        print(f"An error occurred while monitoring {job_id_str}.")
     elif final_status == STATUS_UNKNOWN:
-        print(
-            f"Could not determine the final status of {job_id_str} during monitoring."
-        )
-    elif final_status in TAPIS_TERMINAL_STATES:  # Catch other known terminal states
+        print(f"Could not determine final status of {job_id_str}.")
+    elif final_status in TAPIS_TERMINAL_STATES:
         print(f"{job_id_str} ended with status: {final_status}")
-    else:  # Catch any other unexpected status string returned
+    else:
         print(f"{job_id_str} ended with an unexpected status: {final_status}")
