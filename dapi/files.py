@@ -29,7 +29,7 @@ def _parse_tapis_uri(tapis_uri: str) -> (str, str):
         raise ValueError(f"Could not parse Tapis URI '{tapis_uri}': {e}") from e
 
 
-def get_ds_path_uri(t: Tapis, path: str) -> str:
+def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
     """
     Given a path string commonly used in DesignSafe (e.g., /MyData/folder,
     /projects/PRJ-XXXX/folder), determine the correct Tapis system URI.
@@ -39,12 +39,17 @@ def get_ds_path_uri(t: Tapis, path: str) -> str:
     Args:
         t: Authenticated Tapis client.
         path: The DesignSafe-style path string.
+        verify_exists: If True, attempts to verify the existence of the
+                       translated path on the Tapis system using files.listFiles.
+                       Raises FileOperationError if the path does not exist.
+                       Defaults to False.
 
     Returns:
         The corresponding Tapis URI (e.g., tapis://system-id/path).
 
     Raises:
-        FileOperationError: If path translation or project lookup fails.
+        FileOperationError: If path translation, project lookup, or path
+                            verification (if requested) fails.
         AuthenticationError: If username is needed but t.username is not available.
         ValueError: If the input path format is unrecognized or incomplete.
     """
@@ -53,175 +58,154 @@ def get_ds_path_uri(t: Tapis, path: str) -> str:
         raise ValueError("Input path cannot be empty.")
 
     # --- Use t.username directly as per user's working code ---
-    # Check if t.username exists and is non-empty when needed
     current_username = getattr(t, "username", None)
     # ---
 
-    # 1. Handle MyData variations (User's Logic - Refined)
+    input_uri = None # Initialize variable
+
+    # 1. Handle MyData variations
     mydata_patterns = [
         # Pattern, Tapis System ID, Use Username in Path?
         ("jupyter/MyData", "designsafe.storage.default", True),
         ("jupyter/mydata", "designsafe.storage.default", True),
         ("/MyData", "designsafe.storage.default", True),
         ("/mydata", "designsafe.storage.default", True),
-        ("MyData", "designsafe.storage.default", True),  # Handle relative paths
+        ("MyData", "designsafe.storage.default", True),
         ("mydata", "designsafe.storage.default", True),
-        # Added /home/jupyter variations just in case
         ("/home/jupyter/MyData", "designsafe.storage.default", True),
         ("/home/jupyter/mydata", "designsafe.storage.default", True),
     ]
     for pattern, storage_system_id, use_username in mydata_patterns:
-        # Use simple 'in' check and split as per user's code
-        # This is less precise than startswith but matches the provided logic
         if pattern in path:
             if use_username and not current_username:
                 raise AuthenticationError(
                     "Username is required for MyData paths but t.username is not available on the Tapis client."
                 )
-
-            # Use the user's split logic
             path_remainder = path.split(pattern, 1)[1].lstrip("/")
-
             if use_username:
-                # Construct path using t.username
-                tapis_path = (
-                    f"{current_username}/{path_remainder}"
-                    if path_remainder
-                    else current_username
-                )
-            else:  # Should not happen for MyData patterns
+                tapis_path = f"{current_username}/{path_remainder}" if path_remainder else current_username
+            else:
                 tapis_path = path_remainder
-
-            # URL-encode the path part using urllib.parse.quote
             encoded_path = urllib.parse.quote(tapis_path)
             input_uri = f"tapis://{storage_system_id}/{encoded_path}"
-            # Use replace for space encoding *only if* quote doesn't handle it (it should)
-            # input_uri = input_uri.replace(" ", "%20") # Keep user's original encoding method if quote fails
             print(f"Translated '{path}' to '{input_uri}' using t.username")
-            return input_uri
+            break # Found match, exit loop
 
-    # 2. Handle Community variations (No username needed)
-    community_patterns = [
-        ("jupyter/CommunityData", "designsafe.storage.community", False),
-        ("/CommunityData", "designsafe.storage.community", False),
-        ("CommunityData", "designsafe.storage.community", False),
-    ]
-    for pattern, storage_system_id, use_username in community_patterns:
-        # Use simple 'in' check and split
-        if pattern in path:
-            path_remainder = path.split(pattern, 1)[1].lstrip("/")
-            tapis_path = path_remainder  # Community paths are relative to root
-            encoded_path = urllib.parse.quote(tapis_path)
-            input_uri = f"tapis://{storage_system_id}/{encoded_path}"
-            # input_uri = input_uri.replace(" ", "%20") # Keep user's original encoding method if quote fails
-            print(f"Translated '{path}' to '{input_uri}'")
-            return input_uri
+    # 2. Handle Community variations (if not already matched)
+    if input_uri is None:
+        community_patterns = [
+            ("jupyter/CommunityData", "designsafe.storage.community", False),
+            ("/CommunityData", "designsafe.storage.community", False),
+            ("CommunityData", "designsafe.storage.community", False),
+        ]
+        for pattern, storage_system_id, use_username in community_patterns:
+            if pattern in path:
+                path_remainder = path.split(pattern, 1)[1].lstrip("/")
+                tapis_path = path_remainder
+                encoded_path = urllib.parse.quote(tapis_path)
+                input_uri = f"tapis://{storage_system_id}/{encoded_path}"
+                print(f"Translated '{path}' to '{input_uri}'")
+                break # Found match, exit loop
 
-    # 3. Handle Project variations (using Tapis v3 System Search - from previous attempt)
-    project_patterns = [
-        ("jupyter/MyProjects", "project-"),
-        ("jupyter/projects", "project-"),
-        ("/projects", "project-"),
-        ("projects", "project-"),
-        ("/MyProjects", "project-"),
-    ]
-    for pattern, system_prefix in project_patterns:
-        # Use simple 'in' check and split
-        if pattern in path:
-            path_remainder_full = path.split(pattern, 1)[1].lstrip("/")
+    # 3. Handle Project variations (if not already matched)
+    if input_uri is None:
+        project_patterns = [
+            ("jupyter/MyProjects", "project-"),
+            ("jupyter/projects", "project-"),
+            ("/projects", "project-"),
+            ("projects", "project-"),
+            ("/MyProjects", "project-"),
+        ]
+        for pattern, system_prefix in project_patterns:
+            if pattern in path:
+                path_remainder_full = path.split(pattern, 1)[1].lstrip("/")
+                if not path_remainder_full:
+                    raise ValueError(f"Project path '{path}' is incomplete. Missing project ID.")
+                parts = path_remainder_full.split("/", 1)
+                project_id_part = parts[0]
+                path_within_project = parts[1] if len(parts) > 1 else ""
 
-            if not path_remainder_full:
-                raise ValueError(
-                    f"Project path '{path}' is incomplete. Missing project ID."
-                )
-
-            # Split into project ID and path within project
-            parts = path_remainder_full.split("/", 1)  # Use / separator
-            project_id_part = parts[0]  # Assume this is the PRJ-XXXX ID
-            path_within_project = parts[1] if len(parts) > 1 else ""
-
-            # --- Tapis v3 System Search ---
-            print(f"Searching Tapis systems for project ID '{project_id_part}'...")
-            found_system_id = None
-            try:
-                # Search strategy: Look for the PRJ-ID within the system description.
-                search_query = (
-                    f"description.like.%{project_id_part}%&id.like.{system_prefix}*"
-                )
-                systems = t.systems.getSystems(
-                    search=search_query,
-                    listType="ALL",
-                    select="id,owner,description",
-                    limit=10,
-                )
-
-                matches = []
-                if systems:
-                    for sys in systems:
-                        if (
-                            project_id_part.lower()
-                            in getattr(sys, "description", "").lower()
-                        ):
-                            matches.append(sys.id)
-
-                if len(matches) == 1:
-                    found_system_id = matches[0]
-                    print(f"Found unique matching system: {found_system_id}")
-                elif len(matches) == 0:
-                    # Try direct UUID lookup fallback
-                    if "-" in project_id_part and len(project_id_part) > 30:
-                        potential_sys_id = f"{system_prefix}{project_id_part}"
-                        print(
-                            f"Search failed, attempting direct lookup for system ID: {potential_sys_id}"
-                        )
-                        try:
-                            t.systems.getSystem(systemId=potential_sys_id)
-                            found_system_id = potential_sys_id
-                            print(f"Direct lookup successful: {found_system_id}")
-                        except BaseTapyException:
-                            print(f"Direct lookup for {potential_sys_id} also failed.")
-                            raise FileOperationError(
-                                f"No project system found matching ID '{project_id_part}' via Tapis v3 search or direct UUID lookup."
-                            )
+                print(f"Searching Tapis systems for project ID '{project_id_part}'...")
+                found_system_id = None
+                try:
+                    search_query = f"description.like.%{project_id_part}%&id.like.{system_prefix}*"
+                    systems = t.systems.getSystems(search=search_query, listType="ALL", select="id,owner,description", limit=10)
+                    matches = []
+                    if systems:
+                        for sys in systems:
+                            if project_id_part.lower() in getattr(sys, "description", "").lower():
+                                matches.append(sys.id)
+                    if len(matches) == 1:
+                        found_system_id = matches[0]
+                        print(f"Found unique matching system: {found_system_id}")
+                    elif len(matches) == 0:
+                        if "-" in project_id_part and len(project_id_part) > 30:
+                            potential_sys_id = f"{system_prefix}{project_id_part}"
+                            print(f"Search failed, attempting direct lookup for system ID: {potential_sys_id}")
+                            try:
+                                t.systems.getSystem(systemId=potential_sys_id, select="id") # Select minimal field
+                                found_system_id = potential_sys_id
+                                print(f"Direct lookup successful: {found_system_id}")
+                            except BaseTapyException:
+                                print(f"Direct lookup for {potential_sys_id} also failed.")
+                                raise FileOperationError(f"No project system found matching ID '{project_id_part}' via Tapis v3 search or direct UUID lookup.")
+                        else:
+                            raise FileOperationError(f"No project system found matching ID '{project_id_part}' via Tapis v3 search.")
                     else:
-                        raise FileOperationError(
-                            f"No project system found matching ID '{project_id_part}' via Tapis v3 search."
-                        )
-                else:
-                    raise FileOperationError(
-                        f"Multiple project systems found potentially matching ID '{project_id_part}': {matches}. Cannot determine unique system."
-                    )
+                        raise FileOperationError(f"Multiple project systems found potentially matching ID '{project_id_part}': {matches}. Cannot determine unique system.")
+                except BaseTapyException as e:
+                    raise FileOperationError(f"Tapis API error searching for project system '{project_id_part}': {e}") from e
+                except Exception as e:
+                    raise FileOperationError(f"Unexpected error searching for project system '{project_id_part}': {e}") from e
 
-            except BaseTapyException as e:
-                raise FileOperationError(
-                    f"Tapis API error searching for project system '{project_id_part}': {e}"
-                ) from e
-            except Exception as e:
-                raise FileOperationError(
-                    f"Unexpected error searching for project system '{project_id_part}': {e}"
-                ) from e
-            # --- End Tapis v3 System Search ---
+                if not found_system_id:
+                    raise FileOperationError(f"Could not resolve project ID '{project_id_part}' to a Tapis system ID.")
 
-            if not found_system_id:
-                raise FileOperationError(
-                    f"Could not resolve project ID '{project_id_part}' to a Tapis system ID."
-                )
+                encoded_path_within_project = urllib.parse.quote(path_within_project)
+                input_uri = f"tapis://{found_system_id}/{encoded_path_within_project}"
+                print(f"Translated '{path}' to '{input_uri}' using Tapis v3 lookup")
+                break # Found match, exit loop
 
-            encoded_path_within_project = urllib.parse.quote(path_within_project)
-            input_uri = f"tapis://{found_system_id}/{encoded_path_within_project}"
-            # input_uri = input_uri.replace(" ", "%20") # Keep user's original encoding method if quote fails
-            print(f"Translated '{path}' to '{input_uri}' using Tapis v3 lookup")
-            return input_uri
-
-    # 4. Handle direct tapis:// URI input
-    if path.startswith("tapis://"):
+    # 4. Handle direct tapis:// URI input (if not already matched)
+    if input_uri is None and path.startswith("tapis://"):
         print(f"Path '{path}' is already a Tapis URI.")
-        return path
+        input_uri = path
 
-    # If no pattern matched
-    raise ValueError(
-        f"Unrecognized DesignSafe path format: '{path}'. Could not translate to Tapis URI."
-    )
+    # Check if any pattern matched
+    if input_uri is None:
+        raise ValueError(
+            f"Unrecognized DesignSafe path format: '{path}'. Could not translate to Tapis URI."
+        )
+
+    # Verification Step
+    if verify_exists:
+        print(f"Verifying existence of translated path: {input_uri}")
+        try:
+            system_id, remote_path = _parse_tapis_uri(input_uri)
+            # Decode the path part for the listFiles call, as it expects unencoded paths
+            decoded_remote_path = urllib.parse.unquote(remote_path)
+            print(f"Checking system '{system_id}' for path '{decoded_remote_path}'...")
+            # Use limit=1 for efficiency, we only care if it *exists*
+            # Note: listFiles might return successfully for the *parent* directory
+            # if the final component doesn't exist. A more robust check might
+            # involve checking the result count or specific item name, but this
+            # basic check catches non-existent parent directories.
+            t.files.listFiles(systemId=system_id, path=decoded_remote_path, limit=1)
+            print(f"Verification successful: Path exists.")
+        except BaseTapyException as e:
+            # Specifically check for 404 on the listFiles call
+            if hasattr(e, 'response') and e.response and e.response.status_code == 404:
+                raise FileOperationError(f"Verification failed: Path '{decoded_remote_path}' does not exist on system '{system_id}'. Translated URI: {input_uri}") from e
+            else:
+                # Re-raise other Tapis errors encountered during verification
+                raise FileOperationError(f"Verification error for path '{decoded_remote_path}' on system '{system_id}': {e}") from e
+        except ValueError as e: # Catch errors from _parse_tapis_uri if input_uri was bad
+             raise FileOperationError(f"Verification failed: Could not parse translated URI '{input_uri}' for verification. Error: {e}") from e
+        except Exception as e:
+             # Catch other unexpected errors during verification
+            raise FileOperationError(f"Unexpected verification error for path at '{input_uri}': {e}") from e
+
+    return input_uri
 
 
 def upload_file(t: Tapis, local_path: str, remote_uri: str):

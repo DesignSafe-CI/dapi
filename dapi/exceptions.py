@@ -24,6 +24,10 @@ class AppDiscoveryError(DapiException):
 
     pass
 
+class SystemInfoError(DapiException):
+    """Error retrieving information about Tapis systems or queues."""
+    pass
+
 
 class JobSubmissionError(DapiException):
     """Error during job definition validation or submission."""

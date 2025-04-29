@@ -4,6 +4,7 @@ from . import auth
 from . import apps as apps_module
 from . import files as files_module
 from . import jobs as jobs_module
+from . import systems as systems_module 
 from .db.accessor import DatabaseAccessor
 
 # Import only the necessary classes/functions from jobs
@@ -32,6 +33,7 @@ class DSClient:
         self.apps = AppMethods(self.tapis)
         self.files = FileMethods(self.tapis)
         self.jobs = JobMethods(self.tapis)
+        self.systems = SystemMethods(self.tapis)
         self.db = DatabaseAccessor()
 
 
@@ -63,8 +65,14 @@ class FileMethods:
     def list(self, *args, **kwargs) -> List[Tapis]:
         return files_module.list_files(self._tapis, *args, **kwargs)
 
+class SystemMethods:
+    def __init__(self, tapis_client: Tapis):
+        self._tapis = tapis_client
 
-# --- JobMethods Updated ---
+    def list_queues(self, system_id: str, verbose: bool = True) -> List[Any]:
+        """Lists logical queues for a given Tapis system."""
+        return systems_module.list_system_queues(self._tapis, system_id, verbose=verbose)
+    
 class JobMethods:
     def __init__(self, tapis_client: Tapis):
         self._tapis = tapis_client
