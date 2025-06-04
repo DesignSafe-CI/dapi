@@ -299,6 +299,31 @@ class SubmittedJob:
                 f"Failed to get status for job {self.uuid}: {e}"
             ) from e
 
+    @property
+    def last_message(self) -> Optional[str]:
+        """
+        Retrieves the last status message recorded for the job.
+        This is typically found in the 'lastMessage' attribute of the job details.
+        Returns None if the message is not available or not set.
+        """
+        try:
+            details = self.details  # Ensures job details are loaded
+            message = getattr(details, "lastMessage", None)
+            if message:
+                # Sometimes messages might be empty strings, treat as None for consistency
+                return str(message).strip() if str(message).strip() else None
+            return None
+        except JobMonitorError as e:
+            print(
+                f"Could not retrieve job details to get last_message for job {self.uuid}: {e}"
+            )
+            return None
+        except Exception as e:
+            print(
+                f"An unexpected error occurred while fetching last_message for job {self.uuid}: {e}"
+            )
+            return None
+
     def monitor(self, interval: int = 15, timeout_minutes: Optional[int] = None) -> str:
         """
         Monitors the job status with tqdm progress bars until completion,
@@ -574,6 +599,97 @@ class SubmittedJob:
         except Exception as e:
             raise FileOperationError(
                 f"Failed to download output '{remote_path}' for job {self.uuid}: {e}"
+            ) from e
+
+    def get_output_content(
+        self,
+        output_filename: str,
+        max_lines: Optional[int] = None,
+        missing_ok: bool = True,
+    ) -> Optional[str]:
+        """
+        Retrieves the content of a specific output file from the job's archive.
+
+        Args:
+            output_filename: The name of the file in the job's archive root
+                             (e.g., "tapisjob.out", "tapisjob.err").
+            max_lines: If specified, returns only the last `max_lines` of the file.
+            missing_ok: If True and the file is not found, returns None.
+                        If False and not found, raises FileOperationError.
+
+        Returns:
+            The content of the file as a string, or None if not found (and missing_ok=True).
+
+        Raises:
+            FileOperationError: If the job archive is not available, the file is not found (and missing_ok=False),
+                                or if there's an error fetching the file.
+        """
+        print(f"Attempting to fetch content of '{output_filename}' from job archive...")
+        details = self._get_details()  # Ensure details are loaded
+        if not details.archiveSystemId or not details.archiveSystemDir:
+            raise FileOperationError(
+                f"Job {self.uuid} archive system ID or directory not available. Cannot fetch output."
+            )
+
+        full_archive_path = os.path.join(
+            details.archiveSystemDir, output_filename.lstrip("/")
+        )
+        full_archive_path = os.path.normpath(full_archive_path).lstrip("/")
+
+        try:
+            # self._tapis.files.getContents() is expected to return the full file content as bytes
+            # when the response is not JSON. The stream=True parameter is for the API endpoint.
+            content_bytes = self._tapis.files.getContents(
+                systemId=details.archiveSystemId,
+                path=full_archive_path,
+                stream=True,  # Good to keep, as it's a hint for the server
+            )
+
+            # Verify that we indeed received bytes
+            if not isinstance(content_bytes, bytes):
+                raise FileOperationError(
+                    f"Tapis API returned unexpected type for file content of '{output_filename}': {type(content_bytes)}. Expected bytes."
+                )
+
+            content_str = content_bytes.decode(
+                "utf-8", errors="replace"
+            )  # Decode to string
+
+            if max_lines is not None and max_lines > 0:
+                lines = content_str.splitlines()
+                if len(lines) > max_lines:
+                    # Slice to get the last max_lines
+                    content_str = "\n".join(lines[-max_lines:])
+                    print(f"Returning last {max_lines} lines of '{output_filename}'.")
+                else:
+                    print(
+                        f"File '{output_filename}' has {len(lines)} lines (less than/equal to max_lines={max_lines}). Returning full content."
+                    )
+            else:
+                print(f"Returning full content of '{output_filename}'.")
+            return content_str
+
+        except BaseTapyException as e:
+            if hasattr(e, "response") and e.response and e.response.status_code == 404:
+                if missing_ok:
+                    print(
+                        f"Output file '{output_filename}' not found in archive (missing_ok=True). Path: {details.archiveSystemId}/{full_archive_path}"
+                    )
+                    return None
+                else:
+                    raise FileOperationError(
+                        f"Output file '{output_filename}' not found in job archive "
+                        f"at system '{details.archiveSystemId}', path '{full_archive_path}'."
+                    ) from e
+            else:
+                raise FileOperationError(
+                    f"Tapis error fetching output file '{output_filename}' for job {self.uuid} (Path: {details.archiveSystemId}/{full_archive_path}): {e}"
+                ) from e
+        except FileOperationError:  # Re-raise FileOperationErrors from above
+            raise
+        except Exception as e:  # Catch other unexpected errors
+            raise FileOperationError(
+                f"Unexpected error fetching content of '{output_filename}' for job {self.uuid} (Path: {details.archiveSystemId}/{full_archive_path}): {e}"
             ) from e
 
     def cancel(self):

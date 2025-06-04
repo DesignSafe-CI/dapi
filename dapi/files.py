@@ -61,7 +61,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
     current_username = getattr(t, "username", None)
     # ---
 
-    input_uri = None # Initialize variable
+    input_uri = None  # Initialize variable
 
     # 1. Handle MyData variations
     mydata_patterns = [
@@ -83,13 +83,17 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                 )
             path_remainder = path.split(pattern, 1)[1].lstrip("/")
             if use_username:
-                tapis_path = f"{current_username}/{path_remainder}" if path_remainder else current_username
+                tapis_path = (
+                    f"{current_username}/{path_remainder}"
+                    if path_remainder
+                    else current_username
+                )
             else:
                 tapis_path = path_remainder
             encoded_path = urllib.parse.quote(tapis_path)
             input_uri = f"tapis://{storage_system_id}/{encoded_path}"
             print(f"Translated '{path}' to '{input_uri}' using t.username")
-            break # Found match, exit loop
+            break  # Found match, exit loop
 
     # 2. Handle Community variations (if not already matched)
     if input_uri is None:
@@ -105,7 +109,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                 encoded_path = urllib.parse.quote(tapis_path)
                 input_uri = f"tapis://{storage_system_id}/{encoded_path}"
                 print(f"Translated '{path}' to '{input_uri}'")
-                break # Found match, exit loop
+                break  # Found match, exit loop
 
     # 3. Handle Project variations (if not already matched)
     if input_uri is None:
@@ -120,7 +124,9 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
             if pattern in path:
                 path_remainder_full = path.split(pattern, 1)[1].lstrip("/")
                 if not path_remainder_full:
-                    raise ValueError(f"Project path '{path}' is incomplete. Missing project ID.")
+                    raise ValueError(
+                        f"Project path '{path}' is incomplete. Missing project ID."
+                    )
                 parts = path_remainder_full.split("/", 1)
                 project_id_part = parts[0]
                 path_within_project = parts[1] if len(parts) > 1 else ""
@@ -128,12 +134,22 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                 print(f"Searching Tapis systems for project ID '{project_id_part}'...")
                 found_system_id = None
                 try:
-                    search_query = f"description.like.%{project_id_part}%&id.like.{system_prefix}*"
-                    systems = t.systems.getSystems(search=search_query, listType="ALL", select="id,owner,description", limit=10)
+                    search_query = (
+                        f"description.like.%{project_id_part}%&id.like.{system_prefix}*"
+                    )
+                    systems = t.systems.getSystems(
+                        search=search_query,
+                        listType="ALL",
+                        select="id,owner,description",
+                        limit=10,
+                    )
                     matches = []
                     if systems:
                         for sys in systems:
-                            if project_id_part.lower() in getattr(sys, "description", "").lower():
+                            if (
+                                project_id_part.lower()
+                                in getattr(sys, "description", "").lower()
+                            ):
                                 matches.append(sys.id)
                     if len(matches) == 1:
                         found_system_id = matches[0]
@@ -141,30 +157,48 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                     elif len(matches) == 0:
                         if "-" in project_id_part and len(project_id_part) > 30:
                             potential_sys_id = f"{system_prefix}{project_id_part}"
-                            print(f"Search failed, attempting direct lookup for system ID: {potential_sys_id}")
+                            print(
+                                f"Search failed, attempting direct lookup for system ID: {potential_sys_id}"
+                            )
                             try:
-                                t.systems.getSystem(systemId=potential_sys_id, select="id") # Select minimal field
+                                t.systems.getSystem(
+                                    systemId=potential_sys_id, select="id"
+                                )  # Select minimal field
                                 found_system_id = potential_sys_id
                                 print(f"Direct lookup successful: {found_system_id}")
                             except BaseTapyException:
-                                print(f"Direct lookup for {potential_sys_id} also failed.")
-                                raise FileOperationError(f"No project system found matching ID '{project_id_part}' via Tapis v3 search or direct UUID lookup.")
+                                print(
+                                    f"Direct lookup for {potential_sys_id} also failed."
+                                )
+                                raise FileOperationError(
+                                    f"No project system found matching ID '{project_id_part}' via Tapis v3 search or direct UUID lookup."
+                                )
                         else:
-                            raise FileOperationError(f"No project system found matching ID '{project_id_part}' via Tapis v3 search.")
+                            raise FileOperationError(
+                                f"No project system found matching ID '{project_id_part}' via Tapis v3 search."
+                            )
                     else:
-                        raise FileOperationError(f"Multiple project systems found potentially matching ID '{project_id_part}': {matches}. Cannot determine unique system.")
+                        raise FileOperationError(
+                            f"Multiple project systems found potentially matching ID '{project_id_part}': {matches}. Cannot determine unique system."
+                        )
                 except BaseTapyException as e:
-                    raise FileOperationError(f"Tapis API error searching for project system '{project_id_part}': {e}") from e
+                    raise FileOperationError(
+                        f"Tapis API error searching for project system '{project_id_part}': {e}"
+                    ) from e
                 except Exception as e:
-                    raise FileOperationError(f"Unexpected error searching for project system '{project_id_part}': {e}") from e
+                    raise FileOperationError(
+                        f"Unexpected error searching for project system '{project_id_part}': {e}"
+                    ) from e
 
                 if not found_system_id:
-                    raise FileOperationError(f"Could not resolve project ID '{project_id_part}' to a Tapis system ID.")
+                    raise FileOperationError(
+                        f"Could not resolve project ID '{project_id_part}' to a Tapis system ID."
+                    )
 
                 encoded_path_within_project = urllib.parse.quote(path_within_project)
                 input_uri = f"tapis://{found_system_id}/{encoded_path_within_project}"
                 print(f"Translated '{path}' to '{input_uri}' using Tapis v3 lookup")
-                break # Found match, exit loop
+                break  # Found match, exit loop
 
     # 4. Handle direct tapis:// URI input (if not already matched)
     if input_uri is None and path.startswith("tapis://"):
@@ -194,16 +228,26 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
             print(f"Verification successful: Path exists.")
         except BaseTapyException as e:
             # Specifically check for 404 on the listFiles call
-            if hasattr(e, 'response') and e.response and e.response.status_code == 404:
-                raise FileOperationError(f"Verification failed: Path '{decoded_remote_path}' does not exist on system '{system_id}'. Translated URI: {input_uri}") from e
+            if hasattr(e, "response") and e.response and e.response.status_code == 404:
+                raise FileOperationError(
+                    f"Verification failed: Path '{decoded_remote_path}' does not exist on system '{system_id}'. Translated URI: {input_uri}"
+                ) from e
             else:
                 # Re-raise other Tapis errors encountered during verification
-                raise FileOperationError(f"Verification error for path '{decoded_remote_path}' on system '{system_id}': {e}") from e
-        except ValueError as e: # Catch errors from _parse_tapis_uri if input_uri was bad
-             raise FileOperationError(f"Verification failed: Could not parse translated URI '{input_uri}' for verification. Error: {e}") from e
+                raise FileOperationError(
+                    f"Verification error for path '{decoded_remote_path}' on system '{system_id}': {e}"
+                ) from e
+        except (
+            ValueError
+        ) as e:  # Catch errors from _parse_tapis_uri if input_uri was bad
+            raise FileOperationError(
+                f"Verification failed: Could not parse translated URI '{input_uri}' for verification. Error: {e}"
+            ) from e
         except Exception as e:
-             # Catch other unexpected errors during verification
-            raise FileOperationError(f"Unexpected verification error for path at '{input_uri}': {e}") from e
+            # Catch other unexpected errors during verification
+            raise FileOperationError(
+                f"Unexpected verification error for path at '{input_uri}': {e}"
+            ) from e
 
     return input_uri
 

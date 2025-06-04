@@ -44,7 +44,6 @@ __all__ = [
     "AuthenticationError",
     "FileOperationError",
     "AppDiscoveryError",
-    "SystemInfoError"
-    "JobSubmissionError",
+    "SystemInfoError" "JobSubmissionError",
     "JobMonitorError",
 ]
