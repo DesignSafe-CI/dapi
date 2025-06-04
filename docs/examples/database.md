@@ -2,6 +2,9 @@
 
 This comprehensive guide demonstrates how to query and analyze DesignSafe research databases using dapi. We'll explore the NGL (Next Generation Liquefaction) database with practical examples for earthquake engineering and geotechnical research.
 
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-Training/pinn/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/Training/dapi/examples/mpm.ipynb)
+
+
 ## 🎯 Overview
 
 This example covers:
