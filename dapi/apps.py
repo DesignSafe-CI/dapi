@@ -7,20 +7,35 @@ from .exceptions import AppDiscoveryError
 def find_apps(
     t: Tapis, search_term: str, list_type: str = "ALL", verbose: bool = True
 ) -> List[Tapis]:
-    """
-    Search for Tapis apps matching a search term.
+    """Search for Tapis apps matching a search term.
+
+    Searches through available Tapis applications using partial name matching.
+    This function helps discover applications available for job submission.
 
     Args:
-        t: Authenticated Tapis client instance.
-        search_term: Name or partial name to search for. Use "" for all.
-        list_type: One of 'OWNED', 'SHARED_PUBLIC', 'SHARED_DIRECT', 'READ_PERM', 'MINE', 'ALL'.
-        verbose: If True, prints summary of found apps.
+        t (Tapis): Authenticated Tapis client instance.
+        search_term (str): Name or partial name to search for. Use empty string
+            for all apps. Supports partial matching with wildcards.
+        list_type (str, optional): Type of apps to list. Must be one of:
+            'OWNED', 'SHARED_PUBLIC', 'SHARED_DIRECT', 'READ_PERM', 'MINE', 'ALL'.
+            Defaults to "ALL".
+        verbose (bool, optional): If True, prints summary of found apps including
+            ID, version, and owner information. Defaults to True.
 
     Returns:
-        List of matching Tapis app objects.
+        List[Tapis]: List of matching Tapis app objects with selected fields
+            (id, version, owner).
 
     Raises:
-        AppDiscoveryError: If the search fails.
+        AppDiscoveryError: If the Tapis API search fails or an unexpected
+            error occurs during the search operation.
+
+    Example:
+        >>> find_apps(client, "matlab", verbose=True)
+        Found 3 matching apps:
+        - matlab-r2023a (Version: 1.0, Owner: designsafe)
+        - matlab-parallel (Version: 2.1, Owner: tacc)
+        - matlab-desktop (Version: 1.5, Owner: designsafe)
     """
     try:
         # Use id.like for partial matching, ensure search term is handled
@@ -53,20 +68,35 @@ def find_apps(
 def get_app_details(
     t: Tapis, app_id: str, app_version: Optional[str] = None, verbose: bool = True
 ) -> Optional[Tapis]:
-    """
-    Get detailed information for a specific app ID and version (or latest).
+    """Get detailed information for a specific app ID and version.
+
+    Retrieves comprehensive details about a specific Tapis application,
+    including job attributes, execution system, and parameter definitions.
 
     Args:
-        t: Authenticated Tapis client instance.
-        app_id: Exact app ID to look up.
-        app_version: Specific app version. If None, fetches the latest version.
-        verbose: If True, prints basic app info.
+        t (Tapis): Authenticated Tapis client instance.
+        app_id (str): Exact app ID to look up. Must match exactly.
+        app_version (Optional[str], optional): Specific app version to retrieve.
+            If None, fetches the latest available version. Defaults to None.
+        verbose (bool, optional): If True, prints basic app information including
+            ID, version, owner, execution system, and description. Defaults to True.
 
     Returns:
-        Tapis app object with full details, or None if not found.
+        Optional[Tapis]: Tapis app object with full details including jobAttributes,
+            parameterSet, and other configuration. Returns None if the app is not found.
 
     Raises:
-        AppDiscoveryError: If fetching the app details fails.
+        AppDiscoveryError: If the Tapis API call fails (except for 404 not found)
+            or an unexpected error occurs during retrieval.
+
+    Example:
+        >>> app = get_app_details(client, "matlab-r2023a", "1.0")
+        App Details:
+          ID: matlab-r2023a
+          Version: 1.0
+          Owner: designsafe
+          Execution System: frontera
+          Description: MATLAB R2023a runtime environment
     """
     try:
         if app_version:

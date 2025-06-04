@@ -12,26 +12,54 @@ def init(
     password: str = None,
     env_file: str = None,
 ) -> Tapis:
-    """
-    Initialize and authenticate a Tapis client for DesignSafe.
+    """Initialize and authenticate a Tapis client for DesignSafe.
 
-    Tries credentials in this order:
-    1. Explicitly passed username/password arguments.
-    2. Environment variables (DESIGNSAFE_USERNAME, DESIGNSAFE_PASSWORD).
-       Loads from `env_file` (e.g., '.env') if specified, otherwise checks system env.
-    3. Prompts user for username/password if none found.
+    Creates and authenticates a Tapis client instance for interacting with
+    DesignSafe resources. The function follows a credential resolution hierarchy
+    and handles secure password input when needed.
+
+    Credential Resolution Order:
+        1. Explicitly passed username/password arguments
+        2. Environment variables (DESIGNSAFE_USERNAME, DESIGNSAFE_PASSWORD)
+           - Loads from env_file if specified, otherwise checks system environment
+        3. Interactive prompts for missing credentials
 
     Args:
-        base_url: The Tapis base URL for DesignSafe.
-        username: Explicit DesignSafe username.
-        password: Explicit DesignSafe password.
-        env_file: Path to a .env file to load credentials from.
+        base_url (str, optional): The Tapis base URL for DesignSafe API endpoints.
+            Defaults to "https://designsafe.tapis.io".
+        username (str, optional): Explicit DesignSafe username. If None, will
+            attempt to load from environment or prompt user. Defaults to None.
+        password (str, optional): Explicit DesignSafe password. If None, will
+            attempt to load from environment or prompt user securely. Defaults to None.
+        env_file (str, optional): Path to a .env file containing credentials.
+            If None, attempts to load from default .env file if it exists.
+            Defaults to None.
 
     Returns:
-        An authenticated tapipy.Tapis object.
+        Tapis: An authenticated tapipy.Tapis client object ready for API calls.
 
     Raises:
-        AuthenticationError: If authentication fails.
+        AuthenticationError: If authentication fails due to invalid credentials,
+            network issues, or if required credentials cannot be obtained.
+
+    Example:
+        >>> # Using explicit credentials
+        >>> client = init(username="myuser", password="mypass")
+        Authentication successful.
+
+        >>> # Using environment variables or .env file
+        >>> client = init(env_file=".env")
+        Authentication successful.
+
+        >>> # Interactive authentication
+        >>> client = init()
+        Enter DesignSafe Username: myuser
+        Enter DesignSafe Password: [hidden]
+        Authentication successful.
+
+    Note:
+        The function disables automatic spec downloads for faster initialization.
+        Password input uses getpass for secure entry in terminal environments.
     """
     # Load environment variables if a file path is provided
     if env_file:

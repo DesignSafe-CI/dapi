@@ -13,7 +13,22 @@ from typing import List
 
 # _parse_tapis_uri helper remains the same
 def _parse_tapis_uri(tapis_uri: str) -> (str, str):
-    """Helper to parse tapis://system_id/path URIs."""
+    """Parse a Tapis URI into system ID and path components.
+
+    Args:
+        tapis_uri (str): URI in the format 'tapis://system_id/path'.
+
+    Returns:
+        tuple: A tuple containing (system_id, path) where path is URL-decoded.
+
+    Raises:
+        ValueError: If the URI format is invalid or missing required components.
+
+    Example:
+        >>> system_id, path = _parse_tapis_uri("tapis://mysystem/folder/file.txt")
+        >>> print(system_id)  # "mysystem"
+        >>> print(path)       # "folder/file.txt"
+    """
     if not tapis_uri.startswith("tapis://"):
         raise ValueError(
             f"Invalid Tapis URI: '{tapis_uri}'. Must start with 'tapis://'"
@@ -30,28 +45,42 @@ def _parse_tapis_uri(tapis_uri: str) -> (str, str):
 
 
 def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
-    """
-    Given a path string commonly used in DesignSafe (e.g., /MyData/folder,
-    /projects/PRJ-XXXX/folder), determine the correct Tapis system URI.
-    Uses the user's provided logic for MyData (relies on t.username) and
-    Tapis v3 system search for projects.
+    """Translate DesignSafe-style paths to Tapis URIs.
+
+    Converts commonly used DesignSafe path formats (e.g., /MyData/folder,
+    /projects/PRJ-XXXX/folder) to their corresponding Tapis system URIs.
+    Supports MyData, CommunityData, and project-specific paths with automatic
+    system discovery for projects.
 
     Args:
-        t: Authenticated Tapis client.
-        path: The DesignSafe-style path string.
-        verify_exists: If True, attempts to verify the existence of the
-                       translated path on the Tapis system using files.listFiles.
-                       Raises FileOperationError if the path does not exist.
-                       Defaults to False.
+        t (Tapis): Authenticated Tapis client instance.
+        path (str): The DesignSafe-style path string to translate. Supported formats:
+            - MyData paths: "/MyData/folder", "jupyter/MyData/folder"
+            - Community paths: "/CommunityData/folder"
+            - Project paths: "/projects/PRJ-XXXX/folder"
+            - Direct Tapis URIs: "tapis://system-id/path"
+        verify_exists (bool, optional): If True, verifies the translated path
+            exists on the target Tapis system. Defaults to False.
 
     Returns:
-        The corresponding Tapis URI (e.g., tapis://system-id/path).
+        str: The corresponding Tapis URI (e.g., "tapis://system-id/path").
 
     Raises:
-        FileOperationError: If path translation, project lookup, or path
-                            verification (if requested) fails.
-        AuthenticationError: If username is needed but t.username is not available.
-        ValueError: If the input path format is unrecognized or incomplete.
+        FileOperationError: If path translation fails, project system lookup
+            fails, or path verification fails (when verify_exists=True).
+        AuthenticationError: If username is required for MyData paths but
+            t.username is not available.
+        ValueError: If the input path format is unrecognized, empty, or incomplete.
+
+    Example:
+        >>> uri = get_ds_path_uri(client, "/MyData/analysis/results")
+        Translated '/MyData/analysis/results' to 'tapis://designsafe.storage.default/username/analysis/results' using t.username
+
+        >>> uri = get_ds_path_uri(client, "/projects/PRJ-1234/data", verify_exists=True)
+        Searching Tapis systems for project ID 'PRJ-1234'...
+        Found unique matching system: project-1234-abcd-ef01-2345-6789abcdef01
+        Verifying existence of translated path: tapis://project-1234-abcd-ef01-2345-6789abcdef01/data
+        Verification successful: Path exists.
     """
     path = path.strip()
     if not path:
@@ -253,6 +282,23 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
 
 
 def upload_file(t: Tapis, local_path: str, remote_uri: str):
+    """Upload a local file to a Tapis storage system.
+
+    Args:
+        t (Tapis): Authenticated Tapis client instance.
+        local_path (str): Path to the local file to upload.
+        remote_uri (str): Tapis URI destination (e.g., "tapis://system/path/file.txt").
+
+    Raises:
+        FileNotFoundError: If the local file does not exist.
+        ValueError: If local_path is not a file or remote_uri is invalid.
+        FileOperationError: If the Tapis upload operation fails.
+
+    Example:
+        >>> upload_file(client, "/local/data.txt", "tapis://mysystem/uploads/data.txt")
+        Uploading '/local/data.txt' to system 'mysystem' at path 'uploads/data.txt'...
+        Upload complete.
+    """
     if not os.path.exists(local_path):
         raise FileNotFoundError(f"Local file not found: {local_path}")
     if not os.path.isfile(local_path):
@@ -277,6 +323,22 @@ def upload_file(t: Tapis, local_path: str, remote_uri: str):
 
 
 def download_file(t: Tapis, remote_uri: str, local_path: str):
+    """Download a file from a Tapis storage system to local filesystem.
+
+    Args:
+        t (Tapis): Authenticated Tapis client instance.
+        remote_uri (str): Tapis URI of the file to download (e.g., "tapis://system/path/file.txt").
+        local_path (str): Local filesystem path where the file should be saved.
+
+    Raises:
+        ValueError: If local_path is a directory or remote_uri is invalid.
+        FileOperationError: If the download operation fails or remote file not found.
+
+    Example:
+        >>> download_file(client, "tapis://mysystem/data/results.txt", "/local/results.txt")
+        Downloading from system 'mysystem' path 'data/results.txt' to '/local/results.txt'...
+        Download complete.
+    """
     if os.path.isdir(local_path):
         raise ValueError(
             f"Local path '{local_path}' is a directory. Please provide a full file path."
@@ -318,6 +380,29 @@ def download_file(t: Tapis, remote_uri: str, local_path: str):
 def list_files(
     t: Tapis, remote_uri: str, limit: int = 100, offset: int = 0
 ) -> List[Tapis]:
+    """List files and directories in a Tapis storage system path.
+
+    Args:
+        t (Tapis): Authenticated Tapis client instance.
+        remote_uri (str): Tapis URI of the directory to list (e.g., "tapis://system/path/").
+        limit (int, optional): Maximum number of items to return. Defaults to 100.
+        offset (int, optional): Number of items to skip (for pagination). Defaults to 0.
+
+    Returns:
+        List[Tapis]: List of file and directory objects from the specified path.
+        Each object contains metadata like name, size, type, and permissions.
+
+    Raises:
+        ValueError: If remote_uri is invalid.
+        FileOperationError: If the listing operation fails or path not found.
+
+    Example:
+        >>> files = list_files(client, "tapis://mysystem/data/")
+        Listing files in system 'mysystem' at path 'data/'...
+        Found 5 items.
+        >>> for file in files:
+        ...     print(f"{file.name} ({file.type})")
+    """
     try:
         system_id, path = _parse_tapis_uri(remote_uri)
         print(f"Listing files in system '{system_id}' at path '{path}'...")
