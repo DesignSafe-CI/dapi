@@ -1,0 +1,69 @@
+site_name: DAPI - DesignSafe API
+site_description: User documentation for the DesignSafe API (dapi) package
+site_author: Krishna Kumar, Pedro Arduino, Scott Brandenberg
+site_url: https://designsafe-ci.github.io/dapi
+repo_url: https://github.com/DesignSafe-CI/dapi
+repo_name: DesignSafe-CI/dapi
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.tabs.link
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: installation.md
+    - Authentication: authentication.md
+    - Quick Start: quickstart.md
+  - User Guide:
+    - Jobs: jobs.md
+    - Database Access: database.md
+  - Examples:
+    - MPM Job Submission: examples/mpm.md
+    - Database Queries: examples/database.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/DesignSafe-CI/dapi

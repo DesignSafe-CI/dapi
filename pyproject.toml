@@ -21,6 +21,9 @@ numpy = "^2.1.1"
 pandas = "^2.2.3"
 tapipy = "^1.6.3"
 jsonschema = ">=4.18.0"
+mkdocs = ">=1.5,<1.6"
+mkdocs-material = ">=9.0,<9.5"
+mkdocstrings = {version = ">=0.20,<0.24", extras = ["python"]}
 
 
 [tool.poetry.group.dev.dependencies]

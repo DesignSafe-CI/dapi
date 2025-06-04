@@ -102,15 +102,6 @@ print(df)
 db.close()
 ```
 
-## Documentation
-
-View [dapi API doc](https://designsafe-ci.github.io/dapi/dapi/index.html)
-
-To generate API docs:
-
-```
-pdoc --html --output-dir docs dapi --force
-```
 
 ## Support
 
@@ -141,3 +132,26 @@ poetry run pytest -v
 * Krishna Kumar, University of Texas at Austin
 * Prof. Pedro Arduino, University of Washington
 * Prof. Scott Brandenberg, University of California Los Angeles
+
+
+## Documentation
+
+View [dapi API doc](https://designsafe-ci.github.io/dapi/dapi/index.html)
+
+### Running documentation locally
+
+To serve the MkDocs documentation locally:
+
+```shell
+poetry install
+poetry run mkdocs serve
+```
+
+This will start a local server at `http://127.0.0.1:8000/dapi/` where you can view the documentation.
+
+### API docs
+To generate API docs:
+
+```
+pdoc --html --output-dir docs dapi --force
+```
