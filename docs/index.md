@@ -58,13 +58,21 @@ final_status = job.monitor()
 df = client.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
 ```
 
-## 📖 Navigation
+## 📖 Getting Started
 
 - **[Installation](installation.md)**: Install dapi and set up your environment
 - **[Authentication](authentication.md)**: Configure credentials and authentication
+- **[Quick Start](quickstart.md)**: Get up and running in 5 minutes
+
+## 📚 User Guide
+
 - **[Jobs](jobs.md)**: Submit and monitor computational jobs
 - **[Database Access](database.md)**: Query DesignSafe research databases
-- **[Examples](examples/mpm.md)**: Detailed examples and workflows
+
+## 🎯 Examples
+
+- **[MPM Job Submission](examples/mpm.md)**: Material Point Method workflow
+- **[Database Queries](examples/database.md)**: Research data analysis examples
 
 ## 💡 Use Cases
 

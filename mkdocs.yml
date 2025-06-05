@@ -7,6 +7,8 @@ repo_name: DesignSafe-CI/dapi
 
 theme:
   name: material
+  logo: nheri.png
+  favicon: favicon.ico
   palette:
     # Palette toggle for light mode
     - scheme: default
@@ -51,7 +53,18 @@ markdown_extensions:
   - md_in_html
 
 nav:
-  - Home: index.md
+  - Home: 
+    - Overview: index.md
+    - Getting Started:
+      - Installation: installation.md
+      - Authentication: authentication.md
+      - Quick Start: quickstart.md
+    - User Guide:
+      - Jobs: jobs.md
+      - Database Access: database.md
+    - Examples:
+      - MPM Job Submission: examples/mpm.md
+      - Database Queries: examples/database.md
   - Getting Started:
     - Installation: installation.md
     - Authentication: authentication.md
