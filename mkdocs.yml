@@ -10,15 +10,15 @@ theme:
   palette:
     # Palette toggle for light mode
     - scheme: default
-      primary: teal
-      accent: teal
+      primary: blue
+      accent: blue
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
-      primary: teal
-      accent: teal
+      primary: blue
+      accent: blue
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -67,3 +67,5 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/DesignSafe-CI/dapi
+  css:
+    - stylesheets/extra.css

@@ -7,6 +7,7 @@ This comprehensive example demonstrates how to submit and monitor a Material Poi
 ## 🎯 Overview
 
 This example covers:
+
 - Setting up authentication and environment
 - Discovering available MPM applications
 - Preparing input files and directories
@@ -439,7 +440,7 @@ advanced_job_request = ds.jobs.generate_request(
 )
 ```
 
-### Parametric Study Example
+### Parametric Study Example [Work In Progress]
 
 ```python
 # Submit multiple jobs with different parameters

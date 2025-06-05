@@ -1,7 +1,5 @@
 # DAPI - DesignSafe API
 
-![dapi](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png)
-
 [![build and test](https://github.com/DesignSafe-CI/dapi/actions/workflows/build-test.yml/badge.svg)](https://github.com/DesignSafe-CI/dapi/actions/workflows/build-test.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/DesignSafe-CI/dapi/blob/main/LICENSE.md)
 [![PyPI version](https://badge.fury.io/py/dapi.svg)](https://badge.fury.io/py/dapi)
@@ -9,6 +7,8 @@
 Welcome to the **DesignSafe API (dapi)** documentation! 
 
 `dapi` is a Python library that simplifies the process of submitting, running, and monitoring [TAPIS v3](https://tapis.readthedocs.io/en/latest/) jobs on [DesignSafe](https://designsafe-ci.org) via [Jupyter Notebooks](https://jupyter.designsafe-ci.org). It provides high-level, user-friendly interfaces for working with DesignSafe resources and research databases.
+
+<img src="https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png" alt="dapi" width="300">
 
 ## ✨ Key Features
 
