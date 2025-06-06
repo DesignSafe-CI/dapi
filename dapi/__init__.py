@@ -82,7 +82,7 @@ def _get_version():
     """Read version from pyproject.toml"""
     import tomllib
     from pathlib import Path
-    
+
     try:
         pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
         with open(pyproject_path, "rb") as f:

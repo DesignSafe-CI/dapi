@@ -83,7 +83,7 @@ def generate_job_request(
         archive_system (str, optional): Archive system for job outputs. If "designsafe" is specified,
             uses "designsafe.storage.default". If None, uses app default.
         archive_path (str, optional): Archive directory path. Can be a full path or just a directory name
-            in MyData (e.g., "tapis-jobs-archive"). If None and archive_system is "designsafe", 
+            in MyData (e.g., "tapis-jobs-archive"). If None and archive_system is "designsafe",
             defaults to "${EffectiveUserId}/tapis-jobs-archive/${JobCreateDate}/${JobUUID}".
         extra_file_inputs (List[Dict[str, Any]], optional): Additional file inputs beyond the main input directory.
         extra_app_args (List[Dict[str, Any]], optional): Additional application arguments.
@@ -135,11 +135,11 @@ def generate_job_request(
         final_description = (
             description or app_details.description or f"dapi job for {app_details.id}"
         )
-        
+
         # Handle archive system configuration
         archive_system_id = None
         archive_system_dir = None
-        
+
         if archive_system:
             if archive_system.lower() == "designsafe":
                 archive_system_id = "designsafe.storage.default"
@@ -164,7 +164,7 @@ def generate_job_request(
             # Use app defaults
             archive_system_id = getattr(job_attrs, "archiveSystemId", None)
             archive_system_dir = getattr(job_attrs, "archiveSystemDir", None)
-        
+
         job_req = {
             "name": final_job_name,
             "appId": app_details.id,

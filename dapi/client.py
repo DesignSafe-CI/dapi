@@ -355,10 +355,10 @@ class JobMethods:
             memory_mb (int, optional): Memory in MB. Overrides app default.
             queue (str, optional): Execution queue name. Overrides app default.
             allocation (str, optional): TACC allocation to charge for compute time.
-            archive_system (str, optional): Archive system for job outputs. Use "designsafe" 
+            archive_system (str, optional): Archive system for job outputs. Use "designsafe"
                 for designsafe.storage.default. If None, uses app default.
-            archive_path (str, optional): Archive directory path. Can be a full path or just 
-                a directory name in MyData. If None and archive_system is "designsafe", 
+            archive_path (str, optional): Archive directory path. Can be a full path or just
+                a directory name in MyData. If None and archive_system is "designsafe",
                 defaults to "tapis-jobs-archive/${JobCreateDate}/${JobUUID}".
             extra_file_inputs (List[Dict[str, Any]], optional): Additional file inputs.
             extra_app_args (List[Dict[str, Any]], optional): Additional app arguments.
