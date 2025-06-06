@@ -48,6 +48,8 @@ def generate_job_request(
     memory_mb: Optional[int] = None,
     queue: Optional[str] = None,
     allocation: Optional[str] = None,
+    archive_system: Optional[str] = None,
+    archive_path: Optional[str] = None,
     extra_file_inputs: Optional[List[Dict[str, Any]]] = None,
     extra_app_args: Optional[List[Dict[str, Any]]] = None,
     extra_env_vars: Optional[List[Dict[str, Any]]] = None,
@@ -78,6 +80,11 @@ def generate_job_request(
         memory_mb (int, optional): Memory in MB. Overrides app default.
         queue (str, optional): Execution queue name. Overrides app default.
         allocation (str, optional): TACC allocation to charge for compute time.
+        archive_system (str, optional): Archive system for job outputs. If "designsafe" is specified,
+            uses "designsafe.storage.default". If None, uses app default.
+        archive_path (str, optional): Archive directory path. Can be a full path or just a directory name
+            in MyData (e.g., "tapis-jobs-archive"). If None and archive_system is "designsafe", 
+            defaults to "${EffectiveUserId}/tapis-jobs-archive/${JobCreateDate}/${JobUUID}".
         extra_file_inputs (List[Dict[str, Any]], optional): Additional file inputs beyond the main input directory.
         extra_app_args (List[Dict[str, Any]], optional): Additional application arguments.
         extra_env_vars (List[Dict[str, Any]], optional): Additional environment variables.
@@ -128,13 +135,44 @@ def generate_job_request(
         final_description = (
             description or app_details.description or f"dapi job for {app_details.id}"
         )
+        
+        # Handle archive system configuration
+        archive_system_id = None
+        archive_system_dir = None
+        
+        if archive_system:
+            if archive_system.lower() == "designsafe":
+                archive_system_id = "designsafe.storage.default"
+                # Handle archive path configuration
+                if archive_path:
+                    # Check if it's a full path or just a directory name
+                    if archive_path.startswith("/") or archive_path.startswith("${"):
+                        # Full path provided
+                        archive_system_dir = archive_path
+                    else:
+                        # Directory name provided, construct the full path
+                        archive_system_dir = f"${{EffectiveUserId}}/{archive_path}/${{JobCreateDate}}/${{JobUUID}}"
+                else:
+                    # Default path for DesignSafe
+                    archive_system_dir = "${EffectiveUserId}/tapis-jobs-archive/${JobCreateDate}/${JobUUID}"
+            else:
+                # Use the provided archive system as-is
+                archive_system_id = archive_system
+                if archive_path:
+                    archive_system_dir = archive_path
+        else:
+            # Use app defaults
+            archive_system_id = getattr(job_attrs, "archiveSystemId", None)
+            archive_system_dir = getattr(job_attrs, "archiveSystemDir", None)
+        
         job_req = {
             "name": final_job_name,
             "appId": app_details.id,
             "appVersion": final_app_version,
             "description": final_description,
             "execSystemId": getattr(job_attrs, "execSystemId", None),
-            "archiveSystemId": getattr(job_attrs, "archiveSystemId", None),
+            "archiveSystemId": archive_system_id,
+            **({"archiveSystemDir": archive_system_dir} if archive_system_dir else {}),
             "archiveOnAppError": getattr(job_attrs, "archiveOnAppError", True),
             "execSystemLogicalQueue": queue
             if queue is not None

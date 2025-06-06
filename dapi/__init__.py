@@ -78,7 +78,22 @@ from .jobs import (
 )
 
 
-__version__ = "1.1.0"
+def _get_version():
+    """Read version from pyproject.toml"""
+    import tomllib
+    from pathlib import Path
+    
+    try:
+        pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+        with open(pyproject_path, "rb") as f:
+            pyproject = tomllib.load(f)
+        return pyproject["tool"]["poetry"]["version"]
+    except (FileNotFoundError, KeyError, ImportError):
+        # Fallback version if pyproject.toml can't be read
+        return "unknown"
+
+
+__version__ = _get_version()
 
 __all__ = [
     "DSClient",

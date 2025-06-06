@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dapi"
-version = "1.0.0"
+version = "0.3.0"
 description = "DesignSafe API"
 authors = [
     "Krishna Kumar <krishnak@utexas.edu>",

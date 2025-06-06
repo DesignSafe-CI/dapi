@@ -323,6 +323,8 @@ class JobMethods:
         memory_mb: Optional[int] = None,
         queue: Optional[str] = None,
         allocation: Optional[str] = None,
+        archive_system: Optional[str] = None,
+        archive_path: Optional[str] = None,
         # --- Optional Extra Parameters ---
         extra_file_inputs: Optional[List[Dict[str, Any]]] = None,
         extra_app_args: Optional[List[Dict[str, Any]]] = None,
@@ -353,6 +355,11 @@ class JobMethods:
             memory_mb (int, optional): Memory in MB. Overrides app default.
             queue (str, optional): Execution queue name. Overrides app default.
             allocation (str, optional): TACC allocation to charge for compute time.
+            archive_system (str, optional): Archive system for job outputs. Use "designsafe" 
+                for designsafe.storage.default. If None, uses app default.
+            archive_path (str, optional): Archive directory path. Can be a full path or just 
+                a directory name in MyData. If None and archive_system is "designsafe", 
+                defaults to "tapis-jobs-archive/${JobCreateDate}/${JobUUID}".
             extra_file_inputs (List[Dict[str, Any]], optional): Additional file inputs.
             extra_app_args (List[Dict[str, Any]], optional): Additional app arguments.
             extra_env_vars (List[Dict[str, Any]], optional): Additional environment variables.
@@ -393,6 +400,8 @@ class JobMethods:
             memory_mb=memory_mb,
             queue=queue,
             allocation=allocation,
+            archive_system=archive_system,
+            archive_path=archive_path,
             extra_file_inputs=extra_file_inputs,
             extra_app_args=extra_app_args,
             extra_env_vars=extra_env_vars,
