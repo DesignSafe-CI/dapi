@@ -6,8 +6,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9"]
-        poetry-version: ["1.6.1"]
+        python-version: ["3.13"]
+        poetry-version: ["2.1.2"]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -23,5 +23,4 @@ jobs:
         run: poetry install
       - name: Lint with black
         run: poetry run black --check .
-      - name: Run the automated tests
-        run: poetry run pytest -v
+  

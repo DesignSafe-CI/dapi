@@ -1,0 +1,17 @@
+/* Custom color override for DesignSafe blue */
+:root {
+  --md-primary-fg-color: #136ac9;
+  --md-primary-fg-color--light: #136ac9;
+  --md-primary-fg-color--dark: #136ac9;
+  --md-accent-fg-color: #136ac9;
+  --md-accent-fg-color--transparent: #136ac91a;
+}
+
+/* Dark mode overrides */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #136ac9;
+  --md-primary-fg-color--light: #136ac9;
+  --md-primary-fg-color--dark: #136ac9;
+  --md-accent-fg-color: #136ac9;
+  --md-accent-fg-color--transparent: #136ac91a;
+}
