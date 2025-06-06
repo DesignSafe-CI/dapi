@@ -37,6 +37,21 @@ theme:
 
 plugins:
   - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_if_no_docstring: true
+            inherited_members: true
+            members_order: source
+            separate_signature: true
+            unwrap_annotated: true
+            filters: ["!^_"]
+            merge_init_into_class: true
+            docstring_section_style: spacy
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -67,6 +82,16 @@ nav:
     - MPM Job Submission: examples/mpm.md
     - OpenSees Job Submission: examples/opensees.md
     - Database Queries: examples/database.md
+  - API Reference:
+    - Overview: api/index.md
+    - DSClient: api/client.md
+    - Jobs: api/jobs.md
+    - Files: api/files.md
+    - Apps: api/apps.md
+    - Systems: api/systems.md
+    - Database: api/database.md
+    - Auth: api/auth.md
+    - Exceptions: api/exceptions.md
 
 extra:
   social:

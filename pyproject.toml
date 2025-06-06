@@ -23,7 +23,9 @@ tapipy = "^1.6.3"
 jsonschema = ">=4.18.0"
 mkdocs = ">=1.5,<1.6"
 mkdocs-material = ">=9.0,<9.5"
-mkdocstrings = {version = ">=0.20,<0.24", extras = ["python"]}
+mkdocstrings = {version = ">=0.25,<0.26", extras = ["python"]}
+mkdocs-autorefs = ">=1.0.0"
+griffe = ">=0.48.0,<1.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
