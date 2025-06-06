@@ -1,12 +1,13 @@
 # DesignSafe API (dapi)
 
-![dapi](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png)
-
 [![build and test](https://github.com/DesignSafe-CI/dapi/actions/workflows/build-test.yml/badge.svg)](https://github.com/DesignSafe-CI/dapi/actions/workflows/build-test.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 [![Docs](https://img.shields.io/badge/view-docs-8A2BE2?color=8A2BE2)](https://designsafe-ci.github.io/dapi/dapi/index.html)
 
 `dapi` is a library that simplifies the process of submitting, running, and monitoring [TAPIS v3](https://tapis.readthedocs.io/en/latest/) jobs on [DesignSafe](https://designsafe-ci.org) via [Jupyter Notebooks](https://jupyter.designsafe-ci.org).
+
+<img src="https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png" alt="dapi" width="300">
+
 
 ## Features
 
@@ -153,5 +154,5 @@ This will start a local server at `http://127.0.0.1:8000/dapi/` where you can vi
 To generate API docs:
 
 ```
-pdoc --html --output-dir docs dapi --force
+pdoc --html --output-dir api-docs dapi --force
 ```

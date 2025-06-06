@@ -55,16 +55,6 @@ markdown_extensions:
 nav:
   - Home: 
     - Overview: index.md
-    - Getting Started:
-      - Installation: installation.md
-      - Authentication: authentication.md
-      - Quick Start: quickstart.md
-    - User Guide:
-      - Jobs: jobs.md
-      - Database Access: database.md
-    - Examples:
-      - MPM Job Submission: examples/mpm.md
-      - Database Queries: examples/database.md
   - Getting Started:
     - Installation: installation.md
     - Authentication: authentication.md
@@ -73,7 +63,9 @@ nav:
     - Jobs: jobs.md
     - Database Access: database.md
   - Examples:
+    - Overview: examples.md
     - MPM Job Submission: examples/mpm.md
+    - OpenSees Job Submission: examples/opensees.md
     - Database Queries: examples/database.md
 
 extra:

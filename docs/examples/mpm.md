@@ -2,7 +2,7 @@
 
 This comprehensive example demonstrates how to submit and monitor a Material Point Method (MPM) job using dapi. MPM is a particle-based method for simulating large deformation problems in geomechanics and fluid mechanics.
 
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/Training/dapi/examples/mpm.ipynb)
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/mpm/mpm-minimal.ipynb)
 
 ## 🎯 Overview
 
