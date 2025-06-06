@@ -44,6 +44,77 @@ def _parse_tapis_uri(tapis_uri: str) -> (str, str):
         raise ValueError(f"Could not parse Tapis URI '{tapis_uri}': {e}") from e
 
 
+def tapis_uri_to_local_path(tapis_uri: str) -> str:
+    """Convert a Tapis URI to the corresponding DesignSafe local path.
+
+    Converts Tapis system URIs back to their equivalent DesignSafe local paths
+    that would be accessible in a Jupyter environment. This is the reverse
+    operation of get_ds_path_uri().
+
+    Args:
+        tapis_uri (str): The Tapis URI to convert. Supported formats:
+            - "tapis://designsafe.storage.default/username/path" -> "/home/jupyter/MyData/path"
+            - "tapis://designsafe.storage.community/path" -> "/home/jupyter/CommunityData/path"
+            - "tapis://project-*/path" -> "/home/jupyter/MyProjects/path"
+
+    Returns:
+        str: The corresponding DesignSafe local path, or the original URI if
+             it's not a recognized Tapis URI format.
+
+    Raises:
+        ValueError: If the Tapis URI format is invalid.
+
+    Example:
+        >>> local_path = tapis_uri_to_local_path("tapis://designsafe.storage.default/user/data/file.txt")
+        >>> print(local_path)  # "/home/jupyter/MyData/data/file.txt"
+
+        >>> local_path = tapis_uri_to_local_path("tapis://designsafe.storage.community/datasets/earthquake.csv")
+        >>> print(local_path)  # "/home/jupyter/CommunityData/datasets/earthquake.csv"
+    """
+    if not tapis_uri.startswith("tapis://"):
+        # Not a Tapis URI, return as-is
+        return tapis_uri
+
+    try:
+        # Parse the URI using the existing helper function
+        system_id, path = _parse_tapis_uri(tapis_uri)
+
+        # Handle different system types
+        if system_id == "designsafe.storage.default":
+            # For MyData: tapis://designsafe.storage.default/username/path -> /home/jupyter/MyData/path
+            # Remove the username (first path component)
+            path_parts = path.split("/", 1) if path else [""]
+            if len(path_parts) > 1:
+                user_path = path_parts[1]
+                return f"/home/jupyter/MyData/{user_path}"
+            else:
+                return "/home/jupyter/MyData/"
+
+        elif system_id == "designsafe.storage.community":
+            # For CommunityData: tapis://designsafe.storage.community/path -> /home/jupyter/CommunityData/path
+            return (
+                f"/home/jupyter/CommunityData/{path}"
+                if path
+                else "/home/jupyter/CommunityData/"
+            )
+
+        elif system_id.startswith("project-"):
+            # For Projects: tapis://project-*/path -> /home/jupyter/MyProjects/path
+            return (
+                f"/home/jupyter/MyProjects/{path}"
+                if path
+                else "/home/jupyter/MyProjects/"
+            )
+
+        else:
+            # Unknown system type, return original URI
+            return tapis_uri
+
+    except ValueError:
+        # Invalid URI format, return original
+        return tapis_uri
+
+
 def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
     """Translate DesignSafe-style paths to Tapis URIs.
 

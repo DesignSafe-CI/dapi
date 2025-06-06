@@ -183,6 +183,24 @@ class FileMethods:
         """
         return files_module.get_ds_path_uri(self._tapis, *args, **kwargs)
 
+    def translate_uri_to_path(self, *args, **kwargs) -> str:
+        """Translate Tapis URIs to DesignSafe local paths.
+
+        This is a convenience wrapper around files_module.tapis_uri_to_local_path().
+
+        Args:
+            *args: Positional arguments passed to tapis_uri_to_local_path().
+            **kwargs: Keyword arguments passed to tapis_uri_to_local_path().
+
+        Returns:
+            str: The corresponding DesignSafe local path (e.g., /home/jupyter/MyData/path).
+
+        Example:
+            >>> local_path = client.files.translate_uri_to_path("tapis://designsafe.storage.default/user/data")
+            >>> print(local_path)  # "/home/jupyter/MyData/data"
+        """
+        return files_module.tapis_uri_to_local_path(*args, **kwargs)
+
     def upload(self, *args, **kwargs):
         """Upload a local file to a Tapis storage system.
 
