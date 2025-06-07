@@ -4,6 +4,10 @@ This comprehensive example demonstrates how to submit and monitor a Material Poi
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/mpm/mpm-minimal.ipynb)
 
+> More detailed example
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/mpm/mpm.ipynb)
+
+
 ## 🎯 Overview
 
 This example covers:
