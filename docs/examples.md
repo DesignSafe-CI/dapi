@@ -8,6 +8,7 @@ Welcome to the DAPI examples collection! These comprehensive tutorials demonstra
 Choose an example above and click "Try on DesignSafe" to begin your computational research journey!
 
 Each example is self-contained and includes:
+
 - ✅ Complete, runnable code
 - ✅ Step-by-step explanations
 - ✅ Real-world applications
