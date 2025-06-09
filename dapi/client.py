@@ -344,7 +344,8 @@ class JobMethods:
         Args:
             app_id (str): The ID of the Tapis application to use for the job.
             input_dir_uri (str): Tapis URI to the input directory containing job files.
-            script_filename (str): Name of the main script file to execute.
+            script_filename (str, optional): Name of the main script file to execute.
+                If None, no script parameter is added (suitable for apps like OpenFOAM).
             app_version (str, optional): Specific app version. If None, uses latest.
             job_name (str, optional): Custom job name. If None, auto-generates one.
             description (str, optional): Job description. If None, uses app description.

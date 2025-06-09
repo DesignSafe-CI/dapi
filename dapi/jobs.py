@@ -64,7 +64,9 @@ def generate_job_request(
     Creates a properly formatted job request dictionary by retrieving the specified
     application details and applying user-provided overrides and additional parameters.
     The function automatically maps the script filename (if provided) and input
-    directory to the appropriate app parameters.
+    directory to the appropriate app parameters. It dynamically reads the app definition
+    to detect parameter names, determines whether to use appArgs or envVariables, and
+    automatically populates all required parameters with default values when available.
 
     Args:
         tapis_client (Tapis): Authenticated Tapis client instance.
@@ -99,7 +101,7 @@ def generate_job_request(
             if script_filename is provided. Defaults to ["Input Script", "Main Script", "tclScript"].
         input_dir_param_name (str, optional): The 'name' of the fileInput in the Tapis app definition
             that corresponds to input_dir_uri. Defaults to "Input Directory".
-            CRITICAL: Must match the app's definition (e.g., "Case Directory" for OpenFOAM).
+            The function will auto-detect the correct name from the app definition.
         allocation_param_name (str, optional): Parameter name for TACC allocation.
             Defaults to "TACC Allocation".
 
@@ -191,30 +193,58 @@ def generate_job_request(
         }
 
         # --- Handle main input directory ---
-        # The 'name' of this fileInput in the job request MUST match a fileInput 'name' in the app definition.
-        # The caller is responsible for providing the correct 'input_dir_param_name'.
+        # Automatically detect the correct input directory parameter name from app definition
         main_input_target_path = None
         main_input_automount = True
         found_input_def = False
+        actual_input_param_name = input_dir_param_name  # Default fallback
+        
         if hasattr(job_attrs, "fileInputs") and job_attrs.fileInputs:
+            # First try to find exact match with provided name
             for fi_def in job_attrs.fileInputs:
                 if getattr(fi_def, "name", "").lower() == input_dir_param_name.lower():
                     main_input_target_path = getattr(fi_def, "targetPath", None)
                     main_input_automount = getattr(fi_def, "autoMountLocal", True)
+                    actual_input_param_name = getattr(fi_def, "name", "")
                     found_input_def = True
                     print(
-                        f"Configuring main input '{input_dir_param_name}' with targetPath: '{main_input_target_path}', autoMount: {main_input_automount}"
+                        f"Found exact match for input parameter: '{actual_input_param_name}'"
                     )
                     break
+            
+            # If no exact match found, try to auto-detect common input directory names
+            if not found_input_def:
+                common_input_names = ["Input Directory", "Case Directory", "inputDirectory", "inputDir"]
+                for fi_def in job_attrs.fileInputs:
+                    fi_name = getattr(fi_def, "name", "")
+                    if fi_name in common_input_names:
+                        main_input_target_path = getattr(fi_def, "targetPath", None)
+                        main_input_automount = getattr(fi_def, "autoMountLocal", True)
+                        actual_input_param_name = fi_name
+                        found_input_def = True
+                        print(
+                            f"Auto-detected input parameter: '{actual_input_param_name}' (provided: '{input_dir_param_name}')"
+                        )
+                        break
+                
+                # If still not found, use the first fileInput as fallback
+                if not found_input_def and job_attrs.fileInputs:
+                    fi_def = job_attrs.fileInputs[0]
+                    main_input_target_path = getattr(fi_def, "targetPath", None)
+                    main_input_automount = getattr(fi_def, "autoMountLocal", True)
+                    actual_input_param_name = getattr(fi_def, "name", "")
+                    found_input_def = True
+                    print(
+                        f"Using first available fileInput: '{actual_input_param_name}' (no match found for '{input_dir_param_name}')"
+                    )
+        
         if not found_input_def:
             print(
-                f"Warning: The provided input_dir_param_name '{input_dir_param_name}' was not found in the app's fileInput definitions. "
-                f"The job request will use '{input_dir_param_name}' as the fileInput name. "
-                f"Ensure this name is valid for the app '{app_id}'. App fileInputs: {getattr(job_attrs, 'fileInputs', 'Not defined')}"
+                f"Warning: No fileInputs found in app definition. Using provided name '{input_dir_param_name}'"
             )
 
         main_input_dict = {
-            "name": input_dir_param_name,  # Critical: This name must be defined in the app.
+            "name": actual_input_param_name,  # Use the detected/matched parameter name
             "sourceUrl": input_dir_uri,
             "autoMountLocal": main_input_automount,
         }
@@ -281,6 +311,94 @@ def generate_job_request(
                 )
         else:
             print("script_filename is None, skipping script parameter placement.")
+
+        # --- Auto-detect and add required parameters from app definition ---
+        # Process appArgs first - add all required appArgs that aren't provided by user
+        if hasattr(param_set_def, "appArgs") and param_set_def.appArgs:
+            for app_arg_def in param_set_def.appArgs:
+                arg_name = getattr(app_arg_def, "name", "")
+                input_mode = getattr(app_arg_def, "inputMode", "")
+                default_value = getattr(app_arg_def, "arg", "")
+                
+                # Skip if this is the script parameter (already handled above)
+                if script_filename and arg_name in script_param_names:
+                    continue
+                    
+                # Check if this arg is required and not already provided
+                if input_mode == "REQUIRED" and arg_name:
+                    # Check if user already provided this arg
+                    user_provided = False
+                    if extra_app_args:
+                        for user_arg in extra_app_args:
+                            if user_arg.get("name") == arg_name:
+                                user_provided = True
+                                break
+                    
+                    # Also check if already added to job_req
+                    already_added = False
+                    for existing_arg in job_req["parameterSet"]["appArgs"]:
+                        if existing_arg.get("name") == arg_name:
+                            already_added = True
+                            break
+                    
+                    if not user_provided and not already_added:
+                        if default_value:
+                            print(f"Auto-adding required appArg '{arg_name}' with default: '{default_value}'")
+                            job_req["parameterSet"]["appArgs"].append({
+                                "name": arg_name,
+                                "arg": default_value
+                            })
+                        else:
+                            print(f"Warning: Required appArg '{arg_name}' has no default value.")
+
+        # Process envVariables - add all required envVariables that aren't provided by user
+        if hasattr(param_set_def, "envVariables") and param_set_def.envVariables:
+            for env_var_def in param_set_def.envVariables:
+                var_key = getattr(env_var_def, "key", "")
+                input_mode = getattr(env_var_def, "inputMode", "")
+                default_value = getattr(env_var_def, "value", "")
+                enum_values = getattr(env_var_def, "enum_values", None)
+                
+                # Skip if this is the script parameter (already handled above)
+                if script_filename and var_key in script_param_names:
+                    continue
+                
+                # Check if this variable is required and not already provided by user
+                if input_mode == "REQUIRED" and var_key:
+                    # Check if user already provided this variable
+                    user_provided = False
+                    if extra_env_vars:
+                        for user_var in extra_env_vars:
+                            if user_var.get("key") == var_key:
+                                user_provided = True
+                                break
+                    
+                    # Also check if already added to job_req  
+                    already_added = False
+                    for existing_var in job_req["parameterSet"]["envVariables"]:
+                        if existing_var.get("key") == var_key:
+                            already_added = True
+                            break
+                    
+                    if not user_provided and not already_added:
+                        # Use default value if available
+                        value_to_use = default_value
+                        
+                        # If no default but has enum values, use the first one
+                        if not value_to_use and enum_values and isinstance(enum_values, dict):
+                            value_to_use = list(enum_values.keys())[0]
+                            print(f"Auto-setting required env var '{var_key}' to first available option: '{value_to_use}'")
+                        elif value_to_use:
+                            print(f"Auto-setting required env var '{var_key}' to default: '{value_to_use}'")
+                        else:
+                            print(f"Warning: Required env var '{var_key}' has no default value.")
+                            continue
+                        
+                        # Add to job request
+                        job_req["parameterSet"]["envVariables"].append({
+                            "key": var_key,
+                            "value": value_to_use
+                        })
 
         # --- Handle extra parameters ---
         if extra_app_args:
