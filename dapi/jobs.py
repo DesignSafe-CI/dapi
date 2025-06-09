@@ -32,12 +32,13 @@ TAPIS_TERMINAL_STATES = [
 ]
 
 
-# --- generate_job_request function (Production Ready) ---
 def generate_job_request(
     tapis_client: Tapis,
     app_id: str,
     input_dir_uri: str,
-    script_filename: str,
+    script_filename: Optional[
+        str
+    ] = None,  # Default is None, important for apps like OpenFOAM
     app_version: Optional[str] = None,
     job_name: Optional[str] = None,
     description: Optional[str] = None,
@@ -55,21 +56,25 @@ def generate_job_request(
     extra_env_vars: Optional[List[Dict[str, Any]]] = None,
     extra_scheduler_options: Optional[List[Dict[str, Any]]] = None,
     script_param_names: List[str] = ["Input Script", "Main Script", "tclScript"],
-    input_dir_param_name: str = "Input Directory",
+    input_dir_param_name: str = "Input Directory",  # Caller MUST override if app uses a different name (e.g., "Case Directory")
     allocation_param_name: str = "TACC Allocation",
 ) -> Dict[str, Any]:
     """Generate a Tapis job request dictionary based on app definition and inputs.
 
     Creates a properly formatted job request dictionary by retrieving the specified
     application details and applying user-provided overrides and additional parameters.
-    The function automatically maps the script filename and input directory to the
-    appropriate app parameters.
+    The function automatically maps the script filename (if provided) and input
+    directory to the appropriate app parameters. It dynamically reads the app definition
+    to detect parameter names, determines whether to use appArgs or envVariables, and
+    automatically populates all required parameters with default values when available.
 
     Args:
         tapis_client (Tapis): Authenticated Tapis client instance.
         app_id (str): The ID of the Tapis application to use for the job.
         input_dir_uri (str): Tapis URI to the input directory containing job files.
-        script_filename (str): Name of the main script file to execute.
+        script_filename (str, optional): Name of the main script file to execute.
+            If None (default), no script parameter is added. This is suitable for
+            apps like OpenFOAM that don't take a script argument.
         app_version (str, optional): Specific app version to use. If None, uses latest.
         job_name (str, optional): Custom job name. If None, auto-generates based on app ID and timestamp.
         description (str, optional): Job description. If None, uses app description.
@@ -87,36 +92,28 @@ def generate_job_request(
             defaults to "${EffectiveUserId}/tapis-jobs-archive/${JobCreateDate}/${JobUUID}".
         extra_file_inputs (List[Dict[str, Any]], optional): Additional file inputs beyond the main input directory.
         extra_app_args (List[Dict[str, Any]], optional): Additional application arguments.
+            Use for parameters expected in 'appArgs' by the Tapis app.
         extra_env_vars (List[Dict[str, Any]], optional): Additional environment variables.
+            Use for parameters expected in 'envVariables' by the Tapis app (e.g., OpenFOAM solver, mesh).
+            Each item should be a dict like {"key": "VAR_NAME", "value": "var_value"}.
         extra_scheduler_options (List[Dict[str, Any]], optional): Additional scheduler options.
-        script_param_names (List[str], optional): Parameter names to check for script placement.
-            Defaults to ["Input Script", "Main Script", "tclScript"].
-        input_dir_param_name (str, optional): Parameter name for input directory.
-            Defaults to "Input Directory".
+        script_param_names (List[str], optional): Parameter names/keys to check for script placement
+            if script_filename is provided. Defaults to ["Input Script", "Main Script", "tclScript"].
+        input_dir_param_name (str, optional): The 'name' of the fileInput in the Tapis app definition
+            that corresponds to input_dir_uri. Defaults to "Input Directory".
+            The function will auto-detect the correct name from the app definition.
         allocation_param_name (str, optional): Parameter name for TACC allocation.
             Defaults to "TACC Allocation".
 
     Returns:
         Dict[str, Any]: Complete job request dictionary ready for submission to Tapis.
-        Contains all necessary job configuration including file inputs, parameters,
-        and resource requirements.
 
     Raises:
         AppDiscoveryError: If the specified app cannot be found or details cannot be retrieved.
-        ValueError: If required parameters are missing, invalid, or script parameter cannot be placed.
+        ValueError: If required parameters are missing, invalid, or if script_filename is provided
+            but a suitable placement (matching script_param_names) cannot be found in the app's
+            parameterSet.
         JobSubmissionError: If unexpected errors occur during job request generation.
-
-    Example:
-        >>> job_request = generate_job_request(
-        ...     tapis_client=client,
-        ...     app_id="matlab-r2023a",
-        ...     input_dir_uri="tapis://designsafe.storage.default/username/input/",
-        ...     script_filename="run_analysis.m",
-        ...     max_minutes=120,
-        ...     node_count=2,
-        ...     allocation="MyProject-123"
-        ... )
-        >>> print(job_request["name"])  # "matlab-r2023a-20231201_143022"
     """
     print(f"Generating job request for app '{app_id}'...")
     try:
@@ -136,32 +133,23 @@ def generate_job_request(
             description or app_details.description or f"dapi job for {app_details.id}"
         )
 
-        # Handle archive system configuration
         archive_system_id = None
         archive_system_dir = None
-
         if archive_system:
             if archive_system.lower() == "designsafe":
                 archive_system_id = "designsafe.storage.default"
-                # Handle archive path configuration
                 if archive_path:
-                    # Check if it's a full path or just a directory name
                     if archive_path.startswith("/") or archive_path.startswith("${"):
-                        # Full path provided
                         archive_system_dir = archive_path
                     else:
-                        # Directory name provided, construct the full path
                         archive_system_dir = f"${{EffectiveUserId}}/{archive_path}/${{JobCreateDate}}/${{JobUUID}}"
                 else:
-                    # Default path for DesignSafe
                     archive_system_dir = "${EffectiveUserId}/tapis-jobs-archive/${JobCreateDate}/${JobUUID}"
             else:
-                # Use the provided archive system as-is
                 archive_system_id = archive_system
                 if archive_path:
                     archive_system_dir = archive_path
         else:
-            # Use app defaults
             archive_system_id = getattr(job_attrs, "archiveSystemId", None)
             archive_system_dir = getattr(job_attrs, "archiveSystemDir", None)
 
@@ -203,86 +191,302 @@ def generate_job_request(
             "fileInputs": [],
             "parameterSet": {"appArgs": [], "envVariables": [], "schedulerOptions": []},
         }
+
+        # --- Handle main input directory ---
+        # Automatically detect the correct input directory parameter name from app definition
         main_input_target_path = None
         main_input_automount = True
+        found_input_def = False
+        actual_input_param_name = input_dir_param_name  # Default fallback
+
         if hasattr(job_attrs, "fileInputs") and job_attrs.fileInputs:
+            # First try to find exact match with provided name
             for fi_def in job_attrs.fileInputs:
                 if getattr(fi_def, "name", "").lower() == input_dir_param_name.lower():
                     main_input_target_path = getattr(fi_def, "targetPath", None)
                     main_input_automount = getattr(fi_def, "autoMountLocal", True)
+                    actual_input_param_name = getattr(fi_def, "name", "")
+                    found_input_def = True
+                    print(
+                        f"Found exact match for input parameter: '{actual_input_param_name}'"
+                    )
                     break
+
+            # If no exact match found, try to auto-detect common input directory names
+            if not found_input_def:
+                common_input_names = [
+                    "Input Directory",
+                    "Case Directory",
+                    "inputDirectory",
+                    "inputDir",
+                ]
+                for fi_def in job_attrs.fileInputs:
+                    fi_name = getattr(fi_def, "name", "")
+                    if fi_name in common_input_names:
+                        main_input_target_path = getattr(fi_def, "targetPath", None)
+                        main_input_automount = getattr(fi_def, "autoMountLocal", True)
+                        actual_input_param_name = fi_name
+                        found_input_def = True
+                        print(
+                            f"Auto-detected input parameter: '{actual_input_param_name}' (provided: '{input_dir_param_name}')"
+                        )
+                        break
+
+                # If still not found, use the first fileInput as fallback
+                if not found_input_def and job_attrs.fileInputs:
+                    fi_def = job_attrs.fileInputs[0]
+                    main_input_target_path = getattr(fi_def, "targetPath", None)
+                    main_input_automount = getattr(fi_def, "autoMountLocal", True)
+                    actual_input_param_name = getattr(fi_def, "name", "")
+                    found_input_def = True
+                    print(
+                        f"Using first available fileInput: '{actual_input_param_name}' (no match found for '{input_dir_param_name}')"
+                    )
+
+        if not found_input_def:
+            print(
+                f"Warning: No fileInputs found in app definition. Using provided name '{input_dir_param_name}'"
+            )
+
         main_input_dict = {
-            "name": input_dir_param_name,
+            "name": actual_input_param_name,  # Use the detected/matched parameter name
             "sourceUrl": input_dir_uri,
             "autoMountLocal": main_input_automount,
         }
-        if main_input_target_path:
+        if (
+            main_input_target_path
+        ):  # Add targetPath only if the app definition provided one for this input
             main_input_dict["targetPath"] = main_input_target_path
         job_req["fileInputs"].append(main_input_dict)
+
         if extra_file_inputs:
             job_req["fileInputs"].extend(extra_file_inputs)
+
+        # --- Handle script parameter placement ---
         script_param_added = False
+        if script_filename is not None:  # Only process if a script filename is provided
+            # Try to place in appArgs
+            if hasattr(param_set_def, "appArgs") and param_set_def.appArgs:
+                for arg_def in param_set_def.appArgs:
+                    arg_name = getattr(arg_def, "name", "")
+                    if arg_name in script_param_names:
+                        print(
+                            f"Placing script '{script_filename}' in appArgs: '{arg_name}'"
+                        )
+                        job_req["parameterSet"]["appArgs"].append(
+                            {"name": arg_name, "arg": script_filename}
+                        )
+                        script_param_added = True
+                        break
+
+            # If not placed in appArgs, try envVariables
+            if (
+                not script_param_added
+                and hasattr(param_set_def, "envVariables")
+                and param_set_def.envVariables
+            ):
+                for var_def in param_set_def.envVariables:
+                    var_key = getattr(var_def, "key", "")
+                    if var_key in script_param_names:
+                        print(
+                            f"Placing script '{script_filename}' in envVariables: '{var_key}'"
+                        )
+                        job_req["parameterSet"]["envVariables"].append(
+                            {"key": var_key, "value": script_filename}
+                        )
+                        script_param_added = True
+                        break
+
+            if not script_param_added:
+                # If script_filename was provided but could not be placed.
+                app_args_details = getattr(param_set_def, "appArgs", [])
+                env_vars_details = getattr(param_set_def, "envVariables", [])
+                defined_app_arg_names = [
+                    getattr(a, "name", None) for a in app_args_details
+                ]
+                defined_env_var_keys = [
+                    getattr(e, "key", None) for e in env_vars_details
+                ]
+                raise ValueError(
+                    f"script_filename '{script_filename}' was provided, but no matching parameter "
+                    f"(expected names/keys from script_param_names: {script_param_names}) was found "
+                    f"in the app's defined parameterSet. "
+                    f"App's defined appArgs names: {defined_app_arg_names}. "
+                    f"App's defined envVariables keys: {defined_env_var_keys}."
+                )
+        else:
+            print("script_filename is None, skipping script parameter placement.")
+
+        # --- Auto-detect and add required parameters from app definition ---
+        # Process appArgs first - add all required appArgs that aren't provided by user
         if hasattr(param_set_def, "appArgs") and param_set_def.appArgs:
-            for arg_def in param_set_def.appArgs:
-                arg_name = getattr(arg_def, "name", "")
-                if arg_name in script_param_names:
-                    print(
-                        f"Placing script '{script_filename}' in appArgs: '{arg_name}'"
-                    )
-                    job_req["parameterSet"]["appArgs"].append(
-                        {"name": arg_name, "arg": script_filename}
-                    )
-                    script_param_added = True
-                    break
-        if (
-            not script_param_added
-            and hasattr(param_set_def, "envVariables")
-            and param_set_def.envVariables
-        ):
-            for var_def in param_set_def.envVariables:
-                var_key = getattr(var_def, "key", "")
-                if var_key in script_param_names:
-                    print(
-                        f"Placing script '{script_filename}' in envVariables: '{var_key}'"
-                    )
-                    job_req["parameterSet"]["envVariables"].append(
-                        {"key": var_key, "value": script_filename}
-                    )
-                    script_param_added = True
-                    break
-        if not script_param_added:
-            raise ValueError(f"Could not find where to place the script parameter...")
+            for app_arg_def in param_set_def.appArgs:
+                arg_name = getattr(app_arg_def, "name", "")
+                input_mode = getattr(app_arg_def, "inputMode", "")
+                default_value = getattr(app_arg_def, "arg", "")
+
+                # Skip if this is the script parameter (already handled above)
+                if script_filename and arg_name in script_param_names:
+                    continue
+
+                # Check if this arg is required and not already provided
+                if input_mode == "REQUIRED" and arg_name:
+                    # Check if user already provided this arg
+                    user_provided = False
+                    if extra_app_args:
+                        for user_arg in extra_app_args:
+                            if user_arg.get("name") == arg_name:
+                                user_provided = True
+                                break
+
+                    # Also check if already added to job_req
+                    already_added = False
+                    for existing_arg in job_req["parameterSet"]["appArgs"]:
+                        if existing_arg.get("name") == arg_name:
+                            already_added = True
+                            break
+
+                    if not user_provided and not already_added:
+                        if default_value:
+                            print(
+                                f"Auto-adding required appArg '{arg_name}' with default: '{default_value}'"
+                            )
+                            job_req["parameterSet"]["appArgs"].append(
+                                {"name": arg_name, "arg": default_value}
+                            )
+                        else:
+                            print(
+                                f"Warning: Required appArg '{arg_name}' has no default value."
+                            )
+
+        # Process envVariables - add all required envVariables that aren't provided by user
+        if hasattr(param_set_def, "envVariables") and param_set_def.envVariables:
+            for env_var_def in param_set_def.envVariables:
+                var_key = getattr(env_var_def, "key", "")
+                input_mode = getattr(env_var_def, "inputMode", "")
+                default_value = getattr(env_var_def, "value", "")
+                enum_values = getattr(env_var_def, "enum_values", None)
+
+                # Skip if this is the script parameter (already handled above)
+                if script_filename and var_key in script_param_names:
+                    continue
+
+                # Check if this variable is required and not already provided by user
+                if input_mode == "REQUIRED" and var_key:
+                    # Check if user already provided this variable
+                    user_provided = False
+                    if extra_env_vars:
+                        for user_var in extra_env_vars:
+                            if user_var.get("key") == var_key:
+                                user_provided = True
+                                break
+
+                    # Also check if already added to job_req
+                    already_added = False
+                    for existing_var in job_req["parameterSet"]["envVariables"]:
+                        if existing_var.get("key") == var_key:
+                            already_added = True
+                            break
+
+                    if not user_provided and not already_added:
+                        # Use default value if available
+                        value_to_use = default_value
+
+                        # If no default but has enum values, use the first one
+                        if (
+                            not value_to_use
+                            and enum_values
+                            and isinstance(enum_values, dict)
+                        ):
+                            value_to_use = list(enum_values.keys())[0]
+                            print(
+                                f"Auto-setting required env var '{var_key}' to first available option: '{value_to_use}'"
+                            )
+                        elif value_to_use:
+                            print(
+                                f"Auto-setting required env var '{var_key}' to default: '{value_to_use}'"
+                            )
+                        else:
+                            print(
+                                f"Warning: Required env var '{var_key}' has no default value."
+                            )
+                            continue
+
+                        # Add to job request
+                        job_req["parameterSet"]["envVariables"].append(
+                            {"key": var_key, "value": value_to_use}
+                        )
+
+        # --- Handle extra parameters ---
         if extra_app_args:
             job_req["parameterSet"]["appArgs"].extend(extra_app_args)
-        if extra_env_vars:
+        if extra_env_vars:  # For OpenFOAM, parameters like solver, mesh, decomp go here
             job_req["parameterSet"]["envVariables"].extend(extra_env_vars)
+
+        # --- Handle scheduler options and allocation ---
         fixed_sched_opt_names = []
         if (
             hasattr(param_set_def, "schedulerOptions")
             and param_set_def.schedulerOptions
         ):
             for sched_opt_def in param_set_def.schedulerOptions:
-                if getattr(sched_opt_def, "inputMode", None) == "FIXED":
-                    fixed_sched_opt_names.append(getattr(sched_opt_def, "name", ""))
+                # Check if inputMode is FIXED for this specific option definition
+                if getattr(sched_opt_def, "inputMode", None) == "FIXED" and hasattr(
+                    sched_opt_def, "name"
+                ):
+                    fixed_sched_opt_names.append(getattr(sched_opt_def, "name"))
+
         if allocation:
-            if allocation_param_name in fixed_sched_opt_names:
-                print(
-                    f"Warning: App definition marks '{allocation_param_name}' as FIXED..."
-                )
-            else:
-                print(f"Adding allocation: {allocation}")
+            # Check if the app itself defines an allocation parameter that is FIXED
+            allocation_is_fixed_by_app = False
+            if (
+                hasattr(param_set_def, "schedulerOptions")
+                and param_set_def.schedulerOptions
+            ):
+                for sched_opt_def in param_set_def.schedulerOptions:
+                    # Assuming allocation is identified by allocation_param_name
+                    if (
+                        getattr(sched_opt_def, "name", "") == allocation_param_name
+                        and getattr(sched_opt_def, "inputMode", None) == "FIXED"
+                    ):
+                        allocation_is_fixed_by_app = True
+                        print(
+                            f"Warning: App definition marks '{allocation_param_name}' as FIXED with value '{getattr(sched_opt_def, 'arg', '')}'. "
+                            f"User-provided allocation '{allocation}' will be ignored."
+                        )
+                        break
+
+            if not allocation_is_fixed_by_app:
+                # If user provides an allocation and it's not fixed by the app, add/override it.
+                # Remove any existing scheduler option with the same name before adding the new one.
+                job_req["parameterSet"]["schedulerOptions"] = [
+                    opt
+                    for opt in job_req["parameterSet"]["schedulerOptions"]
+                    if getattr(opt, "name", opt.get("name"))
+                    != allocation_param_name  # Handle both Tapis objects and dicts
+                ]
+                print(f"Adding/Updating TACC allocation: {allocation}")
                 job_req["parameterSet"]["schedulerOptions"].append(
                     {"name": allocation_param_name, "arg": f"-A {allocation}"}
                 )
+
         if extra_scheduler_options:
             for extra_opt in extra_scheduler_options:
                 opt_name = extra_opt.get("name")
                 if opt_name and opt_name in fixed_sched_opt_names:
                     print(
-                        f"Warning: Skipping user-provided scheduler option '{opt_name}'..."
+                        f"Warning: Skipping user-provided scheduler option '{opt_name}' because it is marked as FIXED in the app definition."
                     )
                 else:
+                    # Avoid duplicates if user tries to override allocation via extra_scheduler_options
+                    if opt_name == allocation_param_name and allocation:
+                        print(
+                            f"Note: Allocation '{allocation}' is already being handled. Skipping duplicate allocation from extra_scheduler_options."
+                        )
+                        continue
                     job_req["parameterSet"]["schedulerOptions"].append(extra_opt)
+
+        # --- Clean up empty parameterSet sections ---
         if not job_req["parameterSet"]["appArgs"]:
             del job_req["parameterSet"]["appArgs"]
         if not job_req["parameterSet"]["envVariables"]:
@@ -291,9 +495,11 @@ def generate_job_request(
             del job_req["parameterSet"]["schedulerOptions"]
         if not job_req["parameterSet"]:
             del job_req["parameterSet"]
+
         final_job_req = {k: v for k, v in job_req.items() if v is not None}
         print("Job request dictionary generated successfully.")
         return final_job_req
+
     except (AppDiscoveryError, ValueError) as e:
         print(f"ERROR: Failed to generate job request: {e}")
         raise
@@ -302,7 +508,7 @@ def generate_job_request(
         raise JobSubmissionError(f"Unexpected error generating job request: {e}") from e
 
 
-# --- submit_job_request function (Production Ready) ---
+# --- submit_job_request function ---
 def submit_job_request(
     tapis_client: Tapis, job_request: Dict[str, Any]
 ) -> "SubmittedJob":
@@ -359,7 +565,7 @@ def submit_job_request(
         raise JobSubmissionError(f"Unexpected error during job submission: {e}") from e
 
 
-# --- SubmittedJob Class (Production Ready) ---
+# --- SubmittedJob Class ---
 class SubmittedJob:
     """Represents a submitted Tapis job with methods for monitoring and management.
 
@@ -631,7 +837,7 @@ class SubmittedJob:
                 pbar_monitoring = tqdm(
                     total=total_iterations,
                     desc="Monitoring job",
-                    ncols=100,
+                    dynamic_ncols=True,
                     unit=" checks",
                     leave=True,
                 )  # leave=True keeps bar after completion
@@ -1040,7 +1246,7 @@ class SubmittedJob:
             ) from e
 
 
-# --- Standalone Helper Functions (Production Ready) ---
+# --- Standalone Helper Functions ---
 def get_job_status(t: Tapis, job_uuid: str) -> str:
     """Get the current status of a job by UUID.
 

@@ -1,0 +1,74 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.1                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     pisoFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         30;
+
+deltaT          0.1;
+
+writeControl    runTime;
+
+writeInterval   5;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression compressed;
+
+timeFormat      general;
+
+timePrecision   8;
+
+runTimeModifiable yes;
+
+
+functions
+{
+    forceCoeffs1
+    {
+        type            forceCoeffs;
+        libs            ("libforces.so");
+        
+        writeControl    timeStep;
+        writeInterval   1;
+        
+        patches         (obstacle); // Make sure 'obstacle' is the correct patch name
+        
+        rho             rhoInf;      // Indicates incompressible
+        rhoInf          1;           // Required when rho = rhoInf
+        
+        liftDir         (0 1 0);
+        dragDir         (1 0 0);
+        CofR            (0.5 0 0);   // Centre of rotation
+        pitchAxis       (0 0 1);
+        
+        magUInf         1;
+        lRef            1;           // Reference length
+        Aref            1;           // Reference area
+    }
+}
+// ************************************************************************* //
