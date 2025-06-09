@@ -311,8 +311,8 @@ class JobMethods:
         self,
         app_id: str,
         input_dir_uri: str,
-        script_filename: str,
         # --- Optional Overrides ---
+        script_filename: Optional[str] = None,
         app_version: Optional[str] = None,
         job_name: Optional[str] = None,
         description: Optional[str] = None,

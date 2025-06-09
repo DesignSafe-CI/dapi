@@ -37,7 +37,7 @@ def generate_job_request(
     tapis_client: Tapis,
     app_id: str,
     input_dir_uri: str,
-    script_filename: str,
+    script_filename: Optional[str] = None,
     app_version: Optional[str] = None,
     job_name: Optional[str] = None,
     description: Optional[str] = None,
@@ -251,7 +251,15 @@ def generate_job_request(
                     script_param_added = True
                     break
         if not script_param_added:
-            raise ValueError(f"Could not find where to place the script parameter...")
+            # Check if appArgs is empty - if so, skip script parameter requirement
+            if hasattr(param_set_def, "appArgs") and param_set_def.appArgs == []:
+                print(
+                    "App has empty appArgs list - skipping script parameter placement"
+                )
+            else:
+                raise ValueError(
+                    f"Could not find where to place the script parameter..."
+                )
         if extra_app_args:
             job_req["parameterSet"]["appArgs"].extend(extra_app_args)
         if extra_env_vars:
