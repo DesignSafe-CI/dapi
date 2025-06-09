@@ -79,6 +79,7 @@ nav:
     - Database Access: database.md
   - Examples:
     - Overview: examples.md
+    - App Discovery: examples/apps.md
     - MPM Job Submission: examples/mpm.md
     - OpenSees Job Submission: examples/opensees.md
     - Database Queries: examples/database.md
