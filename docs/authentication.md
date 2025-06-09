@@ -307,6 +307,27 @@ print(f"NGL database has {df.iloc[0, 0]} sites")
 print("✅ All authentication successful!")
 ```
 
+## 🔧 Troubleshooting
+
+### JWT Token Expiration
+
+If you encounter JWT token expiration errors during long-running sessions, you'll see an error like:
+
+```
+UnauthorizedError: message: b'TAPIS_SECURITY_JWT_EXPIRED Exception message: JWT expired at 2025-06-09T08:51:38Z. Current time: 2025-06-09T12:06:54Z, a difference of 11716617 milliseconds. Allowed clock skew: 0 milliseconds. Claims: iss: https://designsafe.tapis.io/v3/tokens sub: username@designsafe tapis/tenant_id: designsafe tapis/username: username tapis/account_type: user'
+```
+
+**Solution:** Simply reinitialize your DSClient to refresh the authentication tokens:
+
+```python
+# Reinitialize the client to refresh tokens
+ds = DSClient()
+```
+
+This will automatically handle token refresh and you can continue with your work.
+
+**Why this happens:** Tapis authentication tokens have a limited lifespan for security purposes. Long-running Jupyter notebooks or scripts may encounter this after several hours of use.
+
 ## ➡️ Next Steps
 
 After setting up authentication:
