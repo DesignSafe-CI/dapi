@@ -198,7 +198,7 @@ def generate_job_request(
         main_input_automount = True
         found_input_def = False
         actual_input_param_name = input_dir_param_name  # Default fallback
-        
+
         if hasattr(job_attrs, "fileInputs") and job_attrs.fileInputs:
             # First try to find exact match with provided name
             for fi_def in job_attrs.fileInputs:
@@ -211,10 +211,15 @@ def generate_job_request(
                         f"Found exact match for input parameter: '{actual_input_param_name}'"
                     )
                     break
-            
+
             # If no exact match found, try to auto-detect common input directory names
             if not found_input_def:
-                common_input_names = ["Input Directory", "Case Directory", "inputDirectory", "inputDir"]
+                common_input_names = [
+                    "Input Directory",
+                    "Case Directory",
+                    "inputDirectory",
+                    "inputDir",
+                ]
                 for fi_def in job_attrs.fileInputs:
                     fi_name = getattr(fi_def, "name", "")
                     if fi_name in common_input_names:
@@ -226,7 +231,7 @@ def generate_job_request(
                             f"Auto-detected input parameter: '{actual_input_param_name}' (provided: '{input_dir_param_name}')"
                         )
                         break
-                
+
                 # If still not found, use the first fileInput as fallback
                 if not found_input_def and job_attrs.fileInputs:
                     fi_def = job_attrs.fileInputs[0]
@@ -237,7 +242,7 @@ def generate_job_request(
                     print(
                         f"Using first available fileInput: '{actual_input_param_name}' (no match found for '{input_dir_param_name}')"
                     )
-        
+
         if not found_input_def:
             print(
                 f"Warning: No fileInputs found in app definition. Using provided name '{input_dir_param_name}'"
@@ -319,11 +324,11 @@ def generate_job_request(
                 arg_name = getattr(app_arg_def, "name", "")
                 input_mode = getattr(app_arg_def, "inputMode", "")
                 default_value = getattr(app_arg_def, "arg", "")
-                
+
                 # Skip if this is the script parameter (already handled above)
                 if script_filename and arg_name in script_param_names:
                     continue
-                    
+
                 # Check if this arg is required and not already provided
                 if input_mode == "REQUIRED" and arg_name:
                     # Check if user already provided this arg
@@ -333,23 +338,26 @@ def generate_job_request(
                             if user_arg.get("name") == arg_name:
                                 user_provided = True
                                 break
-                    
+
                     # Also check if already added to job_req
                     already_added = False
                     for existing_arg in job_req["parameterSet"]["appArgs"]:
                         if existing_arg.get("name") == arg_name:
                             already_added = True
                             break
-                    
+
                     if not user_provided and not already_added:
                         if default_value:
-                            print(f"Auto-adding required appArg '{arg_name}' with default: '{default_value}'")
-                            job_req["parameterSet"]["appArgs"].append({
-                                "name": arg_name,
-                                "arg": default_value
-                            })
+                            print(
+                                f"Auto-adding required appArg '{arg_name}' with default: '{default_value}'"
+                            )
+                            job_req["parameterSet"]["appArgs"].append(
+                                {"name": arg_name, "arg": default_value}
+                            )
                         else:
-                            print(f"Warning: Required appArg '{arg_name}' has no default value.")
+                            print(
+                                f"Warning: Required appArg '{arg_name}' has no default value."
+                            )
 
         # Process envVariables - add all required envVariables that aren't provided by user
         if hasattr(param_set_def, "envVariables") and param_set_def.envVariables:
@@ -358,11 +366,11 @@ def generate_job_request(
                 input_mode = getattr(env_var_def, "inputMode", "")
                 default_value = getattr(env_var_def, "value", "")
                 enum_values = getattr(env_var_def, "enum_values", None)
-                
+
                 # Skip if this is the script parameter (already handled above)
                 if script_filename and var_key in script_param_names:
                     continue
-                
+
                 # Check if this variable is required and not already provided by user
                 if input_mode == "REQUIRED" and var_key:
                     # Check if user already provided this variable
@@ -372,33 +380,42 @@ def generate_job_request(
                             if user_var.get("key") == var_key:
                                 user_provided = True
                                 break
-                    
-                    # Also check if already added to job_req  
+
+                    # Also check if already added to job_req
                     already_added = False
                     for existing_var in job_req["parameterSet"]["envVariables"]:
                         if existing_var.get("key") == var_key:
                             already_added = True
                             break
-                    
+
                     if not user_provided and not already_added:
                         # Use default value if available
                         value_to_use = default_value
-                        
+
                         # If no default but has enum values, use the first one
-                        if not value_to_use and enum_values and isinstance(enum_values, dict):
+                        if (
+                            not value_to_use
+                            and enum_values
+                            and isinstance(enum_values, dict)
+                        ):
                             value_to_use = list(enum_values.keys())[0]
-                            print(f"Auto-setting required env var '{var_key}' to first available option: '{value_to_use}'")
+                            print(
+                                f"Auto-setting required env var '{var_key}' to first available option: '{value_to_use}'"
+                            )
                         elif value_to_use:
-                            print(f"Auto-setting required env var '{var_key}' to default: '{value_to_use}'")
+                            print(
+                                f"Auto-setting required env var '{var_key}' to default: '{value_to_use}'"
+                            )
                         else:
-                            print(f"Warning: Required env var '{var_key}' has no default value.")
+                            print(
+                                f"Warning: Required env var '{var_key}' has no default value."
+                            )
                             continue
-                        
+
                         # Add to job request
-                        job_req["parameterSet"]["envVariables"].append({
-                            "key": var_key,
-                            "value": value_to_use
-                        })
+                        job_req["parameterSet"]["envVariables"].append(
+                            {"key": var_key, "value": value_to_use}
+                        )
 
         # --- Handle extra parameters ---
         if extra_app_args:
@@ -820,7 +837,7 @@ class SubmittedJob:
                 pbar_monitoring = tqdm(
                     total=total_iterations,
                     desc="Monitoring job",
-                    ncols=100,
+                    dynamic_ncols=True,
                     unit=" checks",
                     leave=True,
                 )  # leave=True keeps bar after completion

@@ -313,6 +313,11 @@ status = job.get_status()
 print(f"Status after cancel: {status}")
 ```
 
+The `cancel()` method sends a cancellation request to Tapis. Note that:
+- Cancellation may not be immediate and depends on the job's current state
+- Jobs already in terminal states (FINISHED, FAILED, etc.) cannot be cancelled
+- The job status will eventually change to "CANCELLED" if the cancellation is successful
+
 ### Resuming Monitoring
 
 ```python
