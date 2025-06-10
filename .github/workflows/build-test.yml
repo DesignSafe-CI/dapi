@@ -20,9 +20,9 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Update lock file
-        run: poetry lock --no-update
+        run: poetry lock
       - name: Install the project dependencies
-        run: poetry install
+        run: poetry install --no-update
       - name: Lint with black
         run: poetry run black --check .
   
