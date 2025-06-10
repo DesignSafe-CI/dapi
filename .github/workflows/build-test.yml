@@ -22,7 +22,7 @@ jobs:
       - name: Update lock file
         run: poetry lock
       - name: Install the project dependencies
-        run: poetry install --no-update
+        run: poetry install
       - name: Lint with black
         run: poetry run black --check .
   
