@@ -149,10 +149,3 @@ poetry run mkdocs serve
 ```
 
 This will start a local server at `http://127.0.0.1:8000/dapi/` where you can view the documentation.
-
-### API docs
-To generate API docs:
-
-```
-pdoc --html --output-dir api-docs dapi --force
-```
