@@ -78,18 +78,24 @@ from .jobs import (
 )
 
 
+from pathlib import Path
+
 def _get_version():
-    """Read version from pyproject.toml"""
-    import tomllib
-    from pathlib import Path
+    """Read version from pyproject.toml, falling back for older Python."""
+    try:
+        # For Python 3.11+
+        import tomllib
+    except ModuleNotFoundError:
+        # For Python < 3.11
+        import tomli as tomllib  # Use tomli and alias it as tomllib
 
     try:
         pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
-        with open(pyproject_path, "rb") as f:
-            pyproject = tomllib.load(f)
-        return pyproject["tool"]["poetry"]["version"]
-    except (FileNotFoundError, KeyError, ImportError):
-        # Fallback version if pyproject.toml can't be read
+        with open(pyproject_path, "rb") as f: # tomllib expects bytes
+            data = tomllib.load(f)
+        return data["tool"]["poetry"]["version"]
+    except (FileNotFoundError, KeyError, ImportError, tomllib.TOMLDecodeError):
+        # Fallback version if pyproject.toml can't be read or parsed
         return "unknown"
 
 
