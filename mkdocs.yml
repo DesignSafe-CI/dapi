@@ -80,9 +80,9 @@ nav:
   - Examples:
     - Overview: examples.md
     - App Discovery: examples/apps.md
-    - MPM Job Submission: examples/mpm.md
-    - OpenSees Job Submission: examples/opensees.md
-    - OpenFOAM Job Submission: examples/openfoam.md
+    - MPM Job: examples/mpm.md
+    - OpenSees Job: examples/opensees.md
+    - OpenFOAM Job: examples/openfoam.md
     - Database Queries: examples/database.md
   - API Reference:
     - Overview: api/index.md
