@@ -90,7 +90,7 @@ def _get_version():
         import tomli as tomllib  # Use tomli and alias it as tomllib
 
     try:
-        pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+        pyproject_path = Path(__file__).parent / "pyproject.toml"
         with open(pyproject_path, "rb") as f: # tomllib expects bytes
             data = tomllib.load(f)
         return data["tool"]["poetry"]["version"]
