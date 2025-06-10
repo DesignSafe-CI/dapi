@@ -77,27 +77,7 @@ from .jobs import (
     TAPIS_TERMINAL_STATES,
 )
 
-
-def _get_version():
-    """Get package version using importlib.metadata."""
-    try:
-        # For Python 3.8+
-        from importlib.metadata import version
-
-        return version("dapi")
-    except ImportError:
-        # For Python < 3.8, use pkg_resources
-        try:
-            from pkg_resources import get_distribution
-
-            return get_distribution("dapi").version
-        except Exception:
-            return "unknown"
-    except Exception:
-        return "unknown"
-
-
-__version__ = _get_version()
+__version__ = "0.4.5"
 
 __all__ = [
     "DSClient",
