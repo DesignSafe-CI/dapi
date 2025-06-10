@@ -1,5 +1,5 @@
 site_name: DAPI - DesignSafe API
-site_description: User documentation for the DesignSafe API (dapi) package
+site_description: Documentation for the DesignSafe API (dapi) package
 site_author: Krishna Kumar, Pedro Arduino, Scott Brandenberg
 site_url: https://designsafe-ci.github.io/dapi
 repo_url: https://github.com/DesignSafe-CI/dapi
