@@ -15,14 +15,14 @@ python = "^3.9"  # Project supports Python 3.9 and newer
 
 # Numpy versioning
 numpy = [
-    { version = ">=1.21.0,<2.1.0", python = "~3.9" },  # For Python 3.9.x
+    { version = ">=1.21.0,<2.0", python = "~3.9" },  # For Python 3.9.x
     { version = ">=1.21.0", python = ">=3.10" }       # For Python 3.10 and newer (latest compatible)
 ]
 
 # Pandas versioning
 pandas = [
     { version = ">=1.3.0,<3.0.0", python = "~3.9" },   # For Python 3.9.x
-    { version = ">=1.3.0", python = ">=3.10" }        # For Python 3.10 and newer (latest compatible)
+    { version = ">=2.1.0", python = ">=3.10" }        # For Python 3.10 and newer (latest compatible)
 ]
 # tomli is a TOML parser, needed for Python < 3.11 as tomllib is not available
 tomli = { version = ">=1.1.0", python = "<3.11" } 
