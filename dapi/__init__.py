@@ -80,6 +80,7 @@ from .jobs import (
 
 from pathlib import Path
 
+
 def _get_version():
     """Read version from pyproject.toml, falling back for older Python."""
     try:
@@ -91,7 +92,7 @@ def _get_version():
 
     try:
         pyproject_path = Path(__file__).parent / "pyproject.toml"
-        with open(pyproject_path, "rb") as f: # tomllib expects bytes
+        with open(pyproject_path, "rb") as f:  # tomllib expects bytes
             data = tomllib.load(f)
         return data["tool"]["poetry"]["version"]
     except (FileNotFoundError, KeyError, ImportError, tomllib.TOMLDecodeError):

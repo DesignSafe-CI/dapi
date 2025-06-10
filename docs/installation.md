@@ -39,9 +39,15 @@ cd dapi
 curl -sSL https://install.python-poetry.org | python3 -
 
 # Install dependencies and dapi in editable mode
+virtualenv env && source env/bin/activate
 poetry install
-poetry shell
 ```
+
+You can also install an editable local version of dapi
+```
+pip install -e .
+```
+
 
 ## 🏗️ DesignSafe Jupyter Environment
 
