@@ -36,7 +36,7 @@ def _parse_tapis_uri(tapis_uri: str) -> (str, str):
     try:
         parsed = urllib.parse.urlparse(tapis_uri)
         system_id = parsed.netloc
-        path = parsed.path.lstrip("/") if parsed.path else ""
+        path = urllib.parse.unquote(parsed.path.lstrip("/")) if parsed.path else ""
         if not system_id:
             raise ValueError(f"Invalid Tapis URI: '{tapis_uri}'. Missing system ID.")
         return system_id, path
@@ -316,26 +316,24 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
         print(f"Verifying existence of translated path: {input_uri}")
         try:
             system_id, remote_path = _parse_tapis_uri(input_uri)
-            # Decode the path part for the listFiles call, as it expects unencoded paths
-            decoded_remote_path = urllib.parse.unquote(remote_path)
-            print(f"Checking system '{system_id}' for path '{decoded_remote_path}'...")
+            print(f"Checking system '{system_id}' for path '{remote_path}'...")
             # Use limit=1 for efficiency, we only care if it *exists*
             # Note: listFiles might return successfully for the *parent* directory
             # if the final component doesn't exist. A more robust check might
             # involve checking the result count or specific item name, but this
             # basic check catches non-existent parent directories.
-            t.files.listFiles(systemId=system_id, path=decoded_remote_path, limit=1)
+            t.files.listFiles(systemId=system_id, path=remote_path, limit=1)
             print(f"Verification successful: Path exists.")
         except BaseTapyException as e:
             # Specifically check for 404 on the listFiles call
             if hasattr(e, "response") and e.response and e.response.status_code == 404:
                 raise FileOperationError(
-                    f"Verification failed: Path '{decoded_remote_path}' does not exist on system '{system_id}'. Translated URI: {input_uri}"
+                    f"Verification failed: Path '{remote_path}' does not exist on system '{system_id}'. Translated URI: {input_uri}"
                 ) from e
             else:
                 # Re-raise other Tapis errors encountered during verification
                 raise FileOperationError(
-                    f"Verification error for path '{decoded_remote_path}' on system '{system_id}': {e}"
+                    f"Verification error for path '{remote_path}' on system '{system_id}': {e}"
                 ) from e
         except (
             ValueError
