@@ -61,6 +61,27 @@ class TestTapisUriToLocalPath(unittest.TestCase):
         result = tapis_uri_to_local_path(input_uri)
         self.assertEqual(result, expected)
 
+    def test_path_with_spaces(self):
+        """Test handling of paths with spaces (URL encoded)"""
+        input_uri = "tapis://designsafe.storage.default/kks32/DS%20input/file.txt"
+        expected = "/home/jupyter/MyData/DS input/file.txt"
+        result = tapis_uri_to_local_path(input_uri)
+        self.assertEqual(result, expected)
+
+    def test_community_path_with_spaces(self):
+        """Test handling of community paths with spaces"""
+        input_uri = "tapis://designsafe.storage.community/My%20Dataset/data.csv"
+        expected = "/home/jupyter/CommunityData/My Dataset/data.csv"
+        result = tapis_uri_to_local_path(input_uri)
+        self.assertEqual(result, expected)
+
+    def test_project_path_with_spaces(self):
+        """Test handling of project paths with spaces"""
+        input_uri = "tapis://project-1234-abcd/simulation%20results/output.txt"
+        expected = "/home/jupyter/MyProjects/simulation results/output.txt"
+        result = tapis_uri_to_local_path(input_uri)
+        self.assertEqual(result, expected)
+
 
 # This allows running the test from the command line
 if __name__ == "__main__":

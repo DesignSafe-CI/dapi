@@ -1,11 +1,11 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from dapi.auth.auth import init
+from dapi.auth import init
 
 
 class TestAuthInit(unittest.TestCase):
-    @patch("dapi.auth.auth.Tapis")
-    @patch("dapi.auth.auth.os.environ")
+    @patch("dapi.auth.Tapis")
+    @patch("dapi.auth.os.environ")
     def test_init_with_env_variables(self, mock_environ, mock_tapis):
         # Setup
         mock_environ.get.side_effect = {
@@ -27,10 +27,10 @@ class TestAuthInit(unittest.TestCase):
         mock_tapis_obj.get_tokens.assert_called_once()
         self.assertEqual(result, mock_tapis_obj)
 
-    @patch("dapi.auth.auth.Tapis")
-    @patch("dapi.auth.auth.os.environ")
-    @patch("dapi.auth.auth.input")
-    @patch("dapi.auth.auth.getpass")
+    @patch("dapi.auth.Tapis")
+    @patch("dapi.auth.os.environ")
+    @patch("dapi.auth.input")
+    @patch("dapi.auth.getpass")
     def test_init_with_user_input(
         self, mock_getpass, mock_input, mock_environ, mock_tapis
     ):
@@ -53,8 +53,8 @@ class TestAuthInit(unittest.TestCase):
         mock_tapis_obj.get_tokens.assert_called_once()
         self.assertEqual(result, mock_tapis_obj)
 
-    @patch("dapi.auth.auth.Tapis")
-    @patch("dapi.auth.auth.os.environ")
+    @patch("dapi.auth.Tapis")
+    @patch("dapi.auth.os.environ")
     def test_init_authentication_failure(self, mock_environ, mock_tapis):
         # Setup
         mock_environ.get.side_effect = {

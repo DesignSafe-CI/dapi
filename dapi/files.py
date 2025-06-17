@@ -316,13 +316,15 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
         print(f"Verifying existence of translated path: {input_uri}")
         try:
             system_id, remote_path = _parse_tapis_uri(input_uri)
+            # The Tapis API expects URL-encoded paths when they contain spaces or special characters
+            encoded_remote_path = urllib.parse.quote(remote_path)
             print(f"Checking system '{system_id}' for path '{remote_path}'...")
             # Use limit=1 for efficiency, we only care if it *exists*
             # Note: listFiles might return successfully for the *parent* directory
             # if the final component doesn't exist. A more robust check might
             # involve checking the result count or specific item name, but this
             # basic check catches non-existent parent directories.
-            t.files.listFiles(systemId=system_id, path=remote_path, limit=1)
+            t.files.listFiles(systemId=system_id, path=encoded_remote_path, limit=1)
             print(f"Verification successful: Path exists.")
         except BaseTapyException as e:
             # Specifically check for 404 on the listFiles call
