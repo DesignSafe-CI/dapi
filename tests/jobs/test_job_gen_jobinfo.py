@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch
-from dapi.jobs import jobs
+from dapi.jobs import generate_job_request
 from datetime import datetime
 
 
@@ -20,10 +20,10 @@ class TestGenerateJobInfo(unittest.TestCase):
         self.app_info_mock.jobAttributes.execSystemLogicalQueue = "normal"
         self.t_mock.apps.getAppLatestVersion.return_value = self.app_info_mock
 
-    @patch("dapi.jobs.jobs.datetime")
+    @patch("dapi.jobs.datetime")
     def test_generate_job_info_default(self, mock_datetime):
         mock_datetime.now.return_value = datetime(2023, 5, 1, 12, 0, 0)
-        result = jobs.generate_job_info(
+        result = generate_job_request(
             self.t_mock, self.app_name, self.input_uri, self.input_file
         )
         self.assertEqual(result["name"], f"{self.app_name}_20230501_120000")
@@ -52,11 +52,10 @@ class TestGenerateJobInfo(unittest.TestCase):
         custom_cores_per_node = 4
         custom_queue = "high-priority"
         custom_allocation = "project123"
-        result = jobs.generate_job_info(
+        result = generate_job_request(
             self.t_mock,
             self.app_name,
             self.input_uri,
-            self.input_file,
             job_name=custom_job_name,
             max_minutes=custom_max_minutes,
             node_count=custom_node_count,
@@ -77,15 +76,11 @@ class TestGenerateJobInfo(unittest.TestCase):
     def test_generate_job_info_invalid_app(self):
         self.t_mock.apps.getAppLatestVersion.side_effect = Exception("Invalid app")
         with self.assertRaises(Exception):
-            jobs.generate_job_info(
-                self.t_mock, "invalid-app", self.input_uri, self.input_file
-            )
+            generate_job_request(self.t_mock, "invalid-app", self.input_uri)
 
     def test_generate_job_info_opensees(self):
         opensees_app_name = "opensees-express"
-        result = jobs.generate_job_info(
-            self.t_mock, opensees_app_name, self.input_uri, self.input_file
-        )
+        result = generate_job_request(self.t_mock, opensees_app_name, self.input_uri)
         self.assertIn("parameterSet", result)
         self.assertIn("envVariables", result["parameterSet"])
         self.assertEqual(

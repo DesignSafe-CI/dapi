@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from dapi.jobs import get_ds_path_uri
+from dapi.files import get_ds_path_uri
 from tapipy.tapis import Tapis
 
 
@@ -52,7 +52,7 @@ class TestGetDsPathUri(unittest.TestCase):
 
     def test_space_in_path(self):
         path = "jupyter/MyData/path with spaces"
-        expected = "tapis://designsafe.storage.default/testuser/path%20with%20spaces"
+        expected = "tapis://designsafe.storage.default/testuser/path with spaces"
         self.assertEqual(get_ds_path_uri(self.t, path), expected)
 
 

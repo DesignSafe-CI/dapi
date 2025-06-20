@@ -39,9 +39,12 @@ ds = DSClient()
 ```
 
 **What this does:**
+
 - Creates an authenticated connection to DesignSafe services
 - Handles OAuth2 authentication automatically
 - Sets up connections to Tapis API, file systems, and job services
+
+**Authentication:** dapi supports multiple authentication methods including environment variables, .env files, and interactive prompts. For detailed authentication setup instructions, see the [authentication guide](../authentication.md).
 
 ### Step 3: Configure Job Parameters
 
@@ -92,6 +95,7 @@ print(f"Input Directory Tapis URI: {input_uri}")
 ```
 
 **What this does:**
+
 - Converts human-readable DesignSafe paths (like `/MyData/...`) to Tapis URI format
 - Tapis URIs are required for job submission and follow the pattern: `tapis://system/path`
 - Automatically detects your username and the correct storage system
@@ -123,6 +127,7 @@ print(json.dumps(job_dict, indent=2, default=str))
 - **`input_dir_param_name`**: OpenFOAM apps expect "Case Directory" not "Input Directory"
 
 **Additional options you can add:**
+
 ```python
 # Extended job configuration options
 job_dict = ds.jobs.generate_request(
@@ -166,6 +171,7 @@ print(json.dumps(job_dict, indent=2, default=str))
 ```
 
 **What this does:**
+
 - Overrides default resource allocation from the app
 - `nodeCount`: Number of compute nodes (1 for small jobs, multiple for large simulations)
 - `coresPerNode`: CPU cores per node (enables parallel processing)
@@ -190,6 +196,7 @@ print(f"Job UUID: {submitted_job.uuid}")
 ```
 
 **What this does:**
+
 - Sends the job request to TACC's job scheduler
 - Returns a `SubmittedJob` object for monitoring
 - Job UUID is a unique identifier for tracking
@@ -203,6 +210,7 @@ print(f"Job {submitted_job.uuid} finished with status: {final_status}")
 ```
 
 **What this does:**
+
 - Polls job status at specified intervals (15 seconds)
 - Shows progress bars for different job phases
 - Returns final status when job completes
@@ -239,6 +247,7 @@ print(f"Last message: {submitted_job.last_message}")
 ```
 
 **What each command does:**
+
 - **`interpret_status`**: Provides human-readable explanation of job outcome
 - **`print_runtime_summary`**: Shows time spent in each job phase (queued, running, etc.)
 - **`get_status`**: Gets current job status (useful for checking later)
@@ -312,6 +321,7 @@ print(f"Loaded force coefficients data with shape: {data.shape}")
 ```
 
 **What this does:**
+
 - **`translate_uri_to_path`**: Converts Tapis URI to local file system path
 - **`pandas.read_csv`**: Reads force coefficient data (much cleaner than manual parsing)
 - **`skiprows=9`**: Skips OpenFOAM header lines
@@ -351,6 +361,7 @@ plt.show()
 ```
 
 **What this does:**
+
 - **`data.iloc[100:, 0]`**: Time values (column 0) starting from row 100
 - **`data.iloc[100:, 2]`**: Drag coefficient values (column 2)
 - **`[100:]`**: Skips initial transient period for cleaner plots
@@ -458,5 +469,3 @@ complete_job = ds.jobs.generate_request(
     input_dir_param_name="Case Directory",
 )
 ```
-
-This streamlined approach focuses on the essential workflow while explaining what each step accomplishes, making it easy to understand and modify for different OpenFOAM simulations.

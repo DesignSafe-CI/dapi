@@ -23,7 +23,7 @@ pip install dapi
 To get the latest features and bug fixes:
 
 ```bash
-pip install git+https://github.com/DesignSafe-CI/dapi.git
+pip install git+https://github.com/DesignSafe-CI/dapi.git@dev
 ```
 
 ### 🛠️ Install for Development
