@@ -1008,7 +1008,7 @@ class SubmittedJob:
         if details.archiveSystemId and details.archiveSystemDir:
             archive_path = details.archiveSystemDir.lstrip("/")
             return (
-                f"tapis://{details.archiveSystemId}/{urllib.parse.quote(archive_path)}"
+                f"tapis://{details.archiveSystemId}/{archive_path}"
             )
         return None
 
@@ -1048,7 +1048,7 @@ class SubmittedJob:
         full_archive_path = os.path.join(details.archiveSystemDir, path.lstrip("/"))
         full_archive_path = os.path.normpath(full_archive_path).lstrip("/")
         try:
-            archive_base_uri = f"tapis://{details.archiveSystemId}/{urllib.parse.quote(full_archive_path)}"
+            archive_base_uri = f"tapis://{details.archiveSystemId}/{full_archive_path}"
             from .files import list_files
 
             return list_files(self._tapis, archive_base_uri, limit=limit, offset=offset)
@@ -1085,7 +1085,7 @@ class SubmittedJob:
         )
         full_archive_path = os.path.normpath(full_archive_path).lstrip("/")
         remote_uri = (
-            f"tapis://{details.archiveSystemId}/{urllib.parse.quote(full_archive_path)}"
+            f"tapis://{details.archiveSystemId}/{full_archive_path}"
         )
         try:
             from .files import download_file

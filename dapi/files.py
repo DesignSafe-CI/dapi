@@ -19,7 +19,7 @@ def _parse_tapis_uri(tapis_uri: str) -> (str, str):
         tapis_uri (str): URI in the format 'tapis://system_id/path'.
 
     Returns:
-        tuple: A tuple containing (system_id, path) where path is URL-decoded.
+        tuple: A tuple containing (system_id, path).
 
     Raises:
         ValueError: If the URI format is invalid or missing required components.
@@ -36,7 +36,7 @@ def _parse_tapis_uri(tapis_uri: str) -> (str, str):
     try:
         parsed = urllib.parse.urlparse(tapis_uri)
         system_id = parsed.netloc
-        path = urllib.parse.unquote(parsed.path.lstrip("/")) if parsed.path else ""
+        path = parsed.path.lstrip("/") if parsed.path else ""
         if not system_id:
             raise ValueError(f"Invalid Tapis URI: '{tapis_uri}'. Missing system ID.")
         return system_id, path
@@ -190,8 +190,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                 )
             else:
                 tapis_path = path_remainder
-            encoded_path = urllib.parse.quote(tapis_path)
-            input_uri = f"tapis://{storage_system_id}/{encoded_path}"
+            input_uri = f"tapis://{storage_system_id}/{tapis_path}"
             print(f"Translated '{path}' to '{input_uri}' using t.username")
             break  # Found match, exit loop
 
@@ -206,8 +205,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
             if pattern in path:
                 path_remainder = path.split(pattern, 1)[1].lstrip("/")
                 tapis_path = path_remainder
-                encoded_path = urllib.parse.quote(tapis_path)
-                input_uri = f"tapis://{storage_system_id}/{encoded_path}"
+                input_uri = f"tapis://{storage_system_id}/{tapis_path}"
                 print(f"Translated '{path}' to '{input_uri}'")
                 break  # Found match, exit loop
 
@@ -295,8 +293,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                         f"Could not resolve project ID '{project_id_part}' to a Tapis system ID."
                     )
 
-                encoded_path_within_project = urllib.parse.quote(path_within_project)
-                input_uri = f"tapis://{found_system_id}/{encoded_path_within_project}"
+                input_uri = f"tapis://{found_system_id}/{path_within_project}"
                 print(f"Translated '{path}' to '{input_uri}' using Tapis v3 lookup")
                 break  # Found match, exit loop
 
