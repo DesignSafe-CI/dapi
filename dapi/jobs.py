@@ -1007,9 +1007,7 @@ class SubmittedJob:
         details = self._get_details()
         if details.archiveSystemId and details.archiveSystemDir:
             archive_path = details.archiveSystemDir.lstrip("/")
-            return (
-                f"tapis://{details.archiveSystemId}/{archive_path}"
-            )
+            return f"tapis://{details.archiveSystemId}/{archive_path}"
         return None
 
     def list_outputs(
@@ -1084,9 +1082,7 @@ class SubmittedJob:
             details.archiveSystemDir, remote_path.lstrip("/")
         )
         full_archive_path = os.path.normpath(full_archive_path).lstrip("/")
-        remote_uri = (
-            f"tapis://{details.archiveSystemId}/{full_archive_path}"
-        )
+        remote_uri = f"tapis://{details.archiveSystemId}/{full_archive_path}"
         try:
             from .files import download_file
 
