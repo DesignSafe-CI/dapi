@@ -11,6 +11,36 @@ from .exceptions import FileOperationError, AuthenticationError
 from typing import List
 
 
+def _safe_quote(path: str) -> str:
+    """Safely URL-encode a path, avoiding double encoding.
+
+    Args:
+        path (str): The path to encode
+
+    Returns:
+        str: URL-encoded path
+
+    Example:
+        >>> _safe_quote("folder with spaces")
+        'folder%20with%20spaces'
+        >>> _safe_quote("folder%20with%20spaces")  # Already encoded
+        'folder%20with%20spaces'
+    """
+    # Check if the path appears to be already URL-encoded
+    # by trying to decode it and seeing if it changes
+    try:
+        decoded = urllib.parse.unquote(path)
+        if decoded != path:
+            # Path was URL-encoded, return as-is to avoid double encoding
+            return path
+        else:
+            # Path was not URL-encoded, encode it
+            return urllib.parse.quote(path)
+    except Exception:
+        # If there's any error in decoding, just encode the original path
+        return urllib.parse.quote(path)
+
+
 # _parse_tapis_uri helper remains the same
 def _parse_tapis_uri(tapis_uri: str) -> (str, str):
     """Parse a Tapis URI into system ID and path components.
@@ -314,7 +344,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
         try:
             system_id, remote_path = _parse_tapis_uri(input_uri)
             # The Tapis API expects URL-encoded paths when they contain spaces or special characters
-            encoded_remote_path = urllib.parse.quote(remote_path)
+            encoded_remote_path = _safe_quote(remote_path)
             print(f"Checking system '{system_id}' for path '{remote_path}'...")
             # Use limit=1 for efficiency, we only care if it *exists*
             # Note: listFiles might return successfully for the *parent* directory
@@ -376,8 +406,12 @@ def upload_file(t: Tapis, local_path: str, remote_uri: str):
         print(
             f"Uploading '{local_path}' to system '{system_id}' at path '{dest_path}'..."
         )
+        # URL-encode the destination path for API call
+        encoded_dest_path = _safe_quote(dest_path)
         t.upload(
-            system_id=system_id, source_file_path=local_path, dest_file_path=dest_path
+            system_id=system_id,
+            source_file_path=local_path,
+            dest_file_path=encoded_dest_path,
         )
         print("Upload complete.")
     except BaseTapyException as e:
@@ -421,8 +455,10 @@ def download_file(t: Tapis, remote_uri: str, local_path: str):
             os.makedirs(local_dir, exist_ok=True)
         # Use getContents which returns the raw bytes
         # Set stream=True for potentially large files
+        # URL-encode the source path for API call
+        encoded_source_path = _safe_quote(source_path)
         response = t.files.getContents(
-            systemId=system_id, path=source_path, stream=True
+            systemId=system_id, path=encoded_source_path, stream=True
         )
 
         # Write the streamed content to the local file
@@ -474,8 +510,10 @@ def list_files(
     try:
         system_id, path = _parse_tapis_uri(remote_uri)
         print(f"Listing files in system '{system_id}' at path '{path}'...")
+        # URL-encode the path for API call
+        encoded_path = _safe_quote(path)
         results = t.files.listFiles(
-            systemId=system_id, path=path, limit=limit, offset=offset
+            systemId=system_id, path=encoded_path, limit=limit, offset=offset
         )
         print(f"Found {len(results)} items.")
         return results
