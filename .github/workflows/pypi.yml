@@ -27,7 +27,5 @@ jobs:
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          # Add retry mechanism for transient failures
-          retry-on-failure: true
           # Enable verbose logging for debugging
           verbose: true
