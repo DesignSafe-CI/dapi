@@ -140,7 +140,10 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
+# Jupyter Book build output
+/out/
+
+# mkdocs documentation (legacy)
 /site
 
 # mypy

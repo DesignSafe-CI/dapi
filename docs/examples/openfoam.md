@@ -4,7 +4,7 @@ This example demonstrates how to submit and monitor an OpenFOAM CFD simulation u
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/openfoam/openfoam-minimal.ipynb)
 
-## 🎯 Overview
+## Overview
 
 This example covers the essential workflow for running OpenFOAM simulations:
 
@@ -14,7 +14,7 @@ This example covers the essential workflow for running OpenFOAM simulations:
 - Submitting and monitoring CFD jobs
 - Post-processing results with force coefficient analysis
 
-## 🚀 Complete Example
+## Complete Example
 
 ### Step 1: Install and Import dapi
 
@@ -50,16 +50,16 @@ ds = DSClient()
 
 ```python
 # Job configuration parameters
-ds_path: str = "/MyData/template-notebooks/tapis3/OpenFOAM/DH1_run"  # Path to OpenFOAM case directory
-max_job_minutes: int = 10  # Maximum runtime in minutes
-tacc_allocation: str = "ASC25049"  # TACC allocation to charge
-app_id_to_use = "openfoam-stampede3"  # OpenFOAM application ID
+ds_path: str = "/MyData/template-notebooks/tapis3/OpenFOAM/DH1_run" # Path to OpenFOAM case directory
+max_job_minutes: int = 10 # Maximum runtime in minutes
+tacc_allocation: str = "ASC25049" # TACC allocation to charge
+app_id_to_use = "openfoam-stampede3" # OpenFOAM application ID
 
 # OpenFOAM-specific environment variables
 openfoam_env_vars = [
-    {"key": "mesh", "value": "On"},      # Enable mesh generation with blockMesh
-    {"key": "solver", "value": "pisoFoam"},  # CFD solver to use
-    {"key": "decomp", "value": "On"}      # Enable domain decomposition for parallel runs
+ {"key": "mesh", "value": "On"}, # Enable mesh generation with blockMesh
+ {"key": "solver", "value": "pisoFoam"}, # CFD solver to use
+ {"key": "decomp", "value": "On"} # Enable domain decomposition for parallel runs
 ]
 ```
 
@@ -70,19 +70,19 @@ openfoam_env_vars = [
 - **`tacc_allocation`**: Your TACC allocation account (required for compute time billing)
 - **`app_id_to_use`**: Specific OpenFOAM application version on DesignSafe
 - **`openfoam_env_vars`**: OpenFOAM-specific configuration:
-  - `mesh: "On"` - Runs blockMesh to generate computational mesh
-  - `solver: "pisoFoam"` - Transient, incompressible Navier-Stokes solver
-  - `decomp: "On"` - Enables parallel domain decomposition for multi-core runs
+ - `mesh: "On"` - Runs blockMesh to generate computational mesh
+ - `solver: "pisoFoam"` - Transient, incompressible Navier-Stokes solver
+ - `decomp: "On"` - Enables parallel domain decomposition for multi-core runs
 
 **Alternative solver options:**
 ```python
 # Different OpenFOAM solvers you can use
 solvers = {
-    "pisoFoam": "Transient, incompressible (general purpose)",
-    "simpleFoam": "Steady-state, incompressible (RANS)",
-    "pimpleFoam": "Transient, incompressible (large time steps)",
-    "rhoSimpleFoam": "Steady-state, compressible",
-    "sonicFoam": "Transient, compressible (high speed flows)"
+ "pisoFoam": "Transient, incompressible (general purpose)",
+ "simpleFoam": "Steady-state, incompressible (RANS)",
+ "pimpleFoam": "Transient, incompressible (large time steps)",
+ "rhoSimpleFoam": "Steady-state, compressible",
+ "sonicFoam": "Transient, compressible (high speed flows)"
 }
 ```
 
@@ -105,13 +105,13 @@ print(f"Input Directory Tapis URI: {input_uri}")
 ```python
 # Generate job request dictionary using app defaults
 job_dict = ds.jobs.generate_request(
-    app_id=app_id_to_use,
-    input_dir_uri=input_uri,
-    max_minutes=max_job_minutes,
-    allocation=tacc_allocation,
-    archive_system="designsafe",
-    extra_env_vars=openfoam_env_vars,
-    input_dir_param_name="Case Directory"  # OpenFOAM apps use "Case Directory" instead of "Input Directory"
+ app_id=app_id_to_use,
+ input_dir_uri=input_uri,
+ max_minutes=max_job_minutes,
+ allocation=tacc_allocation,
+ archive_system="designsafe",
+ extra_env_vars=openfoam_env_vars,
+ input_dir_param_name="Case Directory" # OpenFOAM apps use "Case Directory" instead of "Input Directory"
 )
 print(json.dumps(job_dict, indent=2, default=str))
 ```
@@ -131,33 +131,33 @@ print(json.dumps(job_dict, indent=2, default=str))
 ```python
 # Extended job configuration options
 job_dict = ds.jobs.generate_request(
-    app_id=app_id_to_use,
-    input_dir_uri=input_uri,
-    max_minutes=max_job_minutes,
-    allocation=tacc_allocation,
-    
-    # Resource configuration
-    node_count=2,              # Number of compute nodes
-    cores_per_node=48,         # Cores per node (max depends on system)
-    memory_mb=96000,           # Memory in MB per node
-    queue="normal",            # Queue: "development", "normal", "large", etc.
-    
-    # Job metadata
-    job_name="my_cfd_simulation",                    # Custom job name
-    description="Wind flow around building",        # Job description
-    tags=["research", "cfd", "wind-engineering"],   # Searchable tags
-    
-    # Archive configuration
-    archive_system="designsafe",                     # Where to store results
-    archive_path="openfoam-results",                # Custom archive subdirectory
-    
-    # Additional environment variables
-    extra_env_vars=[
-        {"key": "mesh", "value": "On"},
-        {"key": "solver", "value": "pisoFoam"},
-        {"key": "decomp", "value": "On"},
-        {"key": "OMP_NUM_THREADS", "value": "4"}     # OpenMP threads per MPI process
-    ]
+ app_id=app_id_to_use,
+ input_dir_uri=input_uri,
+ max_minutes=max_job_minutes,
+ allocation=tacc_allocation,
+ 
+ # Resource configuration
+ node_count=2, # Number of compute nodes
+ cores_per_node=48, # Cores per node (max depends on system)
+ memory_mb=96000, # Memory in MB per node
+ queue="normal", # Queue: "development", "normal", "large", etc.
+ 
+ # Job metadata
+ job_name="my_cfd_simulation", # Custom job name
+ description="Wind flow around building", # Job description
+ tags=["research", "cfd", "wind-engineering"], # Searchable tags
+ 
+ # Archive configuration
+ archive_system="designsafe", # Where to store results
+ archive_path="openfoam-results", # Custom archive subdirectory
+ 
+ # Additional environment variables
+ extra_env_vars=[
+ {"key": "mesh", "value": "On"},
+ {"key": "solver", "value": "pisoFoam"},
+ {"key": "decomp", "value": "On"},
+ {"key": "OMP_NUM_THREADS", "value": "4"} # OpenMP threads per MPI process
+ ]
 )
 ```
 
@@ -165,8 +165,8 @@ job_dict = ds.jobs.generate_request(
 
 ```python
 # Customize job settings (optional)
-job_dict["nodeCount"] = 1  # Use single node
-job_dict["coresPerNode"] = 2  # Use 2 cores for parallel simulation
+job_dict["nodeCount"] = 1 # Use single node
+job_dict["coresPerNode"] = 2 # Use 2 cores for parallel simulation
 print(json.dumps(job_dict, indent=2, default=str))
 ```
 
@@ -181,9 +181,9 @@ print(json.dumps(job_dict, indent=2, default=str))
 ```python
 # Resource selection guidelines
 resources = {
-    "small_case": {"nodes": 1, "cores": 2, "time": 30},      # < 100K cells
-    "medium_case": {"nodes": 1, "cores": 16, "time": 120},   # 100K - 1M cells
-    "large_case": {"nodes": 2, "cores": 48, "time": 480},    # > 1M cells
+ "small_case": {"nodes": 1, "cores": 2, "time": 30}, # < 100K cells
+ "medium_case": {"nodes": 1, "cores": 16, "time": 120}, # 100K - 1M cells
+ "large_case": {"nodes": 2, "cores": 48, "time": 480}, # > 1M cells
 }
 ```
 
@@ -205,7 +205,7 @@ print(f"Job UUID: {submitted_job.uuid}")
 
 ```python
 # Monitor job execution until completion
-final_status = submitted_job.monitor(interval=15)  # Check every 15 seconds
+final_status = submitted_job.monitor(interval=15) # Check every 15 seconds
 print(f"Job {submitted_job.uuid} finished with status: {final_status}")
 ```
 
@@ -219,13 +219,13 @@ print(f"Job {submitted_job.uuid} finished with status: {final_status}")
 **Job status meanings:**
 ```python
 job_statuses = {
-    "PENDING": "Job submitted but not yet processed",
-    "PROCESSING_INPUTS": "Input files being staged",
-    "QUEUED": "Job waiting in scheduler queue",
-    "RUNNING": "Job actively executing",
-    "ARCHIVING": "Output files being archived",
-    "FINISHED": "Job completed successfully",
-    "FAILED": "Job failed during execution"
+ "PENDING": "Job submitted but not yet processed",
+ "PROCESSING_INPUTS": "Input files being staged",
+ "QUEUED": "Job waiting in scheduler queue",
+ "RUNNING": "Job actively executing",
+ "ARCHIVING": "Output files being archived",
+ "FINISHED": "Job completed successfully",
+ "FAILED": "Job failed during execution"
 }
 ```
 
@@ -259,8 +259,8 @@ print(f"Last message: {submitted_job.last_message}")
 # Display job output from stdout
 stdout_content = submitted_job.get_output_content("tapisjob.out", max_lines=50)
 if stdout_content:
-    print("Job output:")
-    print(stdout_content)
+ print("Job output:")
+ print(stdout_content)
 ```
 
 **What this does:**
@@ -276,7 +276,7 @@ archive_uri = submitted_job.archive_uri
 print(f"Archive URI: {archive_uri}")
 outputs = ds.files.list(archive_uri)
 for item in outputs:
-    print(f"- {item.name} ({item.type})")
+ print(f"- {item.name} ({item.type})")
 ```
 
 **What this does:**
@@ -287,16 +287,16 @@ for item in outputs:
 **Typical OpenFOAM output files:**
 ```python
 typical_outputs = {
-    "inputDirectory/": "Copy of your case directory with results",
-    "tapisjob.out": "Console output from OpenFOAM",
-    "tapisjob.err": "Error messages (if any)",
-    "tapisjob.sh": "Job script that was executed",
-    "postProcessing/": "Force coefficients, residuals, monitoring data",
-    "processor*/": "Parallel decomposed solution (if using multiple cores)"
+ "inputDirectory/": "Copy of your case directory with results",
+ "tapisjob.out": "Console output from OpenFOAM",
+ "tapisjob.err": "Error messages (if any)",
+ "tapisjob.sh": "Job script that was executed",
+ "postProcessing/": "Force coefficients, residuals, monitoring data",
+ "processor*/": "Parallel decomposed solution (if using multiple cores)"
 }
 ```
 
-## 📊 Post-processing Results
+## Post-processing Results
 
 ### Extract Force Coefficients
 
@@ -331,12 +331,12 @@ print(f"Loaded force coefficients data with shape: {data.shape}")
 ```python
 # Column meanings in forceCoeffs.dat
 columns = {
-    0: "Time",
-    1: "Cm (moment coefficient)",
-    2: "Cd (drag coefficient)",
-    3: "Cl (lift coefficient)", 
-    4: "Cl(f) (front lift)",
-    5: "Cl(r) (rear lift)"
+ 0: "Time",
+ 1: "Cm (moment coefficient)",
+ 2: "Cd (drag coefficient)",
+ 3: "Cl (lift coefficient)", 
+ 4: "Cl(f) (front lift)",
+ 5: "Cl(r) (rear lift)"
 }
 ```
 
@@ -351,7 +351,7 @@ plt.title('Drag Coefficient vs Time')
 plt.grid(True)
 plt.show()
 
-# Plot lift coefficient (Cl) vs time  
+# Plot lift coefficient (Cl) vs time 
 plt.plot(data.iloc[100:, 0], data.iloc[100:, 3])
 plt.xlabel('Time')
 plt.ylabel('$C_l$')
@@ -396,18 +396,18 @@ print(f"Final drag coefficient: {final_cd:.6f}")
 print(f"Final lift coefficient: {final_cl:.6f}")
 ```
 
-## 🔧 Configuration Options
+## Configuration Options
 
 ### Environment Variable Options
 
 ```python
 # Complete list of OpenFOAM environment variables
 openfoam_options = [
-    {"key": "mesh", "value": "On"},        # Generate mesh with blockMesh
-    {"key": "solver", "value": "pisoFoam"}, # Solver selection
-    {"key": "decomp", "value": "On"},       # Enable parallel decomposition
-    {"key": "reconstruct", "value": "On"},  # Reconstruct parallel results
-    {"key": "postProcess", "value": "On"},  # Run post-processing functions
+ {"key": "mesh", "value": "On"}, # Generate mesh with blockMesh
+ {"key": "solver", "value": "pisoFoam"}, # Solver selection
+ {"key": "decomp", "value": "On"}, # Enable parallel decomposition
+ {"key": "reconstruct", "value": "On"}, # Reconstruct parallel results
+ {"key": "postProcess", "value": "On"}, # Run post-processing functions
 ]
 ```
 
@@ -416,17 +416,17 @@ openfoam_options = [
 ```python
 # Available queues on different systems
 queue_options = {
-    "stampede3": {
-        "development": {"max_nodes": 2, "max_time": 120},    # 2 hours, testing
-        "normal": {"max_nodes": 256, "max_time": 2880},      # 48 hours, production
-        "large": {"max_nodes": 512, "max_time": 1440},       # 24 hours, large jobs
-    }
+ "stampede3": {
+ "development": {"max_nodes": 2, "max_time": 120}, # 2 hours, testing
+ "normal": {"max_nodes": 256, "max_time": 2880}, # 48 hours, production
+ "large": {"max_nodes": 512, "max_time": 1440}, # 24 hours, large jobs
+ }
 }
 
 # System-specific configurations
 systems = {
-    "stampede3": {"cores_per_node": 48, "memory_per_node": 192000},
-    "frontera": {"cores_per_node": 56, "memory_per_node": 192000},
+ "stampede3": {"cores_per_node": 48, "memory_per_node": 192000},
+ "frontera": {"cores_per_node": 56, "memory_per_node": 192000},
 }
 ```
 
@@ -435,37 +435,37 @@ systems = {
 ```python
 # Full-featured job request showing all options
 complete_job = ds.jobs.generate_request(
-    # Required parameters
-    app_id="openfoam-stampede3",
-    input_dir_uri=input_uri,
-    allocation="YOUR_ALLOCATION",
-    
-    # Resource configuration
-    max_minutes=120,           # 2 hours
-    node_count=2,              # Multiple nodes
-    cores_per_node=48,         # Full node utilization
-    memory_mb=192000,          # 192 GB RAM
-    queue="normal",            # Production queue
-    
-    # Job metadata
-    job_name="wind_flow_cfd_simulation",
-    description="RANS simulation of wind flow around building using OpenFOAM",
-    tags=["research", "cfd", "wind-engineering", "rans", "openfoam"],
-    
-    # Archive configuration
-    archive_system="designsafe",
-    archive_path="cfd-results/wind-study",  # Results go to MyData/cfd-results/wind-study/
-    
-    # OpenFOAM configuration
-    extra_env_vars=[
-        {"key": "mesh", "value": "On"},
-        {"key": "solver", "value": "simpleFoam"},    # Steady-state RANS
-        {"key": "decomp", "value": "On"},
-        {"key": "reconstruct", "value": "On"},
-        {"key": "postProcess", "value": "On"},
-    ],
-    
-    # Advanced options
-    input_dir_param_name="Case Directory",
+ # Required parameters
+ app_id="openfoam-stampede3",
+ input_dir_uri=input_uri,
+ allocation="YOUR_ALLOCATION",
+ 
+ # Resource configuration
+ max_minutes=120, # 2 hours
+ node_count=2, # Multiple nodes
+ cores_per_node=48, # Full node utilization
+ memory_mb=192000, # 192 GB RAM
+ queue="normal", # Production queue
+ 
+ # Job metadata
+ job_name="wind_flow_cfd_simulation",
+ description="RANS simulation of wind flow around building using OpenFOAM",
+ tags=["research", "cfd", "wind-engineering", "rans", "openfoam"],
+ 
+ # Archive configuration
+ archive_system="designsafe",
+ archive_path="cfd-results/wind-study", # Results go to MyData/cfd-results/wind-study/
+ 
+ # OpenFOAM configuration
+ extra_env_vars=[
+ {"key": "mesh", "value": "On"},
+ {"key": "solver", "value": "simpleFoam"}, # Steady-state RANS
+ {"key": "decomp", "value": "On"},
+ {"key": "reconstruct", "value": "On"},
+ {"key": "postProcess", "value": "On"},
+ ],
+ 
+ # Advanced options
+ input_dir_param_name="Case Directory",
 )
 ```

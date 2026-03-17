@@ -4,4 +4,6 @@ Authentication and credential management for DesignSafe access.
 
 ## Authentication
 
-::: dapi.auth.init
+```{eval-rst}
+.. autofunction:: dapi.auth.init
+```

@@ -4,26 +4,54 @@ Custom exception classes for DAPI error handling and debugging.
 
 ## Base Exception
 
-::: dapi.exceptions.DapiException
+```{eval-rst}
+.. autoclass:: dapi.exceptions.DapiException
+ :members:
+ :show-inheritance:
+```
 
 ## Authentication Exceptions
 
-::: dapi.exceptions.AuthenticationError
+```{eval-rst}
+.. autoclass:: dapi.exceptions.AuthenticationError
+ :members:
+ :show-inheritance:
+```
 
 ## File Operation Exceptions
 
-::: dapi.exceptions.FileOperationError
+```{eval-rst}
+.. autoclass:: dapi.exceptions.FileOperationError
+ :members:
+ :show-inheritance:
+```
 
 ## Application Discovery Exceptions
 
-::: dapi.exceptions.AppDiscoveryError
+```{eval-rst}
+.. autoclass:: dapi.exceptions.AppDiscoveryError
+ :members:
+ :show-inheritance:
+```
 
 ## System Information Exceptions
 
-::: dapi.exceptions.SystemInfoError
+```{eval-rst}
+.. autoclass:: dapi.exceptions.SystemInfoError
+ :members:
+ :show-inheritance:
+```
 
 ## Job Management Exceptions
 
-::: dapi.exceptions.JobSubmissionError
+```{eval-rst}
+.. autoclass:: dapi.exceptions.JobSubmissionError
+ :members:
+ :show-inheritance:
+```
 
-::: dapi.exceptions.JobMonitorError
+```{eval-rst}
+.. autoclass:: dapi.exceptions.JobMonitorError
+ :members:
+ :show-inheritance:
+```

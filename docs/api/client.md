@@ -2,7 +2,12 @@
 
 The main client interface for all DAPI functionality. DSClient provides organized access to DesignSafe resources through the Tapis V3 API.
 
-::: dapi.client.DSClient
+```{eval-rst}
+.. autoclass:: dapi.client.DSClient
+ :members:
+ :undoc-members:
+ :show-inheritance:
+```
 
 ## Accessing the Raw Tapis Client
 
@@ -26,13 +31,14 @@ jobs = tapis_client.jobs.getJobList()
 ### When to Use the Raw Tapis Client
 
 - Access Tapis APIs not yet wrapped by dapi
-- Use advanced search parameters not exposed by dapi  
+- Use advanced search parameters not exposed by dapi 
 - Implement custom functionality
 - Debug or troubleshoot API calls
 - Access experimental or new Tapis features
 
-!!! warning
-    When using the raw Tapis client, you'll need to handle errors and data formatting yourself. The dapi wrapper provides error handling and user-friendly formatting.
+:::{warning}
+When using the raw Tapis client, you'll need to handle errors and data formatting yourself. The dapi wrapper provides error handling and user-friendly formatting.
+:::
 
 ## Service Interfaces
 
@@ -40,16 +46,32 @@ The DSClient provides access to different DesignSafe services through specialize
 
 ### AppMethods
 
-::: dapi.client.AppMethods
+```{eval-rst}
+.. autoclass:: dapi.client.AppMethods
+ :members:
+ :undoc-members:
+```
 
 ### FileMethods
 
-::: dapi.client.FileMethods
+```{eval-rst}
+.. autoclass:: dapi.client.FileMethods
+ :members:
+ :undoc-members:
+```
 
 ### JobMethods
 
-::: dapi.client.JobMethods
+```{eval-rst}
+.. autoclass:: dapi.client.JobMethods
+ :members:
+ :undoc-members:
+```
 
 ### SystemMethods
 
-::: dapi.client.SystemMethods
+```{eval-rst}
+.. autoclass:: dapi.client.SystemMethods
+ :members:
+ :undoc-members:
+```

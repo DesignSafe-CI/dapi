@@ -10,30 +10,30 @@ Welcome to the **DesignSafe API (dapi)** documentation!
 
 <img src="https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png" alt="dapi" width="300">
 
-## ✨ Key Features
+## Key Features
 
-### 🚀 Job Management
+### Job Management
 - **Simple Job Submission**: Submit computational jobs with minimal configuration
 - **Real-time Monitoring**: Track job progress with interactive progress bars
 - **Output Management**: Easily access and download job results
 - **Application Discovery**: Find and explore available DesignSafe applications
 
-### 📊 Database Access
+### Database Access
 - **Research Databases**: Connect to DesignSafe research databases (NGL, Earthquake Recovery, VP)
 - **SQL Queries**: Execute SQL queries and get results as pandas DataFrames
 - **Automatic Connection Management**: Handles database connections and credentials
 
-### 📁 File Operations
+### File Operations
 - **Path Translation**: Convert DesignSafe paths (/MyData, /projects) to TAPIS URIs
 - **File Management**: Upload, download, and list files on DesignSafe storage
 - **Path Verification**: Validate that paths exist before using them
 
-### 🔐 Authentication
+### Authentication
 - **Simplified Auth**: Easy authentication with DesignSafe credentials
 - **Multiple Methods**: Support for environment variables, .env files, and interactive input
 - **Secure**: Handles credentials securely with encrypted storage
 
-## 🏃‍♂️ Quick Start
+## Quick Start
 
 Get started with dapi in just a few lines:
 
@@ -45,9 +45,9 @@ client = DSClient()
 
 # Submit a job
 job_request = client.jobs.generate_request(
-    app_id="matlab-r2023a",
-    input_dir_uri="/MyData/analysis/input/",
-    script_filename="run_analysis.m"
+ app_id="matlab-r2023a",
+ input_dir_uri="/MyData/analysis/input/",
+ script_filename="run_analysis.m"
 )
 job = client.jobs.submit_request(job_request)
 
@@ -58,23 +58,23 @@ final_status = job.monitor()
 df = client.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
 ```
 
-## 📖 Getting Started
+## Getting Started
 
 - **[Installation](installation.md)**: Install dapi and set up your environment
 - **[Authentication](authentication.md)**: Configure credentials and authentication
 - **[Quick Start](quickstart.md)**: Get up and running in 5 minutes
 
-## 📚 User Guide
+## User Guide
 
 - **[Jobs](jobs.md)**: Submit and monitor computational jobs
 - **[Database Access](database.md)**: Query DesignSafe research databases
 
-## 🎯 Examples
+## Examples
 
 - **[MPM Job Submission](examples/mpm.md)**: Material Point Method workflow
 - **[Database Queries](examples/database.md)**: Research data analysis examples
 
-## 💡 Use Cases
+## Use Cases
 
 ### Research Computing
 - Submit OpenSees, MATLAB, Python, and other computational jobs
@@ -91,12 +91,12 @@ df = client.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
 - Transfer files between local machines and DesignSafe storage
 - Collaborate on data with project teams
 
-## 🆘 Support
+## Support
 
 - **Issues**: Report bugs or request features on [GitHub Issues](https://github.com/DesignSafe-CI/dapi/issues)
 - **Documentation**: Comprehensive guides and API reference
 - **Community**: Connect with other users on DesignSafe forums
 
-## 📄 License
+## License
 
 dapi is licensed under the [MIT License](https://github.com/DesignSafe-CI/dapi/blob/main/LICENSE.md).
