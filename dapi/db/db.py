@@ -79,6 +79,8 @@ class DSDatabase:
         config = db_config[dbname]
         env_prefix = config["env_prefix"]
 
+        # Public read-only credentials for DesignSafe research databases.
+        # Override via environment variables ({PREFIX}DB_USER, etc.) if needed.
         self.user = os.getenv(f"{env_prefix}DB_USER", "dspublic")
         self.password = os.getenv(f"{env_prefix}DB_PASSWORD", "R3ad0nlY")
         self.host = os.getenv(f"{env_prefix}DB_HOST", "129.114.52.174")
