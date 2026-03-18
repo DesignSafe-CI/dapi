@@ -29,20 +29,20 @@ The DAPI package is organized into several core modules:
 from dapi import DSClient
 
 # Initialize client
-client = DSClient()
+ds = DSClient()
 
 # Access different services
-client.jobs.generate_request(...)
-client.files.upload(...)
-client.db.ngl.read_sql(...)
+ds.jobs.generate_request(...)
+ds.files.upload(...)
+ds.db.ngl.read_sql(...)
 ```
 
 ### **Common Operations**
-- **Submit Jobs**: `client.jobs.submit_request(job_dict)`
+- **Submit Jobs**: `ds.jobs.submit_request(job_dict)`
 - **Monitor Jobs**: `submitted_job.monitor()`
-- **File Upload**: `client.files.upload(local_path, remote_uri)`
-- **File Download**: `client.files.download(remote_uri, local_path)`
-- **Database Query**: `client.db.ngl.read_sql("SELECT * FROM table")`
+- **File Upload**: `ds.files.upload(local_path, remote_uri)`
+- **File Download**: `ds.files.download(remote_uri, local_path)`
+- **Database Query**: `ds.db.ngl.read_sql("SELECT * FROM table")`
 
 ### **Advanced Features**
 - **Archive Management**: Custom job result organization

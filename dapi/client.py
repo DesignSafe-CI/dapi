@@ -40,21 +40,21 @@ class DSClient:
     Example:
         Basic usage with automatic authentication:
 
-        >>> client = DSClient()
+        >>> ds = DSClient()
         Enter DesignSafe Username: myuser
         Enter DesignSafe Password: [hidden]
         Authentication successful.
 
         Using explicit credentials:
 
-        >>> client = DSClient(username="myuser", password="mypass")
+        >>> ds = DSClient(username="myuser", password="mypass")
         Authentication successful.
 
         Using a pre-authenticated Tapis client:
 
         >>> tapis = Tapis(base_url="https://designsafe.tapis.io", ...)
         >>> tapis.get_tokens()
-        >>> client = DSClient(tapis_client=tapis)
+        >>> ds = DSClient(tapis_client=tapis)
     """
 
     def __init__(self, tapis_client: Optional[Tapis] = None, **auth_kwargs):
@@ -196,7 +196,7 @@ class FileMethods:
             str: The corresponding DesignSafe local path (e.g., /home/jupyter/MyData/path).
 
         Example:
-            >>> local_path = client.files.translate_uri_to_path("tapis://designsafe.storage.default/user/data")
+            >>> local_path = ds.files.translate_uri_to_path("tapis://designsafe.storage.default/user/data")
             >>> print(local_path)  # "/home/jupyter/MyData/data"
         """
         return files_module.tapis_uri_to_local_path(*args, **kwargs)
@@ -453,7 +453,7 @@ class JobMethods:
             JobSubmissionError: If job request generation fails.
 
         Example:
-            >>> job_request = client.jobs.generate_request(
+            >>> job_request = ds.jobs.generate_request(
             ...     app_id="matlab-r2023a",
             ...     input_dir_uri="tapis://designsafe.storage.default/username/input/",
             ...     script_filename="run_analysis.m",
@@ -506,8 +506,8 @@ class JobMethods:
             JobSubmissionError: If the Tapis submission fails or encounters an error.
 
         Example:
-            >>> job_request = client.jobs.generate_request(...)
-            >>> submitted_job = client.jobs.submit_request(job_request)
+            >>> job_request = ds.jobs.generate_request(...)
+            >>> submitted_job = ds.jobs.submit_request(job_request)
             >>> print(f"Job submitted with UUID: {submitted_job.uuid}")
         """
         return jobs_module.submit_job_request(self._tapis, job_request)
@@ -523,7 +523,7 @@ class JobMethods:
             SubmittedJob: A SubmittedJob object for monitoring and managing the job.
 
         Example:
-            >>> job = client.jobs.get("12345678-1234-1234-1234-123456789abc")
+            >>> job = ds.jobs.get("12345678-1234-1234-1234-123456789abc")
             >>> status = job.status
         """
         return SubmittedJob(self._tapis, job_uuid)
@@ -541,7 +541,7 @@ class JobMethods:
             JobMonitorError: If status retrieval fails.
 
         Example:
-            >>> status = client.jobs.get_status("12345678-1234-1234-1234-123456789abc")
+            >>> status = ds.jobs.get_status("12345678-1234-1234-1234-123456789abc")
             >>> print(f"Job status: {status}")
         """
         return jobs_module.get_job_status(self._tapis, job_uuid)
@@ -555,7 +555,7 @@ class JobMethods:
                 Defaults to False.
 
         Example:
-            >>> client.jobs.get_runtime_summary("12345678-1234-1234-1234-123456789abc")
+            >>> ds.jobs.get_runtime_summary("12345678-1234-1234-1234-123456789abc")
             Runtime Summary
             ---------------
             QUEUED  time: 00:05:30
@@ -572,7 +572,44 @@ class JobMethods:
             job_uuid (str, optional): The job UUID for context in the message.
 
         Example:
-            >>> client.jobs.interpret_status("FINISHED", "12345678-1234-1234-1234-123456789abc")
+            >>> ds.jobs.interpret_status("FINISHED", "12345678-1234-1234-1234-123456789abc")
             Job 12345678-1234-1234-1234-123456789abc completed successfully.
         """
         jobs_module.interpret_job_status(final_status, job_uuid)
+
+    def list(
+        self,
+        app_id: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 100,
+        verbose: bool = False,
+    ):
+        """List jobs as a pandas DataFrame with optional filtering.
+
+        Fetches jobs from Tapis ordered by creation date (newest first)
+        and returns them as a DataFrame. Filters are applied client-side.
+
+        Args:
+            app_id (str, optional): Filter by application ID.
+            status (str, optional): Filter by job status (e.g., "FINISHED").
+                Case-insensitive.
+            limit (int, optional): Maximum jobs to fetch. Defaults to 100.
+            verbose (bool, optional): Print job count. Defaults to False.
+
+        Returns:
+            pd.DataFrame: Job metadata with formatted datetime columns.
+
+        Raises:
+            JobMonitorError: If the Tapis API call fails.
+
+        Example:
+            >>> df = ds.jobs.list(app_id="matlab-r2023a", status="FINISHED")
+            >>> print(df[["name", "uuid", "status", "created_dt"]])
+        """
+        return jobs_module.list_jobs(
+            self._tapis,
+            app_id=app_id,
+            status=status,
+            limit=limit,
+            verbose=verbose,
+        )

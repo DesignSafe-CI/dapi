@@ -10,6 +10,7 @@ from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
 from dataclasses import dataclass, field, asdict
 from tqdm.auto import tqdm
+import pandas as pd
 from .apps import get_app_details
 from .exceptions import (
     JobSubmissionError,
@@ -1340,3 +1341,87 @@ def interpret_job_status(final_status: str, job_uuid: Optional[str] = None):
         print(f"{job_id_str} ended with status: {final_status}")
     else:
         print(f"{job_id_str} ended with an unexpected status: {final_status}")
+
+
+def list_jobs(
+    tapis_client: Tapis,
+    app_id: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 100,
+    verbose: bool = False,
+) -> pd.DataFrame:
+    """Fetch Tapis jobs and return them as a pandas DataFrame.
+
+    Retrieves jobs from Tapis ordered by creation date (newest first)
+    and optionally filters by app ID and/or status. Filters are applied
+    client-side after fetching.
+
+    Args:
+        tapis_client: Authenticated Tapis client instance.
+        app_id: Filter by application ID (e.g., "opensees-mp-s3").
+        status: Filter by job status (e.g., "FINISHED", "FAILED").
+            Case-insensitive.
+        limit: Maximum number of jobs to fetch from Tapis. Defaults to 100.
+        verbose: If True, prints the number of jobs found.
+
+    Returns:
+        DataFrame with job metadata and formatted datetime columns.
+        Priority columns appear first: name, uuid, status, appId, appVersion,
+        created_dt, ended_dt. Additional datetime columns include _dt
+        (timezone-aware) and _date (date only) variants for created, ended,
+        remoteStarted, and lastUpdated.
+
+    Raises:
+        JobMonitorError: If the Tapis API call fails.
+
+    Example:
+        >>> df = list_jobs(t, app_id="matlab-r2023a", status="FINISHED")
+        >>> print(df[["name", "uuid", "status", "created_dt"]])
+    """
+    try:
+        jobs_list = tapis_client.jobs.getJobList(
+            limit=limit,
+            orderBy="created(desc)",
+        )
+    except BaseTapyException as e:
+        raise JobMonitorError(f"Failed to list jobs: {e}") from e
+    except Exception as e:
+        raise JobMonitorError(f"Unexpected error listing jobs: {e}") from e
+
+    if not jobs_list:
+        if verbose:
+            print("Found 0 jobs.")
+        return pd.DataFrame()
+
+    # Convert TapisResult objects to dicts
+    jobs_dicts = [job.__dict__ for job in jobs_list]
+    df = pd.DataFrame(jobs_dicts)
+
+    # Apply client-side filters
+    if app_id and "appId" in df.columns:
+        df = df[df["appId"] == app_id]
+    if status and "status" in df.columns:
+        df = df[df["status"] == status.upper()]
+
+    # Add formatted datetime columns
+    time_cols = ["created", "ended", "remoteStarted", "lastUpdated"]
+    for col in time_cols:
+        if col in df.columns:
+            df[f"{col}_dt"] = pd.to_datetime(df[col], utc=True, errors="coerce")
+            df[f"{col}_date"] = df[f"{col}_dt"].dt.date
+
+    # Reorder: priority columns first
+    priority = [
+        "name", "uuid", "status", "appId", "appVersion",
+        "created_dt", "ended_dt",
+    ]
+    priority_present = [c for c in priority if c in df.columns]
+    remaining = [c for c in df.columns if c not in priority_present]
+    df = df[priority_present + remaining]
+
+    df = df.reset_index(drop=True)
+
+    if verbose:
+        print(f"Found {len(df)} jobs.")
+
+    return df

@@ -6,11 +6,42 @@ This guide covers everything you need to know about submitting, monitoring, and 
 
 dapi provides a high-level interface for working with TAPIS v3 jobs on DesignSafe. You can:
 
+- **List** past jobs with filtering and search
 - **Discover** available applications
 - **Generate** job requests with automatic parameter mapping
 - **Submit** jobs to DesignSafe compute resources
 - **Monitor** job progress with real-time updates
 - **Manage** job outputs and results
+
+## Listing Jobs
+
+Browse your job history as a pandas DataFrame with optional filtering.
+
+```python
+from dapi import DSClient
+
+ds = DSClient()
+
+# List all recent jobs (default: last 100)
+df = ds.jobs.list()
+print(df[["name", "uuid", "status", "appId", "created_dt"]])
+
+# Filter by application
+df = ds.jobs.list(app_id="opensees-mp-s3")
+
+# Filter by status
+df = ds.jobs.list(status="FINISHED")
+
+# Combine filters and increase limit
+df = ds.jobs.list(app_id="matlab-r2023a", status="FAILED", limit=500)
+
+# Use pandas for further analysis
+finished = df[df["status"] == "FINISHED"]
+print(f"Finished jobs: {len(finished)}")
+print(finished.groupby("appId").size())
+```
+
+The returned DataFrame includes formatted datetime columns (`created_dt`, `ended_dt`, `created_date`, etc.) for easy time-based analysis.
 
 ## Application Discovery
 
@@ -19,23 +50,23 @@ dapi provides a high-level interface for working with TAPIS v3 jobs on DesignSaf
 ```python
 from dapi import DSClient
 
-client = DSClient()
+ds = DSClient()
 
 # Find all applications
-all_apps = client.apps.find("", verbose=False)
+all_apps = ds.apps.find("", verbose=False)
 print(f"Found {len(all_apps)} applications")
 
 # Search for specific applications
-matlab_apps = client.apps.find("matlab", verbose=True)
-opensees_apps = client.apps.find("opensees", verbose=True)
-mpm_apps = client.apps.find("mpm", verbose=True)
+matlab_apps = ds.apps.find("matlab", verbose=True)
+opensees_apps = ds.apps.find("opensees", verbose=True)
+mpm_apps = ds.apps.find("mpm", verbose=True)
 ```
 
 ### Getting Application Details
 
 ```python
 # Get detailed information about an application
-app_details = client.apps.get_details("mpm-s3", verbose=True)
+app_details = ds.apps.get_details("mpm-s3", verbose=True)
 
 print(f"App: {app_details.id}")
 print(f"Version: {app_details.version}")
@@ -62,10 +93,10 @@ print(f"Default Cores: {app_details.jobAttributes.coresPerNode}")
 ```python
 # 1. Prepare input directory
 input_path = "/MyData/analysis/input/"
-input_uri = client.files.translate_path_to_uri(input_path, verify_exists=True)
+input_uri = ds.files.translate_path_to_uri(input_path, verify_exists=True)
 
 # 2. Generate job request
-job_request = client.jobs.generate_request(
+job_request = ds.jobs.generate_request(
  app_id="matlab-r2023a",
  input_dir_uri=input_uri,
  script_filename="run_analysis.m",
@@ -74,18 +105,18 @@ job_request = client.jobs.generate_request(
 )
 
 # 3. Submit job
-job = client.jobs.submit_request(job_request)
+job = ds.jobs.submit_request(job_request)
 print(f"Job submitted: {job.uuid}")
 ```
 
 ### Advanced Job Configuration
 
 ```python
-job_request = client.jobs.generate_request(
+job_request = ds.jobs.generate_request(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="mpm.json",
- 
+
  # Resource requirements
  max_minutes=120,
  node_count=2,
@@ -126,7 +157,7 @@ job_request = client.jobs.generate_request(
 
 ```python
 # Generate base request
-job_request = client.jobs.generate_request(...)
+job_request = ds.jobs.generate_request(...)
 
 # Modify before submission
 job_request["name"] = "custom_job_name"
@@ -146,7 +177,7 @@ job_request["parameterSet"]["envVariables"].append({
 })
 
 # Submit modified request
-job = client.jobs.submit_request(job_request)
+job = ds.jobs.submit_request(job_request)
 ```
 
 ## Job Monitoring
@@ -155,7 +186,7 @@ job = client.jobs.submit_request(job_request)
 
 ```python
 # Submit job
-job = client.jobs.submit_request(job_request)
+job = ds.jobs.submit_request(job_request)
 
 # Monitor with progress bars
 final_status = job.monitor(
@@ -164,7 +195,7 @@ final_status = job.monitor(
 )
 
 # Interpret results
-client.jobs.interpret_status(final_status, job.uuid)
+ds.jobs.interpret_status(final_status, job.uuid)
 ```
 
 ### Manual Status Checking
@@ -259,7 +290,7 @@ archive_uri = job.archive_uri
 print(f"Job archive: {archive_uri}")
 
 # Use files interface to browse archive
-files = client.files.list(archive_uri)
+files = ds.files.list(archive_uri)
 for file in files:
  print(f"- {file.name}")
 ```
@@ -294,7 +325,7 @@ job.download_output("results.mat", "/local/path/results.mat")
 job.download_output("output_data.csv", "/local/analysis/data.csv")
 
 # Download using files interface
-client.files.download(
+ds.files.download(
  f"{archive_uri}/results.mat",
  "/local/path/results.mat"
 )
@@ -325,7 +356,7 @@ The `cancel()` method sends a cancellation request to Tapis. Note that:
 from dapi import SubmittedJob
 
 job_uuid = "12345678-1234-1234-1234-123456789abc"
-resumed_job = SubmittedJob(client._tapis, job_uuid)
+resumed_job = SubmittedJob(ds._tapis, job_uuid)
 
 # Continue monitoring
 final_status = resumed_job.monitor()
@@ -336,7 +367,7 @@ final_status = resumed_job.monitor()
 ```python
 # Monitor multiple jobs
 job_uuids = ["uuid1", "uuid2", "uuid3"]
-jobs = [SubmittedJob(client._tapis, uuid) for uuid in job_uuids]
+jobs = [SubmittedJob(ds._tapis, uuid) for uuid in job_uuids]
 
 # Check all statuses
 for job in jobs:
@@ -357,7 +388,7 @@ for job in jobs:
 
 ```python
 # List available queues for a system
-frontera_queues = client.systems.list_queues("frontera")
+frontera_queues = ds.systems.list_queues("frontera")
 for queue in frontera_queues:
  print(f"Queue: {queue.name}")
  print(f"Max runtime: {queue.maxRequestedTime} minutes")
@@ -373,7 +404,7 @@ print(f"Development queue available: {dev_queue_exists}")
 ```python
 # Get system information
 try:
- queues = client.systems.list_queues("stampede3")
+ queues = ds.systems.list_queues("stampede3")
  print(f"Stampede3 has {len(queues)} available queues")
 except Exception as e:
  print(f"Cannot access Stampede3: {e}")
@@ -385,7 +416,7 @@ except Exception as e:
 
 ```python
 # Submit multiple jobs with different parameters
-base_request = client.jobs.generate_request(
+base_request = ds.jobs.generate_request(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="template.json",
@@ -419,7 +450,7 @@ for i, params in enumerate(parameters):
  ])
  
  # Submit job
- job = client.jobs.submit_request(job_req)
+ job = ds.jobs.submit_request(job_req)
  submitted_jobs.append(job)
  print(f"Submitted job {i+1}/{len(parameters)}: {job.uuid}")
 
@@ -436,7 +467,7 @@ for i, job in enumerate(submitted_jobs):
 ```python
 # Submit jobs with dependencies (manual coordination)
 # Job 1: Preprocessing
-prep_job = client.jobs.submit_request(preprocessing_request)
+prep_job = ds.jobs.submit_request(preprocessing_request)
 prep_status = prep_job.monitor()
 
 if prep_status == "FINISHED":
@@ -449,7 +480,7 @@ if prep_status == "FINISHED":
  "targetPath": "preprocessed"
  })
  
- main_job = client.jobs.submit_request(main_request)
+ main_job = ds.jobs.submit_request(main_request)
  main_status = main_job.monitor()
  
  if main_status == "FINISHED":
@@ -462,7 +493,7 @@ if prep_status == "FINISHED":
  "targetPath": "results"
  })
  
- post_job = client.jobs.submit_request(post_request)
+ post_job = ds.jobs.submit_request(post_request)
  final_status = post_job.monitor()
  
  print(f"Pipeline complete. Final status: {final_status}")
@@ -477,9 +508,9 @@ from dapi import JobSubmissionError, JobMonitorError
 
 try:
  # Job submission
- job = client.jobs.submit_request(job_request)
+ job = ds.jobs.submit_request(job_request)
  final_status = job.monitor()
- 
+
 except JobSubmissionError as e:
  print(f"Job submission failed: {e}")
  
@@ -535,7 +566,7 @@ if final_status == "FAILED":
 ### 1. Resource Planning
 ```python
 # Choose appropriate resources
-job_request = client.jobs.generate_request(
+job_request = ds.jobs.generate_request(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="analysis.json",
@@ -561,7 +592,7 @@ job_request["tags"] = ["research", "seismic", site_id, method]
 max_retries = 3
 for attempt in range(max_retries):
  try:
- job = client.jobs.submit_request(job_request)
+ job = ds.jobs.submit_request(job_request)
  final_status = job.monitor()
  break
  except JobSubmissionError as e:

@@ -18,14 +18,14 @@ dapi provides access to three major research databases:
 from dapi import DSClient
 
 # Initialize client
-client = DSClient()
+ds = DSClient()
 
 # Query NGL database
-df = client.db.ngl.read_sql("SELECT * FROM SITE LIMIT 5")
+df = ds.db.ngl.read_sql("SELECT * FROM SITE LIMIT 5")
 print(df)
 
 # Query with parameters
-site_data = client.db.ngl.read_sql(
+site_data = ds.db.ngl.read_sql(
  "SELECT * FROM SITE WHERE SITE_NAME = %s",
  params=["Amagasaki"]
 )
@@ -91,18 +91,18 @@ EQ_DB_PORT=3306
 ```python
 from dapi import DSClient
 
-client = DSClient()
+ds = DSClient()
 
 # Count records in NGL database
-count_df = client.db.ngl.read_sql("SELECT COUNT(*) as total_sites FROM SITE")
+count_df = ds.db.ngl.read_sql("SELECT COUNT(*) as total_sites FROM SITE")
 print(f"Total sites: {count_df['total_sites'].iloc[0]}")
 
 # Get first 10 sites
-sites_df = client.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
+sites_df = ds.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
 print(sites_df)
 
 # Get site information
-site_info = client.db.ngl.read_sql("""
+site_info = ds.db.ngl.read_sql("""
  SELECT SITE_NAME, SITE_LAT, SITE_LON, SITE_GEOL 
  FROM SITE 
  WHERE SITE_LAT > 35 
@@ -116,20 +116,20 @@ print(site_info)
 ```python
 # Query with single parameter
 site_name = "Amagasaki"
-site_data = client.db.ngl.read_sql(
+site_data = ds.db.ngl.read_sql(
  "SELECT * FROM SITE WHERE SITE_NAME = %s",
  params=[site_name]
 )
 
 # Query with multiple parameters
 min_lat, max_lat = 32.0, 38.0
-california_sites = client.db.ngl.read_sql(
+california_sites = ds.db.ngl.read_sql(
  "SELECT * FROM SITE WHERE SITE_LAT BETWEEN %s AND %s",
  params=[min_lat, max_lat]
 )
 
 # Query with named parameters (dictionary)
-region_sites = client.db.ngl.read_sql(
+region_sites = ds.db.ngl.read_sql(
  "SELECT * FROM SITE WHERE SITE_LAT > %(min_lat)s AND SITE_LON < %(max_lon)s",
  params={"min_lat": 35.0, "max_lon": -115.0}
 )
@@ -143,12 +143,12 @@ The NGL database contains comprehensive data on soil liquefaction case histories
 
 ```python
 # Explore database structure
-tables_info = client.db.ngl.read_sql("SHOW TABLES")
+tables_info = ds.db.ngl.read_sql("SHOW TABLES")
 print("Available tables:")
 print(tables_info)
 
 # Get table structure
-site_structure = client.db.ngl.read_sql("DESCRIBE SITE")
+site_structure = ds.db.ngl.read_sql("DESCRIBE SITE")
 print("SITE table structure:")
 print(site_structure)
 ```
@@ -157,7 +157,7 @@ print(site_structure)
 
 ```python
 # Site information
-sites = client.db.ngl.read_sql("""
+sites = ds.db.ngl.read_sql("""
  SELECT SITE_ID, SITE_NAME, SITE_LAT, SITE_LON, SITE_GEOL
  FROM SITE
  WHERE SITE_STAT = 1 -- Active sites only
@@ -165,7 +165,7 @@ sites = client.db.ngl.read_sql("""
 """)
 
 # Sites with liquefaction data
-liquefaction_sites = client.db.ngl.read_sql("""
+liquefaction_sites = ds.db.ngl.read_sql("""
  SELECT DISTINCT s.SITE_NAME, s.SITE_LAT, s.SITE_LON
  FROM SITE s
  JOIN RECORD r ON s.SITE_ID = r.SITE_ID
@@ -174,7 +174,7 @@ liquefaction_sites = client.db.ngl.read_sql("""
 """)
 
 # Earthquake events
-earthquakes = client.db.ngl.read_sql("""
+earthquakes = ds.db.ngl.read_sql("""
  SELECT DISTINCT EVENT_NAME, EVENT_DATE, EVENT_MAG
  FROM EVENT
  WHERE EVENT_STAT = 1
@@ -183,7 +183,7 @@ earthquakes = client.db.ngl.read_sql("""
 """)
 
 # CPT data summary
-cpt_summary = client.db.ngl.read_sql("""
+cpt_summary = ds.db.ngl.read_sql("""
  SELECT 
  COUNT(*) as total_cpts,
  AVG(CPT_DEPTH) as avg_depth,
@@ -198,7 +198,7 @@ cpt_summary = client.db.ngl.read_sql("""
 
 ```python
 # Sites with high liquefaction potential
-high_risk_sites = client.db.ngl.read_sql("""
+high_risk_sites = ds.db.ngl.read_sql("""
  SELECT 
  s.SITE_NAME,
  s.SITE_LAT,
@@ -216,7 +216,7 @@ high_risk_sites = client.db.ngl.read_sql("""
 """)
 
 # Correlation between soil properties and liquefaction
-soil_correlation = client.db.ngl.read_sql("""
+soil_correlation = ds.db.ngl.read_sql("""
  SELECT 
  cpt.CPT_FC as fines_content,
  cpt.CPT_D50 as median_grain_size,
@@ -243,7 +243,7 @@ The earthquake recovery database contains data on post-earthquake recovery proce
 
 ```python
 # Recovery milestones
-recovery_data = client.db.eq.read_sql("""
+recovery_data = ds.db.eq.read_sql("""
  SELECT 
  event_name,
  recovery_metric,
@@ -255,7 +255,7 @@ recovery_data = client.db.eq.read_sql("""
 """)
 
 # Economic impact analysis
-economic_impact = client.db.eq.read_sql("""
+economic_impact = ds.db.eq.read_sql("""
  SELECT 
  region,
  AVG(economic_loss_millions) as avg_loss,
@@ -275,7 +275,7 @@ The VP database contains model validation data and benchmarks.
 
 ```python
 # Model performance metrics
-model_performance = client.db.vp.read_sql("""
+model_performance = ds.db.vp.read_sql("""
  SELECT 
  model_name,
  benchmark_case,
@@ -288,7 +288,7 @@ model_performance = client.db.vp.read_sql("""
 """)
 
 # Benchmark cases
-benchmarks = client.db.vp.read_sql("""
+benchmarks = ds.db.vp.read_sql("""
  SELECT 
  benchmark_id,
  benchmark_name,
@@ -309,7 +309,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Get site data for analysis
-sites_df = client.db.ngl.read_sql("""
+sites_df = ds.db.ngl.read_sql("""
  SELECT SITE_LAT, SITE_LON, SITE_GEOL
  FROM SITE 
  WHERE SITE_STAT = 1 AND SITE_LAT IS NOT NULL
@@ -332,7 +332,7 @@ sites_df.to_csv("ngl_sites.csv", index=False)
 
 ```python
 # Earthquake timeline
-earthquake_timeline = client.db.ngl.read_sql("""
+earthquake_timeline = ds.db.ngl.read_sql("""
  SELECT 
  EVENT_DATE,
  EVENT_NAME,
@@ -364,7 +364,7 @@ print(decade_summary)
 
 ```python
 # Sites by geographic region
-regional_analysis = client.db.ngl.read_sql("""
+regional_analysis = ds.db.ngl.read_sql("""
  SELECT 
  CASE 
  WHEN SITE_LAT > 40 THEN 'Northern'
@@ -395,7 +395,7 @@ print(regional_analysis)
 
 ```python
 # Access database connection directly
-ngl_db = client.db.ngl
+ngl_db = ds.db.ngl
 
 # Check connection status
 try:
@@ -421,7 +421,7 @@ queries = [
 ]
 
 for query in queries:
- result = client.db.ngl.read_sql(query)
+ result = ds.db.ngl.read_sql(query)
  print(f"{query}: {result.iloc[0, 0]}")
 ```
 
@@ -431,7 +431,7 @@ for query in queries:
 
 ```python
 try:
- df = client.db.ngl.read_sql("SELECT * FROM SITE LIMIT 5")
+ df = ds.db.ngl.read_sql("SELECT * FROM SITE LIMIT 5")
  print("Query successful")
 except Exception as e:
  print(f"Database error: {e}")
@@ -452,7 +452,7 @@ except Exception as e:
 ```python
 try:
  # Intentionally bad query
- df = client.db.ngl.read_sql("SELECT * FROM NONEXISTENT_TABLE")
+ df = ds.db.ngl.read_sql("SELECT * FROM NONEXISTENT_TABLE")
 except Exception as e:
  print(f"SQL Error: {e}")
  
@@ -468,13 +468,13 @@ except Exception as e:
 ### 1. Use Parameterized Queries
 ```python
 # Good - prevents SQL injection
-safe_query = client.db.ngl.read_sql(
+safe_query = ds.db.ngl.read_sql(
  "SELECT * FROM SITE WHERE SITE_NAME = %s",
  params=[user_input]
 )
 
 # Dangerous - vulnerable to SQL injection
-dangerous_query = client.db.ngl.read_sql(
+dangerous_query = ds.db.ngl.read_sql(
  f"SELECT * FROM SITE WHERE SITE_NAME = '{user_input}'"
 )
 ```
@@ -482,7 +482,7 @@ dangerous_query = client.db.ngl.read_sql(
 ### 2. Limit Result Sets
 ```python
 # Good - use LIMIT for large tables
-limited_query = client.db.ngl.read_sql(
+limited_query = ds.db.ngl.read_sql(
  "SELECT * FROM LARGE_TABLE LIMIT 1000"
 )
 
@@ -490,7 +490,7 @@ limited_query = client.db.ngl.read_sql(
 offset = 0
 batch_size = 1000
 while True:
- batch = client.db.ngl.read_sql(
+ batch = ds.db.ngl.read_sql(
  "SELECT * FROM LARGE_TABLE LIMIT %s OFFSET %s",
  params=[batch_size, offset]
  )
@@ -503,7 +503,7 @@ while True:
 ### 3. Efficient Joins
 ```python
 # Good - use indexes and appropriate joins
-efficient_query = client.db.ngl.read_sql("""
+efficient_query = ds.db.ngl.read_sql("""
  SELECT s.SITE_NAME, COUNT(r.RECORD_ID) as record_count
  FROM SITE s
  LEFT JOIN RECORD r ON s.SITE_ID = r.SITE_ID
@@ -517,7 +517,7 @@ efficient_query = client.db.ngl.read_sql("""
 ### 4. Data Validation
 ```python
 # Good - validate data before analysis
-df = client.db.ngl.read_sql("SELECT SITE_LAT, SITE_LON FROM SITE")
+df = ds.db.ngl.read_sql("SELECT SITE_LAT, SITE_LON FROM SITE")
 
 # Check for missing values
 missing_coords = df.isnull().sum()
@@ -538,7 +538,7 @@ print(f"Valid coordinates: {len(valid_coords)}/{len(df)}")
 
 ```python
 # Query data
-df = client.db.ngl.read_sql("""
+df = ds.db.ngl.read_sql("""
  SELECT s.SITE_NAME, s.SITE_LAT, s.SITE_LON, e.EVENT_NAME, e.EVENT_MAG
  FROM SITE s
  JOIN RECORD r ON s.SITE_ID = r.SITE_ID
@@ -573,7 +573,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
 # Get numeric features
-features_df = client.db.ngl.read_sql("""
+features_df = ds.db.ngl.read_sql("""
  SELECT 
  cpt.CPT_DEPTH,
  cpt.CPT_QC,

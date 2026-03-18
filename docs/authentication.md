@@ -32,7 +32,7 @@ Then initialize the client:
 from dapi import DSClient
 
 # Automatically uses environment variables
-client = DSClient()
+ds = DSClient()
 ```
 
 #### Persistent Environment Variables
@@ -65,10 +65,10 @@ Initialize the client:
 from dapi import DSClient
 
 # Automatically loads from .env file
-client = DSClient()
+ds = DSClient()
 
 # Or specify a custom .env file path
-client = DSClient(env_file="path/to/custom.env")
+ds = DSClient(env_file="path/to/custom.env")
 ```
 
 ### Method 3: Interactive Prompts
@@ -78,7 +78,7 @@ If no credentials are found, dapi will prompt you:
 ```python
 from dapi import DSClient
 
-client = DSClient()
+ds = DSClient()
 # Output:
 # Enter DesignSafe Username: your_username
 # Enter DesignSafe Password: [hidden input]
@@ -92,7 +92,7 @@ Pass credentials directly (not recommended for production):
 ```python
 from dapi import DSClient
 
-client = DSClient(
+ds = DSClient(
  username="your_username",
  password="your_password"
 )
@@ -103,10 +103,10 @@ client = DSClient(
 ### 1. Use Environment Variables or .env Files
 ```python
 # Good - uses environment variables
-client = DSClient()
+ds = DSClient()
 
 # Avoid - credentials in code
-client = DSClient(username="user", password="pass")
+ds = DSClient(username="user", password="pass")
 ```
 
 ### 2. Protect Your .env File
@@ -138,7 +138,7 @@ os.environ['DESIGNSAFE_USERNAME'] = 'your_username'
 os.environ['DESIGNSAFE_PASSWORD'] = 'your_password'
 
 from dapi import DSClient
-client = DSClient()
+ds = DSClient()
 ```
 
 ### Using .env Files in Jupyter
@@ -152,7 +152,7 @@ with open('.env', 'w') as f:
  f.write('DESIGNSAFE_PASSWORD=your_password\n')
 
 from dapi import DSClient
-client = DSClient()
+ds = DSClient()
 ```
 
 ## Advanced Configuration
@@ -162,7 +162,7 @@ client = DSClient()
 ```python
 from dapi import DSClient
 
-client = DSClient(
+ds = DSClient(
  base_url="https://designsafe.tapis.io", # Default
  username="your_username",
  password="your_password"
@@ -175,10 +175,10 @@ client = DSClient(
 from dapi import DSClient
 
 # Development environment
-dev_client = DSClient(env_file=".env.development")
+dev_ds = DSClient(env_file=".env.development")
 
 # Production environment
-prod_client = DSClient(env_file=".env.production")
+prod_ds = DSClient(env_file=".env.production")
 ```
 
 ## TMS Credentials (Execution System Access)
@@ -194,35 +194,35 @@ TMS credentials only need to be established **once per system**. After that, the
 ```python
 from dapi import DSClient
 
-client = DSClient()
+ds = DSClient()
 
 # Establish TMS credentials on execution systems
-client.systems.establish_credentials("frontera")
-client.systems.establish_credentials("stampede3")
-client.systems.establish_credentials("ls6")
+ds.systems.establish_credentials("frontera")
+ds.systems.establish_credentials("stampede3")
+ds.systems.establish_credentials("ls6")
 ```
 
 If credentials already exist, `establish_credentials` does nothing (idempotent). To force re-creation:
 
 ```python
-client.systems.establish_credentials("frontera", force=True)
+ds.systems.establish_credentials("frontera", force=True)
 ```
 
 ### Check Credentials
 
 ```python
 # Check if credentials exist before submitting a job
-if client.systems.check_credentials("frontera"):
+if ds.systems.check_credentials("frontera"):
     print("Ready to submit jobs on Frontera")
 else:
-    client.systems.establish_credentials("frontera")
+    ds.systems.establish_credentials("frontera")
 ```
 
 ### Revoke Credentials
 
 ```python
 # Remove credentials (e.g., to reset keys)
-client.systems.revoke_credentials("frontera")
+ds.systems.revoke_credentials("frontera")
 ```
 
 ### Using TMS from Outside DesignSafe
@@ -239,12 +239,12 @@ DESIGNSAFE_PASSWORD=your_password
 from dapi import DSClient
 
 # Works from anywhere with network access to designsafe.tapis.io
-client = DSClient()
-client.systems.establish_credentials("frontera")
+ds = DSClient()
+ds.systems.establish_credentials("frontera")
 
 # Now submit jobs as usual
-job_request = client.jobs.generate_request(...)
-job = client.jobs.submit_request(job_request)
+job_request = ds.jobs.generate_request(...)
+job = ds.jobs.submit_request(job_request)
 ```
 
 ### Troubleshooting TMS
@@ -269,11 +269,11 @@ CredentialError: System 'nonexistent' not found.
 from dapi import DSClient
 
 try:
- client = DSClient()
+ ds = DSClient()
  print("Authentication successful!")
- 
+
  # Test API access
- apps = client.apps.find("", verbose=False)
+ apps = ds.apps.find("", verbose=False)
  print(f"API access confirmed. Found {len(apps)} apps.")
  
 except Exception as e:
@@ -285,7 +285,7 @@ except Exception as e:
 ```python
 # Test database authentication
 try:
- df = client.db.ngl.read_sql("SELECT COUNT(*) FROM SITE")
+ df = ds.db.ngl.read_sql("SELECT COUNT(*) FROM SITE")
  print("Database access confirmed")
 except Exception as e:
  print(f"Database access failed: {e}")
@@ -374,15 +374,15 @@ with open('.env', 'w') as f:
 
 # 2. Initialize client
 from dapi import DSClient
-client = DSClient()
+ds = DSClient()
 
 # 3. Test authentication
 print("Testing TAPIS API access...")
-apps = client.apps.find("matlab", verbose=False)
+apps = ds.apps.find("matlab", verbose=False)
 print(f"Found {len(apps)} MATLAB apps")
 
 print("Testing database access...")
-df = client.db.ngl.read_sql("SELECT COUNT(*) FROM SITE")
+df = ds.db.ngl.read_sql("SELECT COUNT(*) FROM SITE")
 print(f"NGL database has {df.iloc[0, 0]} sites")
 
 print("All authentication successful!")

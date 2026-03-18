@@ -16,13 +16,13 @@ Here's a complete example that demonstrates the core dapi functionality:
 from dapi import DSClient
 
 # 1. Initialize client (handles authentication)
-client = DSClient()
+ds = DSClient()
 
 # 2. Find available applications
-matlab_apps = client.apps.find("matlab", verbose=True)
+matlab_apps = ds.apps.find("matlab", verbose=True)
 
 # 3. Submit a simple job
-job_request = client.jobs.generate_request(
+job_request = ds.jobs.generate_request(
  app_id="matlab-r2023a",
  input_dir_uri="/MyData/analysis/input/",
  script_filename="run_analysis.m",
@@ -31,7 +31,7 @@ job_request = client.jobs.generate_request(
 )
 
 # 4. Submit and monitor
-job = client.jobs.submit_request(job_request)
+job = ds.jobs.submit_request(job_request)
 final_status = job.monitor()
 
 # 5. Check results
@@ -45,7 +45,7 @@ if final_status == "FINISHED":
  print(f"- {output.name} ({output.type})")
 
 # 6. Query research database
-df = client.db.ngl.read_sql("SELECT * FROM SITE LIMIT 5")
+df = ds.db.ngl.read_sql("SELECT * FROM SITE LIMIT 5")
 print(df)
 ```
 
@@ -57,7 +57,7 @@ print(df)
 from dapi import DSClient
 
 # This will prompt for credentials if not found in environment
-client = DSClient()
+ds = DSClient()
 # Output: Authentication successful.
 ```
 
@@ -67,7 +67,7 @@ Before submitting jobs, ensure you have TMS credentials on the execution system:
 
 ```python
 # One-time setup per system -- safe to call repeatedly
-client.systems.establish_credentials("frontera")
+ds.systems.establish_credentials("frontera")
 # Output: TMS credentials established for user 'myuser' on system 'frontera'.
 
 # Or if already established:
@@ -80,16 +80,16 @@ See the [Authentication Guide](authentication.md#tms-credentials-execution-syste
 
 ```python
 # Find all applications
-all_apps = client.apps.find("", verbose=False)
+all_apps = ds.apps.find("", verbose=False)
 print(f"Found {len(all_apps)} total applications")
 
 # Find specific applications
-mpm_apps = client.apps.find("mpm", verbose=True)
-matlab_apps = client.apps.find("matlab", verbose=True)
-opensees_apps = client.apps.find("opensees", verbose=True)
+mpm_apps = ds.apps.find("mpm", verbose=True)
+matlab_apps = ds.apps.find("matlab", verbose=True)
+opensees_apps = ds.apps.find("opensees", verbose=True)
 
 # Get detailed information about an app
-app_details = client.apps.get_details("mpm-s3", verbose=True)
+app_details = ds.apps.get_details("mpm-s3", verbose=True)
 ```
 
 ### Step 3: Prepare Your Input Files
@@ -97,11 +97,11 @@ app_details = client.apps.get_details("mpm-s3", verbose=True)
 ```python
 # Translate DesignSafe paths to TAPIS URIs
 input_path = "/MyData/mpm-benchmarks/2d/uniaxial_stress/"
-input_uri = client.files.translate_path_to_uri(input_path, verify_exists=True)
+input_uri = ds.files.translate_path_to_uri(input_path, verify_exists=True)
 print(f"Input URI: {input_uri}")
 
 # List files in the directory
-files = client.files.list(input_uri)
+files = ds.files.list(input_uri)
 for file in files:
  print(f"- {file.name} ({file.type}, {file.size} bytes)")
 ```
@@ -110,7 +110,7 @@ for file in files:
 
 ```python
 # Generate a job request with automatic parameter mapping
-job_request = client.jobs.generate_request(
+job_request = ds.jobs.generate_request(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="mpm.json",
@@ -129,14 +129,14 @@ job_request["tags"] = ["research", "mpm"]
 
 ```python
 # Submit the job
-job = client.jobs.submit_request(job_request)
+job = ds.jobs.submit_request(job_request)
 print(f"Job submitted: {job.uuid}")
 
 # Monitor with real-time progress
 final_status = job.monitor(interval=15)
 
 # Interpret the result
-client.jobs.interpret_status(final_status, job.uuid)
+ds.jobs.interpret_status(final_status, job.uuid)
 ```
 
 ### Step 6: Access Job Results
@@ -166,7 +166,7 @@ if final_status in job.TERMINAL_STATES:
 
 ```python
 # Query NGL database
-ngl_data = client.db.ngl.read_sql("""
+ngl_data = ds.db.ngl.read_sql("""
  SELECT SITE_NAME, SITE_LAT, SITE_LON 
  FROM SITE 
  WHERE SITE_LAT > 35 
@@ -177,7 +177,7 @@ print(ngl_data)
 
 # Query with parameters
 site_name = "Amagasaki"
-site_data = client.db.ngl.read_sql(
+site_data = ds.db.ngl.read_sql(
  "SELECT * FROM SITE WHERE SITE_NAME = %s",
  params=[site_name]
 )
@@ -191,7 +191,7 @@ print(site_data)
 
 ```python
 # Submit MATLAB job
-job_request = client.jobs.generate_request(
+job_request = ds.jobs.generate_request(
  app_id="matlab-r2023a",
  input_dir_uri="/MyData/matlab/analysis/",
  script_filename="main.m",
@@ -199,7 +199,7 @@ job_request = client.jobs.generate_request(
  allocation="your_allocation"
 )
 
-job = client.jobs.submit_request(job_request)
+job = ds.jobs.submit_request(job_request)
 final_status = job.monitor()
 
 if final_status == "FINISHED":
@@ -211,7 +211,7 @@ if final_status == "FINISHED":
 
 ```python
 # Submit OpenSees job
-job_request = client.jobs.generate_request(
+job_request = ds.jobs.generate_request(
  app_id="opensees-express",
  input_dir_uri="/MyData/opensees/earthquake/",
  script_filename="earthquake_analysis.tcl",
@@ -219,7 +219,7 @@ job_request = client.jobs.generate_request(
  allocation="your_allocation"
 )
 
-job = client.jobs.submit_request(job_request)
+job = ds.jobs.submit_request(job_request)
 final_status = job.monitor()
 ```
 
@@ -238,7 +238,7 @@ ORDER BY num_records DESC
 LIMIT 20
 """
 
-df = client.db.ngl.read_sql(query)
+df = ds.db.ngl.read_sql(query)
 print("Sites with most records in California:")
 print(df)
 
@@ -255,7 +255,7 @@ import os
 os.environ['DEFAULT_ALLOCATION'] = 'your_tacc_allocation'
 
 # Now you can omit allocation in job requests
-job_request = client.jobs.generate_request(
+job_request = ds.jobs.generate_request(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="mpm.json"
@@ -297,11 +297,11 @@ from dapi import (
 )
 
 try:
- client = DSClient()
+ ds = DSClient()
 
  # Try to submit job
- job_request = client.jobs.generate_request(...)
- job = client.jobs.submit_request(job_request)
+ job_request = ds.jobs.generate_request(...)
+ job = ds.jobs.submit_request(job_request)
  final_status = job.monitor()
 
 except AuthenticationError as e:
@@ -323,13 +323,13 @@ except Exception as e:
 ### 1. Always Verify Paths
 ```python
 # Good - verify path exists
-input_uri = client.files.translate_path_to_uri(
- "/MyData/analysis/", 
+input_uri = ds.files.translate_path_to_uri(
+ "/MyData/analysis/",
  verify_exists=True
 )
 
 # Risk - path might not exist
-input_uri = client.files.translate_path_to_uri("/MyData/analysis/")
+input_uri = ds.files.translate_path_to_uri("/MyData/analysis/")
 ```
 
 ### 2. Use Descriptive Job Names
@@ -343,7 +343,7 @@ job_request["tags"] = ["earthquake", "site-A", "research"]
 ### 3. Handle Long-Running Jobs
 ```python
 # For long jobs, save job UUID for later monitoring
-job = client.jobs.submit_request(job_request)
+job = ds.jobs.submit_request(job_request)
 job_uuid = job.uuid
 
 # Save UUID to file or environment
@@ -352,7 +352,7 @@ with open("current_job.txt", "w") as f:
 
 # Later, resume monitoring
 from dapi import SubmittedJob
-saved_job = SubmittedJob(client._tapis, job_uuid)
+saved_job = SubmittedJob(ds._tapis, job_uuid)
 final_status = saved_job.monitor()
 ```
 

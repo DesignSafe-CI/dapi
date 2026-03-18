@@ -42,21 +42,21 @@ Get started with dapi in just a few lines:
 from dapi import DSClient
 
 # Initialize client (handles authentication automatically)
-client = DSClient()
+ds = DSClient()
 
 # Submit a job
-job_request = client.jobs.generate_request(
+job_request = ds.jobs.generate_request(
  app_id="matlab-r2023a",
  input_dir_uri="/MyData/analysis/input/",
  script_filename="run_analysis.m"
 )
-job = client.jobs.submit_request(job_request)
+job = ds.jobs.submit_request(job_request)
 
 # Monitor progress
 final_status = job.monitor()
 
 # Query research databases
-df = client.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
+df = ds.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
 ```
 
 ## Getting Started

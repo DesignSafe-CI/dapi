@@ -29,7 +29,7 @@ warnings.filterwarnings('ignore')
 # Initialize DSClient
 try:
  print("Initializing DSClient...")
- client = DSClient()
+ ds = DSClient()
  print("DSClient initialized successfully")
  
  # Test database connectivity
@@ -37,20 +37,20 @@ try:
  
  # Test NGL database
  try:
- test_ngl = client.db.ngl.read_sql("SELECT COUNT(*) as count FROM SITE")
+ test_ngl = ds.db.ngl.read_sql("SELECT COUNT(*) as count FROM SITE")
  print(f"NGL Database: {test_ngl['count'].iloc[0]} sites available")
  except Exception as e:
  print(f"NGL Database connection failed: {e}")
  
  # Test other databases (if available)
  try:
- test_vp = client.db.vp.read_sql("SELECT COUNT(*) as count FROM information_schema.tables")
+ test_vp = ds.db.vp.read_sql("SELECT COUNT(*) as count FROM information_schema.tables")
  print(f"VP Database: Connected successfully")
  except Exception as e:
  print(f"VP Database: {e}")
  
  try:
- test_eq = client.db.eq.read_sql("SELECT COUNT(*) as count FROM information_schema.tables")
+ test_eq = ds.db.eq.read_sql("SELECT COUNT(*) as count FROM information_schema.tables")
  print(f"EQ Database: Connected successfully")
  except Exception as e:
  print(f"EQ Database: {e}")
@@ -69,7 +69,7 @@ print("=" * 50)
 
 # List all tables
 try:
- tables = client.db.ngl.read_sql("SHOW TABLES")
+ tables = ds.db.ngl.read_sql("SHOW TABLES")
  print(f"Available tables ({len(tables)}):")
  for i, table in enumerate(tables.iloc[:, 0], 1):
  print(f" {i:2d}. {table}")
@@ -80,7 +80,7 @@ try:
  print(f"\n Key Table Structures:")
  for table in key_tables:
  try:
- structure = client.db.ngl.read_sql(f"DESCRIBE {table}")
+ structure = ds.db.ngl.read_sql(f"DESCRIBE {table}")
  print(f"\n {table} table:")
  print(f"Columns: {len(structure)}")
  for _, row in structure.head(5).iterrows():
@@ -105,7 +105,7 @@ print("=" * 45)
 
 try:
  # Site statistics
- site_stats = client.db.ngl.read_sql("""
+ site_stats = ds.db.ngl.read_sql("""
  SELECT 
  COUNT(*) as total_sites,
  COUNT(DISTINCT SITE_GEOL) as unique_geologies,
@@ -125,7 +125,7 @@ try:
  print(f"Longitude range: {stats['min_longitude']:.2f}° to {stats['max_longitude']:.2f}°")
  
  # Record statistics
- record_stats = client.db.ngl.read_sql("""
+ record_stats = ds.db.ngl.read_sql("""
  SELECT 
  COUNT(*) as total_records,
  COUNT(DISTINCT EVENT_ID) as unique_events,
@@ -141,7 +141,7 @@ try:
  print(f"Sites with records: {rec_stats['sites_with_records']}")
  
  # Event statistics
- event_stats = client.db.ngl.read_sql("""
+ event_stats = ds.db.ngl.read_sql("""
  SELECT 
  COUNT(*) as total_events,
  MIN(EVENT_MAG) as min_magnitude,
@@ -173,7 +173,7 @@ print("=" * 40)
 
 try:
  # Sites by country/region (using latitude/longitude boundaries)
- geographic_distribution = client.db.ngl.read_sql("""
+ geographic_distribution = ds.db.ngl.read_sql("""
  SELECT 
  CASE 
  WHEN SITE_LAT > 49 THEN 'Canada'
@@ -199,7 +199,7 @@ try:
  print(f" {row['region']:15}: {row['site_count']:3d} sites (avg: {row['avg_latitude']:6.2f}°, {row['avg_longitude']:7.2f}°)")
  
  # California sites analysis (high seismic activity region)
- california_sites = client.db.ngl.read_sql("""
+ california_sites = ds.db.ngl.read_sql("""
  SELECT 
  s.SITE_NAME,
  s.SITE_LAT,
@@ -233,7 +233,7 @@ print("=" * 35)
 
 try:
  # Major earthquakes with liquefaction data
- major_earthquakes = client.db.ngl.read_sql("""
+ major_earthquakes = ds.db.ngl.read_sql("""
  SELECT 
  e.EVENT_NAME,
  e.EVENT_DATE,
@@ -260,7 +260,7 @@ try:
  print(f"{row['EVENT_NAME'][:24]:25} {str(row['EVENT_DATE'])[:10]:12} {row['EVENT_MAG']:4.1f} {row['affected_sites']:6d} {row['total_records']:8d} {row['liquefaction_cases']:6d} ({liq_rate:4.1f}%)")
  
  # Magnitude distribution
- magnitude_distribution = client.db.ngl.read_sql("""
+ magnitude_distribution = ds.db.ngl.read_sql("""
  SELECT 
  CASE 
  WHEN EVENT_MAG < 5.0 THEN 'M < 5.0'
@@ -295,7 +295,7 @@ print("=" * 30)
 
 try:
  # Liquefaction susceptibility by soil type
- soil_liquefaction = client.db.ngl.read_sql("""
+ soil_liquefaction = ds.db.ngl.read_sql("""
  SELECT 
  s.SITE_GEOL as geology,
  COUNT(DISTINCT r.RECORD_ID) as total_records,
@@ -320,7 +320,7 @@ try:
  print(f"{row['geology'][:24]:25} {row['total_records']:8d} {row['liquefaction_cases']:10d} {row['liquefaction_rate']:8.1f} {row['avg_magnitude']:8.2f} {row['unique_sites']:6d}")
  
  # CPT-based analysis (if CPT data is available)
- cpt_liquefaction = client.db.ngl.read_sql("""
+ cpt_liquefaction = ds.db.ngl.read_sql("""
  SELECT 
  CASE 
  WHEN cpt.CPT_FC < 10 THEN 'Clean Sand (FC < 10%)'
@@ -350,7 +350,7 @@ try:
  print(f"{row['soil_classification']:25} {row['cpt_count']:10d} {row['liquefaction_cases']:10d} {row['liquefaction_rate']:8.1f} {row['avg_tip_resistance']:8.1f} {row['avg_magnitude']:8.2f}")
  
  # Magnitude vs liquefaction relationship
- magnitude_liquefaction = client.db.ngl.read_sql("""
+ magnitude_liquefaction = ds.db.ngl.read_sql("""
  SELECT 
  CASE 
  WHEN e.EVENT_MAG < 5.5 THEN 'M < 5.5'
@@ -386,7 +386,7 @@ print("=" * 25)
 
 try:
  # Earthquake timeline by decade
- temporal_analysis = client.db.ngl.read_sql("""
+ temporal_analysis = ds.db.ngl.read_sql("""
  SELECT 
  FLOOR(YEAR(e.EVENT_DATE) / 10) * 10 as decade,
  COUNT(DISTINCT e.EVENT_ID) as earthquake_count,
@@ -410,7 +410,7 @@ try:
  print(f"{decade_str:8} {row['earthquake_count']:8d} {row['record_count']:8d} {row['liquefaction_cases']:10d} {row['avg_magnitude']:8.2f} {row['max_magnitude']:8.2f}")
  
  # Recent significant events (last 30 years)
- recent_events = client.db.ngl.read_sql("""
+ recent_events = ds.db.ngl.read_sql("""
  SELECT 
  e.EVENT_NAME,
  e.EVENT_DATE,
@@ -448,7 +448,7 @@ print("=" * 35)
 
 try:
  # Correlation between earthquake parameters and liquefaction
- correlation_data = client.db.ngl.read_sql("""
+ correlation_data = ds.db.ngl.read_sql("""
  SELECT 
  e.EVENT_MAG as magnitude,
  cpt.CPT_DEPTH as depth,
@@ -535,7 +535,7 @@ try:
  timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
  
  # Export site data with coordinates
- sites_export = client.db.ngl.read_sql("""
+ sites_export = ds.db.ngl.read_sql("""
  SELECT 
  s.SITE_ID,
  s.SITE_NAME,
@@ -556,7 +556,7 @@ try:
  """)
  
  # Export earthquake events
- events_export = client.db.ngl.read_sql("""
+ events_export = ds.db.ngl.read_sql("""
  SELECT 
  e.EVENT_ID,
  e.EVENT_NAME,
@@ -575,7 +575,7 @@ try:
  """)
  
  # Export summary statistics
- summary_export = client.db.ngl.read_sql("""
+ summary_export = ds.db.ngl.read_sql("""
  SELECT 
  'Total Sites' as metric,
  COUNT(DISTINCT s.SITE_ID) as value
@@ -682,7 +682,7 @@ print("=" * 40)
 
 # Research Question 1: Distance-dependent liquefaction
 try:
- distance_analysis = client.db.ngl.read_sql("""
+ distance_analysis = ds.db.ngl.read_sql("""
  SELECT 
  CASE 
  WHEN distance_km < 10 THEN '< 10 km'
@@ -732,7 +732,7 @@ except Exception as e:
 
 # Research Question 2: Depth-dependent liquefaction susceptibility
 try:
- depth_analysis = client.db.ngl.read_sql("""
+ depth_analysis = ds.db.ngl.read_sql("""
  SELECT 
  CASE 
  WHEN cpt.CPT_DEPTH < 5 THEN '0-5 m'
@@ -780,7 +780,7 @@ try:
  # 1. Use LIMIT for large datasets
  print("\n1. Using LIMIT for large datasets:")
  large_query_start = datetime.now()
- limited_results = client.db.ngl.read_sql("""
+ limited_results = ds.db.ngl.read_sql("""
  SELECT s.SITE_NAME, s.SITE_LAT, s.SITE_LON 
  FROM SITE s 
  WHERE s.SITE_STAT = 1 
@@ -792,7 +792,7 @@ try:
  # 2. Use WHERE clauses to filter early
  print("\n2. Filtering with WHERE clauses:")
  filtered_query_start = datetime.now()
- filtered_results = client.db.ngl.read_sql("""
+ filtered_results = ds.db.ngl.read_sql("""
  SELECT COUNT(*) as count
  FROM SITE s 
  WHERE s.SITE_STAT = 1 
@@ -807,7 +807,7 @@ try:
  print("\n3. Parameterized queries (secure):")
  site_name = "Amagasaki"
  param_query_start = datetime.now()
- param_results = client.db.ngl.read_sql(
+ param_results = ds.db.ngl.read_sql(
  "SELECT * FROM SITE WHERE SITE_NAME = %s AND SITE_STAT = 1",
  params=[site_name]
  )
@@ -818,7 +818,7 @@ try:
  # 4. Efficient aggregation
  print("\n4. Efficient aggregation:")
  agg_query_start = datetime.now()
- agg_results = client.db.ngl.read_sql("""
+ agg_results = ds.db.ngl.read_sql("""
  SELECT 
  s.SITE_GEOL,
  COUNT(*) as site_count,
@@ -856,7 +856,7 @@ print("=" * 60)
 
 try:
  # Get final statistics
- final_stats = client.db.ngl.read_sql("""
+ final_stats = ds.db.ngl.read_sql("""
  SELECT 
  (SELECT COUNT(*) FROM SITE WHERE SITE_STAT = 1) as total_sites,
  (SELECT COUNT(*) FROM EVENT WHERE EVENT_STAT = 1) as total_events,

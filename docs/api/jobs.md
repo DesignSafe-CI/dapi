@@ -28,6 +28,12 @@ Job submission, monitoring, and management functionality for DesignSafe computat
 .. autofunction:: dapi.jobs.interpret_job_status
 ```
 
+## Listing Jobs
+
+```{eval-rst}
+.. autofunction:: dapi.jobs.list_jobs
+```
+
 ## SubmittedJob Class
 
 ```{eval-rst}
