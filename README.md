@@ -2,29 +2,36 @@
 
 [![build and test](https://github.com/DesignSafe-CI/dapi/actions/workflows/build-test.yml/badge.svg)](https://github.com/DesignSafe-CI/dapi/actions/workflows/build-test.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
-[![Docs](https://img.shields.io/badge/view-docs-8A2BE2?color=8A2BE2)](https://designsafe-ci.github.io/dapi/dapi/index.html)
+[![PyPI version](https://badge.fury.io/py/dapi.svg)](https://badge.fury.io/py/dapi)
+[![Docs](https://img.shields.io/badge/view-docs-8A2BE2?color=8A2BE2)](https://designsafe-ci.github.io/dapi/)
 
-`dapi` is a library that simplifies the process of submitting, running, and monitoring [TAPIS v3](https://tapis.readthedocs.io/en/latest/) jobs on [DesignSafe](https://designsafe-ci.org) via [Jupyter Notebooks](https://jupyter.designsafe-ci.org).
+`dapi` is a Python library that simplifies the process of submitting, running, and monitoring [TAPIS v3](https://tapis.readthedocs.io/en/latest/) jobs on [DesignSafe](https://designsafe-ci.org) via [Jupyter Notebooks](https://jupyter.designsafe-ci.org) or from the command line.
 
 <img src="https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png" alt="dapi" width="300">
-
 
 ## Features
 
 ### Jobs
+- Generate TAPIS v3 job requests with automatic app parameter mapping
+- Submit, monitor (with progress bars), and manage jobs
+- Access and download job outputs
+- Discover and explore available DesignSafe applications
 
-* Get TAPIS v3 templates for jobs: No need to fiddle with complex API requests. `dapi` abstracts away the complexities.
+### TMS Credentials
+- Establish, check, and revoke SSH keys on TACC execution systems (Frontera, Stampede3, LS6)
+- Works from any environment -- DesignSafe JupyterHub, command line, CI/CD
 
-* Seamless Integration with DesignSafe Jupyter Notebooks: Launch DesignSafe applications directly from the Jupyter environment.
+### Files
+- Translate DesignSafe paths (`/MyData`, `/CommunityData`, `/projects`) to TAPIS URIs
+- Upload, download, and list files on DesignSafe storage
 
 ### Database
-
 Connects to SQL databases on DesignSafe:
 
 | Database | dbname | env_prefix |
 |----------|--------|------------|
 | NGL | `ngl`| `NGL_` |
-| Earthake Recovery | `eq` | `EQ_` |
+| Earthquake Recovery | `eq` | `EQ_` |
 | Vp | `vp` | `VP_` |
 
 Define the following environment variables:
@@ -37,92 +44,93 @@ Define the following environment variables:
 
 For e.g., to add the environment variable `NGL_DB_USER` edit `~/.bashrc`, `~/.zshrc`, or a similar shell-specific configuration file for the current user and add `export NGL_DB_USER="dspublic"`.
 
-
 ## Installation
 
-Install `dapi` via pip
-
 ```shell
-pip3 install dapi
+pip install dapi
 ```
 
-To install the current development version of the library use:
+To install the current development version:
 
 ```shell
 pip install git+https://github.com/DesignSafe-CI/dapi.git --quiet
 ```
 
-## Example usage:
+## Quick Start
 
-### Storing credentials
+### Authentication
 
-Dapi uses the Tapis v3 SDK to authenticate with the DesignSafe API. To store your credentials, create a `.env` file in the root of your project with the following content:
+Create a `.env` file with your DesignSafe credentials:
 
 ```shell
-DESIGNSAFE_USERNAME=<your_designsafe_username>
-DESIGNSAFE_PASSWORD=<your_designsafe_password>
+DESIGNSAFE_USERNAME=your_username
+DESIGNSAFE_PASSWORD=your_password
 ```
 
-### Jobs
-
-* [Jupyter Notebook Templates](example-notebooks/template-mpm-run.ipynb) using dapi.
-
-* View [dapi API doc](https://designsafe-ci.github.io/dapi/dapi/index.html)
-
-On [DesignSafe Jupyter](https://jupyter.designsafe-ci.org/):
-
-Install the latest version of `dapi` and restart the kernel (Kernel >> Restart Kernel):
+### Setup and submit a job
 
 ```python
-# Remove any previous installations
-!pip uninstall dapi -y
-# Install
-!pip install dapi --quiet
-```
+from dapi import DSClient
 
-* Import `dapi` library
-```python
-import dapi
-```
+# Authenticate
+client = DSClient()
 
-* To list all functions in `dapi`
-```python
-dir(dapi)
+# Establish TMS credentials (one-time per system)
+client.systems.establish_credentials("frontera")
+
+# Submit a job
+job_request = client.jobs.generate_request(
+    app_id="matlab-r2023a",
+    input_dir_uri="/MyData/analysis/input/",
+    script_filename="run_analysis.m",
+    max_minutes=30,
+    allocation="your_allocation"
+)
+job = client.jobs.submit_request(job_request)
+final_status = job.monitor()
 ```
 
 ### Database
+
 ```python
-from dapi.db import DSDatabase
+from dapi import DSClient
 
-db = DSDatabase("ngl")
-sql = 'SELECT * FROM SITE'
-df = db.read_sql(sql)
+client = DSClient()
+df = client.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
 print(df)
-
-# Optionally, close the database connection when done
-db.close()
 ```
-
 
 ## Support
 
-For any questions, issues, or feedback submit an [issue](https://github.com/DesignSafe-CI/dapi/issues/new)
+For any questions, issues, or feedback submit an [issue](https://github.com/DesignSafe-CI/dapi/issues/new).
 
 ## Development
 
-To develop or test the library locally. Install [Poetry](https://python-poetry.org/docs/#installation). In the current repository run the following commands
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
 
 ```shell
-poetry shell
-poetry install
-poetry build
+uv venv
+uv pip install -e ".[dev]"
 ```
 
-To run the unit test
+Run tests:
 ```shell
-poetry run pytest -v
+pytest tests/ -v
 ```
 
+Build the package:
+```shell
+uv build
+```
+
+### Documentation
+
+Documentation uses [Jupyter Book v2](https://mystmd.org). To build and serve locally:
+
+```shell
+uv pip install -e ".[docs]"
+jupyter-book start
+```
 
 ## License
 
@@ -130,22 +138,6 @@ poetry run pytest -v
 
 ## Authors
 
-* Krishna Kumar, University of Texas at Austin
-* Prof. Pedro Arduino, University of Washington
-* Prof. Scott Brandenberg, University of California Los Angeles
-
-
-## Documentation
-
-View [dapi API doc](https://designsafe-ci.github.io/dapi/dapi/index.html)
-
-### Running documentation locally
-
-To serve the MkDocs documentation locally:
-
-```shell
-poetry install
-poetry run mkdocs serve
-```
-
-This will start a local server at `http://127.0.0.1:8000/dapi/` where you can view the documentation.
+- Krishna Kumar, University of Texas at Austin
+- Prof. Pedro Arduino, University of Washington
+- Prof. Scott Brandenberg, University of California Los Angeles
