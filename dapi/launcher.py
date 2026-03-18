@@ -27,13 +27,13 @@ def _validate_sweep(sweep: Mapping[str, Sequence[Any]]) -> None:
 
 
 def _expand_commands(
-    base_command: str,
+    command: str,
     sweep: Mapping[str, Sequence[Any]],
     placeholder_style: str,
 ) -> List[str]:
     """Expand a command template into all parameter combinations."""
     if not sweep:
-        return [base_command]
+        return [command]
 
     _validate_sweep(sweep)
 
@@ -43,7 +43,7 @@ def _expand_commands(
     keys = list(sweep.keys())
     commands: List[str] = []
     for combo in product(*[sweep[k] for k in keys]):
-        cmd = base_command
+        cmd = command
         for k, v in zip(keys, combo):
             if placeholder_style == "token":
                 cmd = cmd.replace(k, str(v))
@@ -55,7 +55,7 @@ def _expand_commands(
 
 
 def generate_sweep(
-    base_command: str,
+    command: str,
     sweep: Mapping[str, Sequence[Any]],
     directory: Union[str, Path, None] = None,
     *,
@@ -69,19 +69,19 @@ def generate_sweep(
     combinations without writing any files — useful for inspecting the
     sweep in a notebook before committing.
 
-    When *preview* is ``False`` (default), expands *base_command* into one
+    When *preview* is ``False`` (default), expands *command* into one
     command per parameter combination and writes ``runsList.txt`` and
     ``call_pylauncher.py`` into *directory*.
 
     Args:
-        base_command: Command template containing placeholders that match
+        command: Command template containing placeholders that match
             keys in *sweep*. Environment variables like ``$WORK`` or
             ``$SLURM_JOB_ID`` are left untouched.
         sweep: Mapping of placeholder name to a sequence of values.
             Example: ``{"ALPHA": [0.3, 0.5], "BETA": [1, 2]}``.
         directory: Directory to write files into. Created if it doesn't
             exist. Required when *preview* is ``False``.
-        placeholder_style: How placeholders appear in *base_command*:
+        placeholder_style: How placeholders appear in *command*:
 
             - ``"token"`` (default): bare tokens, e.g. ``ALPHA``
             - ``"braces"``: brace-wrapped, e.g. ``{ALPHA}``
@@ -113,7 +113,7 @@ def generate_sweep(
     if directory is None:
         raise ValueError("directory is required when preview=False.")
 
-    commands = _expand_commands(base_command, sweep, placeholder_style)
+    commands = _expand_commands(command, sweep, placeholder_style)
 
     dirpath = Path(directory)
     dirpath.mkdir(parents=True, exist_ok=True)

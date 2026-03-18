@@ -109,7 +109,7 @@ class SystemInfoError(DapiException):
 
     Example:
         >>> try:
-        ...     queues = client.systems.list_queues("nonexistent-system")
+        ...     queues = client.systems.queues("nonexistent-system")
         ... except SystemInfoError as e:
         ...     print(f"System info retrieval failed: {e}")
     """

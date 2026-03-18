@@ -108,7 +108,7 @@ print(f"Default Cores: {app_details.jobAttributes.coresPerNode}")
 ```python
 # 1. Prepare input directory
 input_path = "/MyData/analysis/input/"
-input_uri = ds.files.translate_path_to_uri(input_path, verify_exists=True)
+input_uri = ds.files.to_uri(input_path, verify_exists=True)
 
 # 2. Generate job request
 job_request = ds.jobs.generate(
@@ -403,7 +403,7 @@ for job in jobs:
 
 ```python
 # List available queues for a system
-frontera_queues = ds.systems.list_queues("frontera")
+frontera_queues = ds.systems.queues("frontera")
 for queue in frontera_queues:
  print(f"Queue: {queue.name}")
  print(f"Max runtime: {queue.maxRequestedTime} minutes")
@@ -419,7 +419,7 @@ print(f"Development queue available: {dev_queue_exists}")
 ```python
 # Get system information
 try:
- queues = ds.systems.list_queues("stampede3")
+ queues = ds.systems.queues("stampede3")
  print(f"Stampede3 has {len(queues)} available queues")
 except Exception as e:
  print(f"Cannot access Stampede3: {e}")

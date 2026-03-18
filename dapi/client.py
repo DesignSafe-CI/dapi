@@ -169,10 +169,8 @@ class FileMethods:
         """
         self._tapis = tapis_client
 
-    def translate_path_to_uri(self, *args, **kwargs) -> str:
+    def to_uri(self, *args, **kwargs) -> str:
         """Translate DesignSafe-style paths to Tapis URIs.
-
-        This is a convenience wrapper around files_module.get_ds_path_uri().
 
         Args:
             *args: Positional arguments passed to get_ds_path_uri().
@@ -187,10 +185,8 @@ class FileMethods:
         """
         return files_module.get_ds_path_uri(self._tapis, *args, **kwargs)
 
-    def translate_uri_to_path(self, *args, **kwargs) -> str:
+    def to_path(self, *args, **kwargs) -> str:
         """Translate Tapis URIs to DesignSafe local paths.
-
-        This is a convenience wrapper around files_module.tapis_uri_to_local_path().
 
         Args:
             *args: Positional arguments passed to tapis_uri_to_local_path().
@@ -200,7 +196,7 @@ class FileMethods:
             str: The corresponding DesignSafe local path (e.g., /home/jupyter/MyData/path).
 
         Example:
-            >>> local_path = ds.files.translate_uri_to_path("tapis://designsafe.storage.default/user/data")
+            >>> local_path = ds.files.to_path("tapis://designsafe.storage.default/user/data")
             >>> print(local_path)  # "/home/jupyter/MyData/data"
         """
         return files_module.tapis_uri_to_local_path(*args, **kwargs)
@@ -270,7 +266,7 @@ class SystemMethods:
         """
         self._tapis = tapis_client
 
-    def list_queues(self, system_id: str, verbose: bool = True) -> List[Any]:
+    def queues(self, system_id: str, verbose: bool = True) -> List[Any]:
         """List logical queues available on a Tapis execution system.
 
         This is a convenience wrapper around systems_module.list_system_queues().
@@ -379,7 +375,7 @@ class ParametricSweepMethods:
 
     def generate(
         self,
-        base_command: str,
+        command: str,
         sweep: Dict[str, Any],
         directory: str = None,
         *,
@@ -392,12 +388,12 @@ class ParametricSweepMethods:
         With ``preview=True``, returns a DataFrame of all parameter
         combinations — no files are written.
 
-        Otherwise, expands *base_command* into one command per combination
+        Otherwise, expands *command* into one command per combination
         and writes ``runsList.txt`` and ``call_pylauncher.py`` into
         *directory*. Returns the list of generated commands.
 
         Args:
-            base_command: Command template with placeholders matching sweep keys.
+            command: Command template with placeholders matching sweep keys.
             sweep: Mapping of placeholder name to sequence of values.
             directory: Directory to write files into (created if needed).
                 Required when *preview* is ``False``.
@@ -411,7 +407,7 @@ class ParametricSweepMethods:
             *preview* is ``True``.
         """
         return launcher_module.generate_sweep(
-            base_command, sweep, directory,
+            command, sweep, directory,
             placeholder_style=placeholder_style, debug=debug, preview=preview,
         )
 
@@ -617,23 +613,22 @@ class JobMethods:
         """
         return jobs_module.submit_job_request(self._tapis, job_request)
 
-    # --- Management methods remain the same ---
-    def get(self, job_uuid: str) -> SubmittedJob:
-        """Get a SubmittedJob object for managing an existing job by UUID.
+    def job(self, job_uuid: str) -> SubmittedJob:
+        """Get a SubmittedJob object for an existing job by UUID.
 
         Args:
             job_uuid (str): The UUID of an existing Tapis job.
 
         Returns:
-            SubmittedJob: A SubmittedJob object for monitoring and managing the job.
+            SubmittedJob: A job object for monitoring via ``.monitor()``.
 
         Example:
-            >>> job = ds.jobs.get("12345678-1234-1234-1234-123456789abc")
-            >>> status = job.status
+            >>> job = ds.jobs.job("12345678-1234-1234-1234-123456789abc")
+            >>> job.monitor()
         """
         return SubmittedJob(self._tapis, job_uuid)
 
-    def get_status(self, job_uuid: str) -> str:
+    def status(self, job_uuid: str) -> str:
         """Get the current status of a job by UUID.
 
         Args:
@@ -646,12 +641,12 @@ class JobMethods:
             JobMonitorError: If status retrieval fails.
 
         Example:
-            >>> status = ds.jobs.get_status("12345678-1234-1234-1234-123456789abc")
-            >>> print(f"Job status: {status}")
+            >>> ds.jobs.status("12345678-1234-1234-1234-123456789abc")
+            'FINISHED'
         """
         return jobs_module.get_job_status(self._tapis, job_uuid)
 
-    def get_runtime_summary(self, job_uuid: str, verbose: bool = False):
+    def runtime_summary(self, job_uuid: str, verbose: bool = False):
         """Print the runtime summary for a job by UUID.
 
         Args:
@@ -660,7 +655,7 @@ class JobMethods:
                 Defaults to False.
 
         Example:
-            >>> ds.jobs.get_runtime_summary("12345678-1234-1234-1234-123456789abc")
+            >>> ds.jobs.runtime_summary("12345678-1234-1234-1234-123456789abc")
             Runtime Summary
             ---------------
             QUEUED  time: 00:05:30

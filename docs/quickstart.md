@@ -90,7 +90,7 @@ app_details = ds.apps.get_details("mpm-s3", verbose=True)
 ```python
 # Translate DesignSafe paths to TAPIS URIs
 input_path = "/MyData/mpm-benchmarks/2d/uniaxial_stress/"
-input_uri = ds.files.translate_path_to_uri(input_path, verify_exists=True)
+input_uri = ds.files.to_uri(input_path, verify_exists=True)
 print(f"Input URI: {input_uri}")
 
 # List files in the directory
@@ -316,13 +316,13 @@ except Exception as e:
 ### 1. Always Verify Paths
 ```python
 # Good - verify path exists
-input_uri = ds.files.translate_path_to_uri(
+input_uri = ds.files.to_uri(
  "/MyData/analysis/",
  verify_exists=True
 )
 
 # Risk - path might not exist
-input_uri = ds.files.translate_path_to_uri("/MyData/analysis/")
+input_uri = ds.files.to_uri("/MyData/analysis/")
 ```
 
 ### 2. Use Descriptive Job Names
