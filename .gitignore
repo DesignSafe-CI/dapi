@@ -141,6 +141,7 @@ venv.bak/
 .ropeproject
 
 # Jupyter Book build output
+/_build/
 /out/
 
 # mkdocs documentation (legacy)

@@ -55,3 +55,4 @@ site:
   options:
     logo: docs/nheri.png
     favicon: docs/favicon.ico
+    hide_footer_text: true
