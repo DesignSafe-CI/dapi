@@ -5,6 +5,7 @@ from . import apps as apps_module
 from . import files as files_module
 from . import jobs as jobs_module
 from . import systems as systems_module
+from . import launcher as launcher_module
 from .db.accessor import DatabaseAccessor
 
 # Import only the necessary classes/functions from jobs
@@ -366,6 +367,103 @@ class SystemMethods:
         )
 
 
+class ParametricSweepMethods:
+    """Interface for PyLauncher parameter sweeps.
+
+    - ``generate`` — preview (``preview=True``) or write sweep files.
+    - ``submit`` — submit the sweep job to TACC.
+    """
+
+    def __init__(self, tapis_client):
+        self._tapis = tapis_client
+
+    def generate(
+        self,
+        base_command: str,
+        sweep: Dict[str, Any],
+        directory: str = None,
+        *,
+        placeholder_style: str = "token",
+        debug: str = None,
+        preview: bool = False,
+    ):
+        """Generate PyLauncher sweep files or preview the parameter grid.
+
+        With ``preview=True``, returns a DataFrame of all parameter
+        combinations — no files are written.
+
+        Otherwise, expands *base_command* into one command per combination
+        and writes ``runsList.txt`` and ``call_pylauncher.py`` into
+        *directory*. Returns the list of generated commands.
+
+        Args:
+            base_command: Command template with placeholders matching sweep keys.
+            sweep: Mapping of placeholder name to sequence of values.
+            directory: Directory to write files into (created if needed).
+                Required when *preview* is ``False``.
+            placeholder_style: ``"token"`` (default) for bare ``ALPHA``,
+                or ``"braces"`` for ``{ALPHA}``.
+            debug: Optional debug string (e.g. ``"host+job"``).
+            preview: If ``True``, return a DataFrame (dry run).
+
+        Returns:
+            ``List[str]`` of commands, or ``pandas.DataFrame`` when
+            *preview* is ``True``.
+        """
+        return launcher_module.generate_sweep(
+            base_command, sweep, directory,
+            placeholder_style=placeholder_style, debug=debug, preview=preview,
+        )
+
+    def submit(
+        self,
+        directory: str,
+        app_id: str,
+        allocation: str,
+        *,
+        node_count: Optional[int] = None,
+        cores_per_node: Optional[int] = None,
+        max_minutes: Optional[int] = None,
+        queue: Optional[str] = None,
+        **kwargs,
+    ):
+        """Submit a PyLauncher sweep job.
+
+        Translates *directory* to a Tapis URI, builds a job request with
+        ``call_pylauncher.py`` as the script, and submits it.
+
+        Args:
+            directory: Path to the input directory containing
+                ``runsList.txt`` and ``call_pylauncher.py``
+                (e.g. ``"/MyData/sweep/"``).
+            app_id: Tapis application ID (e.g. ``"openseespy-s3"``).
+            allocation: TACC allocation to charge.
+            node_count: Number of compute nodes.
+            cores_per_node: Cores per node.
+            max_minutes: Maximum runtime in minutes.
+            queue: Execution queue name.
+            **kwargs: Additional arguments passed to
+                ``ds.jobs.generate()``.
+
+        Returns:
+            SubmittedJob: A job object for monitoring via ``.monitor()``.
+        """
+        input_uri = files_module.get_ds_path_uri(self._tapis, directory)
+        job_request = jobs_module.generate_job_request(
+            tapis_client=self._tapis,
+            app_id=app_id,
+            input_dir_uri=input_uri,
+            script_filename="call_pylauncher.py",
+            node_count=node_count,
+            cores_per_node=cores_per_node,
+            max_minutes=max_minutes,
+            queue=queue,
+            allocation=allocation,
+            **kwargs,
+        )
+        return jobs_module.submit_job_request(self._tapis, job_request)
+
+
 class JobMethods:
     """Interface for Tapis job submission, monitoring, and management.
 
@@ -374,6 +472,10 @@ class JobMethods:
 
     Args:
         tapis_client (Tapis): Authenticated Tapis client instance.
+
+    Attributes:
+        parametric_sweep (ParametricSweepMethods): Interface for PyLauncher
+            parameter sweep generation.
     """
 
     def __init__(self, tapis_client: Tapis):
@@ -383,9 +485,10 @@ class JobMethods:
             tapis_client (Tapis): Authenticated Tapis client instance.
         """
         self._tapis = tapis_client
+        self.parametric_sweep = ParametricSweepMethods(tapis_client)
 
     # Method to generate the request dictionary
-    def generate_request(
+    def generate(
         self,
         app_id: str,
         input_dir_uri: str,
@@ -456,7 +559,7 @@ class JobMethods:
             JobSubmissionError: If job request generation fails.
 
         Example:
-            >>> job_request = ds.jobs.generate_request(
+            >>> job_request = ds.jobs.generate(
             ...     app_id="matlab-r2023a",
             ...     input_dir_uri="tapis://designsafe.storage.default/username/input/",
             ...     script_filename="run_analysis.m",
@@ -491,27 +594,26 @@ class JobMethods:
         )
 
     # Method to submit the generated request dictionary
-    def submit_request(self, job_request: Dict[str, Any]) -> SubmittedJob:
-        """Submit a pre-generated job request dictionary to Tapis.
+    def submit(self, job_request: Dict[str, Any]) -> SubmittedJob:
+        """Submit a job request dictionary to Tapis.
 
-        This method takes a complete job request dictionary (typically generated
-        by generate_request) and submits it to Tapis for execution.
+        Takes a job request dictionary (typically from ``generate()``) and
+        submits it to Tapis for execution.
 
         Args:
-            job_request (Dict[str, Any]): Complete job request dictionary containing
-                all necessary job parameters and configuration.
+            job_request (Dict[str, Any]): Complete job request dictionary.
 
         Returns:
             SubmittedJob: A SubmittedJob object for monitoring and managing the job.
 
         Raises:
             ValueError: If job_request is not a dictionary.
-            JobSubmissionError: If the Tapis submission fails or encounters an error.
+            JobSubmissionError: If the Tapis submission fails.
 
         Example:
-            >>> job_request = ds.jobs.generate_request(...)
-            >>> submitted_job = ds.jobs.submit_request(job_request)
-            >>> print(f"Job submitted with UUID: {submitted_job.uuid}")
+            >>> job_request = ds.jobs.generate(...)
+            >>> job = ds.jobs.submit(job_request)
+            >>> print(f"Job submitted with UUID: {job.uuid}")
         """
         return jobs_module.submit_job_request(self._tapis, job_request)
 

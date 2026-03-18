@@ -155,7 +155,7 @@ class JobSubmissionError(DapiException):
 
     Example:
         >>> try:
-        ...     job = client.jobs.submit_request(invalid_job_request)
+        ...     job = client.jobs.submit(invalid_job_request)
         ... except JobSubmissionError as e:
         ...     print(f"Job submission failed: {e}")
         ...     if e.response:

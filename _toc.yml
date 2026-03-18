@@ -20,6 +20,7 @@ parts:
       - file: docs/examples/mpm
       - file: docs/examples/opensees
       - file: docs/examples/openfoam
+      - file: docs/examples/pylauncher
       - file: docs/examples/tms_credentials
       - file: docs/examples/database
   - caption: API Reference
@@ -27,6 +28,7 @@ parts:
       - file: docs/api/index
       - file: docs/api/client
       - file: docs/api/jobs
+      - file: docs/api/launcher
       - file: docs/api/files
       - file: docs/api/apps
       - file: docs/api/systems

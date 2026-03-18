@@ -102,7 +102,7 @@ print(f"Input Directory Tapis URI: {input_uri}")
 
 ```python
 # Generate job request dictionary using app defaults
-job_dict = ds.jobs.generate_request(
+job_dict = ds.jobs.generate(
  app_id=app_id_to_use,
  input_dir_uri=input_uri,
  script_filename=input_filename,
@@ -130,7 +130,7 @@ print(json.dumps(job_dict, indent=2, default=str))
 
 ```python
 # Extended job configuration options
-job_dict = ds.jobs.generate_request(
+job_dict = ds.jobs.generate(
  app_id=app_id_to_use,
  input_dir_uri=input_uri,
  script_filename=input_filename,
@@ -184,7 +184,7 @@ resources = {
 
 ```python
 # Submit the job to TACC
-submitted_job = ds.jobs.submit_request(job_dict)
+submitted_job = ds.jobs.submit(job_dict)
 print(f"Job UUID: {submitted_job.uuid}")
 ```
 

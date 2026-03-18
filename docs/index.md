@@ -45,12 +45,12 @@ from dapi import DSClient
 ds = DSClient()
 
 # Submit a job
-job_request = ds.jobs.generate_request(
+job_request = ds.jobs.generate(
  app_id="matlab-r2023a",
  input_dir_uri="/MyData/analysis/input/",
  script_filename="run_analysis.m"
 )
-job = ds.jobs.submit_request(job_request)
+job = ds.jobs.submit(job_request)
 
 # Monitor progress
 final_status = job.monitor()

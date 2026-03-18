@@ -35,12 +35,12 @@ Example:
     >>> files = client.files.list("/MyData/uploads/")
     
     >>> # Job submission and monitoring
-    >>> job_request = client.jobs.generate_request(
+    >>> job_request = client.jobs.generate(
     ...     app_id="matlab-r2023a",
     ...     input_dir_uri="/MyData/analysis/input/",
     ...     script_filename="run_analysis.m"
     ... )
-    >>> job = client.jobs.submit_request(job_request)
+    >>> job = client.jobs.submit(job_request)
     >>> final_status = job.monitor()
     
     >>> # Database access

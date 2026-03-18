@@ -111,7 +111,7 @@ input_path = "/MyData/analysis/input/"
 input_uri = ds.files.translate_path_to_uri(input_path, verify_exists=True)
 
 # 2. Generate job request
-job_request = ds.jobs.generate_request(
+job_request = ds.jobs.generate(
  app_id="matlab-r2023a",
  input_dir_uri=input_uri,
  script_filename="run_analysis.m",
@@ -120,14 +120,14 @@ job_request = ds.jobs.generate_request(
 )
 
 # 3. Submit job
-job = ds.jobs.submit_request(job_request)
+job = ds.jobs.submit(job_request)
 print(f"Job submitted: {job.uuid}")
 ```
 
 ### Advanced Job Configuration
 
 ```python
-job_request = ds.jobs.generate_request(
+job_request = ds.jobs.generate(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="mpm.json",
@@ -172,7 +172,7 @@ job_request = ds.jobs.generate_request(
 
 ```python
 # Generate base request
-job_request = ds.jobs.generate_request(...)
+job_request = ds.jobs.generate(...)
 
 # Modify before submission
 job_request["name"] = "custom_job_name"
@@ -192,7 +192,7 @@ job_request["parameterSet"]["envVariables"].append({
 })
 
 # Submit modified request
-job = ds.jobs.submit_request(job_request)
+job = ds.jobs.submit(job_request)
 ```
 
 ## Job Monitoring
@@ -201,7 +201,7 @@ job = ds.jobs.submit_request(job_request)
 
 ```python
 # Submit job
-job = ds.jobs.submit_request(job_request)
+job = ds.jobs.submit(job_request)
 
 # Monitor with progress bars
 final_status = job.monitor(
@@ -425,13 +425,60 @@ except Exception as e:
  print(f"Cannot access Stampede3: {e}")
 ```
 
+## Parameter Sweeps with PyLauncher
+
+[PyLauncher](https://github.com/TACC/pylauncher) runs many independent tasks within a single SLURM allocation — ideal for parameter studies on DesignSafe. dapi provides built-in support for generating sweep commands, task lists, and launcher scripts.
+
+### Quick Example
+
+```python
+from dapi import DSClient
+
+ds = DSClient()
+
+# Define parameter sweep
+sweep = {
+    "ALPHA": [0.3, 0.5, 3.7],
+    "BETA":  [1.1, 2.0, 3.0],
+}
+
+# Preview (dry run)
+ds.jobs.parametric_sweep.generate(
+    'python3 simulate.py --alpha ALPHA --beta BETA',
+    sweep,
+    preview=True,
+)
+
+# Generate sweep files
+ds.jobs.parametric_sweep.generate(
+    'python3 simulate.py --alpha ALPHA --beta BETA '
+    '--output "$WORK/sweep_$SLURM_JOB_ID/run_ALPHA_BETA"',
+    sweep,
+    "/home/jupyter/MyData/sweep_demo/",
+    debug="host+job",
+)
+
+# Submit the job
+job = ds.jobs.parametric_sweep.submit(
+    "/MyData/sweep_demo/",
+    app_id="agnostic",
+    allocation="your_allocation",
+    node_count=1,
+    cores_per_node=48,
+    max_minutes=30,
+)
+job.monitor()
+```
+
+For a full walkthrough with OpenSees, see the **[PyLauncher example](examples/pylauncher.md)**.
+
 ## Advanced Patterns
 
 ### Parametric Studies
 
 ```python
 # Submit multiple jobs with different parameters
-base_request = ds.jobs.generate_request(
+base_request = ds.jobs.generate(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="template.json",
@@ -465,7 +512,7 @@ for i, params in enumerate(parameters):
  ])
  
  # Submit job
- job = ds.jobs.submit_request(job_req)
+ job = ds.jobs.submit(job_req)
  submitted_jobs.append(job)
  print(f"Submitted job {i+1}/{len(parameters)}: {job.uuid}")
 
@@ -482,7 +529,7 @@ for i, job in enumerate(submitted_jobs):
 ```python
 # Submit jobs with dependencies (manual coordination)
 # Job 1: Preprocessing
-prep_job = ds.jobs.submit_request(preprocessing_request)
+prep_job = ds.jobs.submit(preprocessing_request)
 prep_status = prep_job.monitor()
 
 if prep_status == "FINISHED":
@@ -495,7 +542,7 @@ if prep_status == "FINISHED":
  "targetPath": "preprocessed"
  })
  
- main_job = ds.jobs.submit_request(main_request)
+ main_job = ds.jobs.submit(main_request)
  main_status = main_job.monitor()
  
  if main_status == "FINISHED":
@@ -508,7 +555,7 @@ if prep_status == "FINISHED":
  "targetPath": "results"
  })
  
- post_job = ds.jobs.submit_request(post_request)
+ post_job = ds.jobs.submit(post_request)
  final_status = post_job.monitor()
  
  print(f"Pipeline complete. Final status: {final_status}")
@@ -523,7 +570,7 @@ from dapi import JobSubmissionError, JobMonitorError
 
 try:
  # Job submission
- job = ds.jobs.submit_request(job_request)
+ job = ds.jobs.submit(job_request)
  final_status = job.monitor()
 
 except JobSubmissionError as e:
@@ -581,7 +628,7 @@ if final_status == "FAILED":
 ### 1. Resource Planning
 ```python
 # Choose appropriate resources
-job_request = ds.jobs.generate_request(
+job_request = ds.jobs.generate(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="analysis.json",
@@ -607,7 +654,7 @@ job_request["tags"] = ["research", "seismic", site_id, method]
 max_retries = 3
 for attempt in range(max_retries):
  try:
- job = ds.jobs.submit_request(job_request)
+ job = ds.jobs.submit(job_request)
  final_status = job.monitor()
  break
  except JobSubmissionError as e:

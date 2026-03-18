@@ -11,6 +11,7 @@ The DAPI package is organized into several core modules:
 
 ### **Service Modules**
 - **[Jobs](jobs.md)** - Job submission, monitoring, and management
+- **[Launcher](launcher.md)** - PyLauncher parameter sweep utilities
 - **[Files](files.md)** - File operations and path translation
 - **[Apps](apps.md)** - Application discovery and details
 - **[Systems](systems.md)** - System information and queue management
@@ -32,13 +33,13 @@ from dapi import DSClient
 ds = DSClient()
 
 # Access different services
-ds.jobs.generate_request(...)
+ds.jobs.generate(...)
 ds.files.upload(...)
 ds.db.ngl.read_sql(...)
 ```
 
 ### **Common Operations**
-- **Submit Jobs**: `ds.jobs.submit_request(job_dict)`
+- **Submit Jobs**: `ds.jobs.submit(job_dict)`
 - **Monitor Jobs**: `submitted_job.monitor()`
 - **File Upload**: `ds.files.upload(local_path, remote_uri)`
 - **File Download**: `ds.files.download(remote_uri, local_path)`

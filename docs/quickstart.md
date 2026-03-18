@@ -22,7 +22,7 @@ ds = DSClient()
 matlab_apps = ds.apps.find("matlab", verbose=True)
 
 # 3. Submit a simple job
-job_request = ds.jobs.generate_request(
+job_request = ds.jobs.generate(
  app_id="matlab-r2023a",
  input_dir_uri="/MyData/analysis/input/",
  script_filename="run_analysis.m",
@@ -31,7 +31,7 @@ job_request = ds.jobs.generate_request(
 )
 
 # 4. Submit and monitor
-job = ds.jobs.submit_request(job_request)
+job = ds.jobs.submit(job_request)
 final_status = job.monitor()
 
 # 5. Check results
@@ -103,7 +103,7 @@ for file in files:
 
 ```python
 # Generate a job request with automatic parameter mapping
-job_request = ds.jobs.generate_request(
+job_request = ds.jobs.generate(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="mpm.json",
@@ -122,7 +122,7 @@ job_request["tags"] = ["research", "mpm"]
 
 ```python
 # Submit the job
-job = ds.jobs.submit_request(job_request)
+job = ds.jobs.submit(job_request)
 print(f"Job submitted: {job.uuid}")
 
 # Monitor with real-time progress
@@ -184,7 +184,7 @@ print(site_data)
 
 ```python
 # Submit MATLAB job
-job_request = ds.jobs.generate_request(
+job_request = ds.jobs.generate(
  app_id="matlab-r2023a",
  input_dir_uri="/MyData/matlab/analysis/",
  script_filename="main.m",
@@ -192,7 +192,7 @@ job_request = ds.jobs.generate_request(
  allocation="your_allocation"
 )
 
-job = ds.jobs.submit_request(job_request)
+job = ds.jobs.submit(job_request)
 final_status = job.monitor()
 
 if final_status == "FINISHED":
@@ -204,7 +204,7 @@ if final_status == "FINISHED":
 
 ```python
 # Submit OpenSees job
-job_request = ds.jobs.generate_request(
+job_request = ds.jobs.generate(
  app_id="opensees-express",
  input_dir_uri="/MyData/opensees/earthquake/",
  script_filename="earthquake_analysis.tcl",
@@ -212,7 +212,7 @@ job_request = ds.jobs.generate_request(
  allocation="your_allocation"
 )
 
-job = ds.jobs.submit_request(job_request)
+job = ds.jobs.submit(job_request)
 final_status = job.monitor()
 ```
 
@@ -248,7 +248,7 @@ import os
 os.environ['DEFAULT_ALLOCATION'] = 'your_tacc_allocation'
 
 # Now you can omit allocation in job requests
-job_request = ds.jobs.generate_request(
+job_request = ds.jobs.generate(
  app_id="mpm-s3",
  input_dir_uri=input_uri,
  script_filename="mpm.json"
@@ -293,8 +293,8 @@ try:
  ds = DSClient()
 
  # Try to submit job
- job_request = ds.jobs.generate_request(...)
- job = ds.jobs.submit_request(job_request)
+ job_request = ds.jobs.generate(...)
+ job = ds.jobs.submit(job_request)
  final_status = job.monitor()
 
 except AuthenticationError as e:
@@ -336,7 +336,7 @@ job_request["tags"] = ["earthquake", "site-A", "research"]
 ### 3. Handle Long-Running Jobs
 ```python
 # For long jobs, save job UUID for later monitoring
-job = ds.jobs.submit_request(job_request)
+job = ds.jobs.submit(job_request)
 job_uuid = job.uuid
 
 # Save UUID to file or environment

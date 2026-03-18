@@ -44,6 +44,20 @@ Submit and monitor MPM simulations for large deformation problems.
 
 ---
 
+### PyLauncher Parameter Sweeps
+Run many independent tasks within a single SLURM allocation using PyLauncher.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher_sweep.ipynb)
+
+**What you'll learn:**
+- Generating parameter sweep commands from templates
+- Writing PyLauncher task lists and launcher scripts
+- Submitting and monitoring sweep jobs
+
+**[View Full Documentation →](examples/pylauncher.md)**
+
+---
+
 ### OpenSees Structural Analysis
 Perform earthquake engineering simulations with OpenSees.
 

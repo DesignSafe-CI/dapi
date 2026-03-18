@@ -243,8 +243,8 @@ ds = DSClient()
 ds.systems.establish_credentials("frontera")
 
 # Now submit jobs as usual
-job_request = ds.jobs.generate_request(...)
-job = ds.jobs.submit_request(job_request)
+job_request = ds.jobs.generate(...)
+job = ds.jobs.submit(job_request)
 ```
 
 ### Troubleshooting TMS

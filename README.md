@@ -79,14 +79,14 @@ client = DSClient()
 client.systems.establish_credentials("frontera")
 
 # Submit a job
-job_request = client.jobs.generate_request(
+job_request = client.jobs.generate(
     app_id="matlab-r2023a",
     input_dir_uri="/MyData/analysis/input/",
     script_filename="run_analysis.m",
     max_minutes=30,
     allocation="your_allocation"
 )
-job = client.jobs.submit_request(job_request)
+job = client.jobs.submit(job_request)
 final_status = job.monitor()
 ```
 
