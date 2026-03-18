@@ -105,7 +105,7 @@ print(dir(dapi))
 
 Expected output:
 ```
-dapi version: 1.1.0
+dapi version: 0.4.9
 Available functions:
 ['DSClient', 'SubmittedJob', 'interpret_job_status', ...]
 ```

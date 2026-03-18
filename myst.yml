@@ -49,6 +49,7 @@ project:
     - out/**
     - "**.ipynb_checkpoints"
     - examples/**
+    - docs-api/**
     - README.md
     - AUTHORS.md
     - LICENSE.md

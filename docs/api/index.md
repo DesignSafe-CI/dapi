@@ -1,6 +1,6 @@
 # API Reference
 
-This section provides comprehensive API documentation for all DAPI modules and classes, automatically generated from docstrings.
+This section provides API documentation for all DAPI modules and classes. For the full auto-generated reference with signatures and type annotations, see the [Sphinx API docs](/api/).
 
 ## Overview
 
