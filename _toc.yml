@@ -20,6 +20,7 @@ parts:
       - file: docs/examples/mpm
       - file: docs/examples/opensees
       - file: docs/examples/openfoam
+      - file: docs/examples/tms_credentials
       - file: docs/examples/database
   - caption: API Reference
     chapters:

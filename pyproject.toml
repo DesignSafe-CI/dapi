@@ -39,6 +39,9 @@ pytest = "^7.4.2"
 black = {extras = ["jupyter"], version = "^23.11.0"}
 ipykernel = "^6.26.0"
 
+[tool.poetry.group.docs.dependencies]
+jupyter-book = "^2.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

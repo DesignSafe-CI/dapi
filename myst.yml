@@ -1,0 +1,57 @@
+version: 1
+project:
+  title: DAPI - DesignSafe API
+  authors:
+    - name: Krishna Kumar
+      email: krishnak@utexas.edu
+    - name: Pedro Arduino
+      email: parduino@uw.edu
+    - name: Scott Brandenberg
+      email: sjbrandenberg@ucla.edu
+  copyright: "2024"
+  github: https://github.com/DesignSafe-CI/dapi
+  license: MIT
+  toc:
+    - file: docs/index.md
+    - title: Getting Started
+      children:
+        - file: docs/installation.md
+        - file: docs/authentication.md
+        - file: docs/quickstart.md
+    - title: User Guide
+      children:
+        - file: docs/jobs.md
+        - file: docs/database.md
+    - title: Examples
+      children:
+        - file: docs/examples.md
+        - file: docs/examples/apps.md
+        - file: docs/examples/mpm.md
+        - file: docs/examples/opensees.md
+        - file: docs/examples/openfoam.md
+        - file: docs/examples/tms_credentials.md
+        - file: docs/examples/database.md
+    - title: API Reference
+      children:
+        - file: docs/api/index.md
+        - file: docs/api/client.md
+        - file: docs/api/jobs.md
+        - file: docs/api/files.md
+        - file: docs/api/apps.md
+        - file: docs/api/systems.md
+        - file: docs/api/database.md
+        - file: docs/api/auth.md
+        - file: docs/api/exceptions.md
+  exclude:
+    - _build/**
+    - out/**
+    - "**.ipynb_checkpoints"
+    - examples/**
+    - README.md
+    - AUTHORS.md
+    - LICENSE.md
+site:
+  template: book-theme
+  options:
+    logo: docs/nheri.png
+    favicon: docs/favicon.ico
