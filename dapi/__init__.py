@@ -61,6 +61,7 @@ from .exceptions import (
     FileOperationError,
     AppDiscoveryError,
     SystemInfoError,
+    CredentialError,
     JobSubmissionError,
     JobMonitorError,
 )
@@ -94,6 +95,8 @@ __all__ = [
     "AuthenticationError",
     "FileOperationError",
     "AppDiscoveryError",
-    "SystemInfoError" "JobSubmissionError",
+    "SystemInfoError",
+    "CredentialError",
+    "JobSubmissionError",
     "JobMonitorError",
 ]

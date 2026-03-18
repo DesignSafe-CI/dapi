@@ -61,6 +61,21 @@ client = DSClient()
 # Output: Authentication successful.
 ```
 
+### Step 1b: Establish TMS Credentials (One-Time)
+
+Before submitting jobs, ensure you have TMS credentials on the execution system:
+
+```python
+# One-time setup per system -- safe to call repeatedly
+client.systems.establish_credentials("frontera")
+# Output: TMS credentials established for user 'myuser' on system 'frontera'.
+
+# Or if already established:
+# Output: Credentials already exist for user 'myuser' on system 'frontera'. No action taken.
+```
+
+See the [Authentication Guide](authentication.md#tms-credentials-execution-system-access) for details.
+
 ### Step 2: Explore Available Applications
 
 ```python
@@ -275,7 +290,8 @@ elif final_status == "TIMEOUT":
 ```python
 from dapi import (
     AuthenticationError,
-    JobSubmissionError, 
+    CredentialError,
+    JobSubmissionError,
     FileOperationError,
     JobMonitorError
 )
@@ -290,6 +306,8 @@ try:
     
 except AuthenticationError as e:
     print(f"Authentication failed: {e}")
+except CredentialError as e:
+    print(f"TMS credential error: {e}")
 except JobSubmissionError as e:
     print(f"Job submission failed: {e}")
 except FileOperationError as e:

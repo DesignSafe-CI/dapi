@@ -83,6 +83,7 @@ nav:
     - MPM Job: examples/mpm.md
     - OpenSees Job: examples/opensees.md
     - OpenFOAM Job: examples/openfoam.md
+    - TMS Credentials: examples/tms_credentials.md
     - Database Queries: examples/database.md
   - API Reference:
     - Overview: api/index.md

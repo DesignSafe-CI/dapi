@@ -180,6 +180,85 @@ dev_client = DSClient(env_file=".env.development")
 prod_client = DSClient(env_file=".env.production")
 ```
 
+## 🔑 TMS Credentials (Execution System Access)
+
+After authenticating with DesignSafe, you also need **TMS credentials** on any execution system where you plan to submit jobs. TMS (Trust Management System) manages SSH key pairs that allow Tapis to access TACC systems (Frontera, Stampede3, Lonestar6) on your behalf.
+
+!!! info "One-time setup"
+    TMS credentials only need to be established **once per system**. After that, they persist until you revoke them.
+
+### Establish Credentials
+
+```python
+from dapi import DSClient
+
+client = DSClient()
+
+# Establish TMS credentials on execution systems
+client.systems.establish_credentials("frontera")
+client.systems.establish_credentials("stampede3")
+client.systems.establish_credentials("ls6")
+```
+
+If credentials already exist, `establish_credentials` does nothing (idempotent). To force re-creation:
+
+```python
+client.systems.establish_credentials("frontera", force=True)
+```
+
+### Check Credentials
+
+```python
+# Check if credentials exist before submitting a job
+if client.systems.check_credentials("frontera"):
+    print("Ready to submit jobs on Frontera")
+else:
+    client.systems.establish_credentials("frontera")
+```
+
+### Revoke Credentials
+
+```python
+# Remove credentials (e.g., to reset keys)
+client.systems.revoke_credentials("frontera")
+```
+
+### Using TMS from Outside DesignSafe
+
+TMS credentials work from any environment -- not just DesignSafe JupyterHub. As long as you can authenticate with Tapis (e.g., via `.env` file), you can establish and manage TMS credentials from your laptop, CI/CD pipelines, or any Python script:
+
+```bash
+# .env file
+DESIGNSAFE_USERNAME=your_username
+DESIGNSAFE_PASSWORD=your_password
+```
+
+```python
+from dapi import DSClient
+
+# Works from anywhere with network access to designsafe.tapis.io
+client = DSClient()
+client.systems.establish_credentials("frontera")
+
+# Now submit jobs as usual
+job_request = client.jobs.generate_request(...)
+job = client.jobs.submit_request(job_request)
+```
+
+### Troubleshooting TMS
+
+#### Non-TMS System
+```
+CredentialError: System 'my-system' uses authentication method 'PASSWORD', not 'TMS_KEYS'.
+```
+**Solution**: TMS credential management only works for systems configured with `TMS_KEYS` authentication. TACC execution systems (frontera, stampede3, ls6) use TMS_KEYS.
+
+#### System Not Found
+```
+CredentialError: System 'nonexistent' not found.
+```
+**Solution**: Verify the system ID. Common system IDs: `frontera`, `stampede3`, `ls6`.
+
 ## ✅ Verifying Authentication
 
 ### Check Authentication Status

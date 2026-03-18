@@ -22,6 +22,10 @@ Custom exception classes for DAPI error handling and debugging.
 
 ::: dapi.exceptions.SystemInfoError
 
+## Credential Management Exceptions
+
+::: dapi.exceptions.CredentialError
+
 ## Job Management Exceptions
 
 ::: dapi.exceptions.JobSubmissionError

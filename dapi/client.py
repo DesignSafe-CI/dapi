@@ -287,6 +287,81 @@ class SystemMethods:
             self._tapis, system_id, verbose=verbose
         )
 
+    def check_credentials(
+        self, system_id: str, username: str = None
+    ) -> bool:
+        """Check whether TMS credentials exist for a user on a system.
+
+        Args:
+            system_id (str): The ID of the Tapis system (e.g., 'frontera').
+            username (str, optional): Username to check. Defaults to
+                the authenticated user.
+
+        Returns:
+            bool: True if credentials exist, False otherwise.
+
+        Raises:
+            CredentialError: If the credential check fails unexpectedly.
+            ValueError: If system_id is empty.
+        """
+        return systems_module.check_credentials(
+            self._tapis, system_id, username=username
+        )
+
+    def establish_credentials(
+        self,
+        system_id: str,
+        username: str = None,
+        force: bool = False,
+        verbose: bool = True,
+    ) -> None:
+        """Establish TMS credentials for a user on a Tapis system.
+
+        Idempotent: skips creation if credentials already exist (unless force=True).
+        Only supported for systems using TMS_KEYS authentication.
+
+        Args:
+            system_id (str): The ID of the Tapis system (e.g., 'frontera').
+            username (str, optional): Username. Defaults to the authenticated user.
+            force (bool, optional): Re-create even if credentials exist.
+                Defaults to False.
+            verbose (bool, optional): Print status messages. Defaults to True.
+
+        Raises:
+            CredentialError: If the system is not TMS_KEYS or creation fails.
+            ValueError: If system_id is empty.
+        """
+        return systems_module.establish_credentials(
+            self._tapis,
+            system_id,
+            username=username,
+            force=force,
+            verbose=verbose,
+        )
+
+    def revoke_credentials(
+        self,
+        system_id: str,
+        username: str = None,
+        verbose: bool = True,
+    ) -> None:
+        """Remove TMS credentials for a user on a Tapis system.
+
+        Idempotent: succeeds silently if credentials do not exist.
+
+        Args:
+            system_id (str): The ID of the Tapis system (e.g., 'frontera').
+            username (str, optional): Username. Defaults to the authenticated user.
+            verbose (bool, optional): Print status messages. Defaults to True.
+
+        Raises:
+            CredentialError: If credential removal fails unexpectedly.
+            ValueError: If system_id is empty.
+        """
+        return systems_module.revoke_credentials(
+            self._tapis, system_id, username=username, verbose=verbose
+        )
+
 
 class JobMethods:
     """Interface for Tapis job submission, monitoring, and management.

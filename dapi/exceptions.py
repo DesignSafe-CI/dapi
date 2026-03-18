@@ -117,6 +117,26 @@ class SystemInfoError(DapiException):
     pass
 
 
+class CredentialError(DapiException):
+    """Exception raised when credential management operations fail.
+
+    This exception is raised when operations involving Tapis Managed Secrets (TMS)
+    credentials fail, such as checking, establishing, or revoking user credentials
+    on a Tapis execution system.
+
+    Args:
+        message (str): Description of the credential operation failure.
+
+    Example:
+        >>> try:
+        ...     client.systems.establish_credentials("frontera")
+        ... except CredentialError as e:
+        ...     print(f"Credential operation failed: {e}")
+    """
+
+    pass
+
+
 class JobSubmissionError(DapiException):
     """Exception raised when job submission or validation fails.
 

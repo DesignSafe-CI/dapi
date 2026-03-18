@@ -28,9 +28,10 @@ Welcome to the **DesignSafe API (dapi)** documentation!
 - **File Management**: Upload, download, and list files on DesignSafe storage
 - **Path Verification**: Validate that paths exist before using them
 
-### 🔐 Authentication
+### 🔐 Authentication & Credentials
 - **Simplified Auth**: Easy authentication with DesignSafe credentials
 - **Multiple Methods**: Support for environment variables, .env files, and interactive input
+- **TMS Credential Management**: Establish, check, and revoke SSH keys on TACC execution systems
 - **Secure**: Handles credentials securely with encrypted storage
 
 ## 🏃‍♂️ Quick Start
