@@ -1348,9 +1348,10 @@ def list_jobs(
     app_id: Optional[str] = None,
     status: Optional[str] = None,
     limit: int = 100,
+    output: str = "df",
     verbose: bool = False,
-) -> pd.DataFrame:
-    """Fetch Tapis jobs and return them as a pandas DataFrame.
+):
+    """Fetch Tapis jobs with optional filtering.
 
     Retrieves jobs from Tapis ordered by creation date (newest first)
     and optionally filters by app ID and/or status. Filters are applied
@@ -1362,22 +1363,29 @@ def list_jobs(
         status: Filter by job status (e.g., "FINISHED", "FAILED").
             Case-insensitive.
         limit: Maximum number of jobs to fetch from Tapis. Defaults to 100.
+        output: Output format. "df" returns a pandas DataFrame (default),
+            "list" returns a list of dicts, "raw" returns the raw
+            TapisResult objects.
         verbose: If True, prints the number of jobs found.
 
     Returns:
-        DataFrame with job metadata and formatted datetime columns.
-        Priority columns appear first: name, uuid, status, appId, appVersion,
-        created_dt, ended_dt. Additional datetime columns include _dt
-        (timezone-aware) and _date (date only) variants for created, ended,
-        remoteStarted, and lastUpdated.
+        Depends on ``output``:
+        - "df": pandas DataFrame with formatted datetime columns.
+        - "list": list of dicts with job metadata.
+        - "raw": list of TapisResult objects as returned by the API.
 
     Raises:
         JobMonitorError: If the Tapis API call fails.
+        ValueError: If output format is not recognized.
 
     Example:
         >>> df = list_jobs(t, app_id="matlab-r2023a", status="FINISHED")
-        >>> print(df[["name", "uuid", "status", "created_dt"]])
+        >>> jobs = list_jobs(t, output="list")
+        >>> raw = list_jobs(t, limit=10, output="raw")
     """
+    if output not in ("df", "list", "raw"):
+        raise ValueError(f"output must be 'df', 'list', or 'raw', got '{output}'")
+
     try:
         jobs_list = tapis_client.jobs.getJobList(
             limit=limit,
@@ -1391,17 +1399,48 @@ def list_jobs(
     if not jobs_list:
         if verbose:
             print("Found 0 jobs.")
+        if output == "raw":
+            return []
+        if output == "list":
+            return []
         return pd.DataFrame()
+
+    # For raw output, apply filters manually on TapisResult objects
+    if output == "raw":
+        results = jobs_list
+        if app_id:
+            results = [j for j in results if getattr(j, "appId", None) == app_id]
+        if status:
+            results = [
+                j for j in results
+                if getattr(j, "status", "").upper() == status.upper()
+            ]
+        if verbose:
+            print(f"Found {len(results)} jobs.")
+        return results
 
     # Convert TapisResult objects to dicts
     jobs_dicts = [job.__dict__ for job in jobs_list]
-    df = pd.DataFrame(jobs_dicts)
 
     # Apply client-side filters
-    if app_id and "appId" in df.columns:
-        df = df[df["appId"] == app_id]
-    if status and "status" in df.columns:
-        df = df[df["status"] == status.upper()]
+    if app_id:
+        jobs_dicts = [j for j in jobs_dicts if j.get("appId") == app_id]
+    if status:
+        jobs_dicts = [
+            j for j in jobs_dicts if j.get("status", "").upper() == status.upper()
+        ]
+
+    if verbose:
+        print(f"Found {len(jobs_dicts)} jobs.")
+
+    if output == "list":
+        return jobs_dicts
+
+    # Build DataFrame
+    df = pd.DataFrame(jobs_dicts)
+
+    if df.empty:
+        return df
 
     # Add formatted datetime columns
     time_cols = ["created", "ended", "remoteStarted", "lastUpdated"]
@@ -1420,8 +1459,5 @@ def list_jobs(
     df = df[priority_present + remaining]
 
     df = df.reset_index(drop=True)
-
-    if verbose:
-        print(f"Found {len(df)} jobs.")
 
     return df

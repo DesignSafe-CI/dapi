@@ -7,6 +7,7 @@ from dapi.systems import (
     check_credentials,
     establish_credentials,
     revoke_credentials,
+    setup_tms_credentials,
     _resolve_username,
 )
 from dapi.exceptions import CredentialError
@@ -217,6 +218,81 @@ class TestRevokeCredentials(unittest.TestCase):
         self.t.systems.removeUserCredential.side_effect = RuntimeError("boom")
         with self.assertRaises(CredentialError):
             revoke_credentials(self.t, "frontera", verbose=False)
+
+
+class TestSetupTmsCredentials(unittest.TestCase):
+    def setUp(self):
+        self.t = MagicMock()
+        self.t.username = "testuser"
+        # Default: all systems use TMS_KEYS
+        self.mock_system = Mock()
+        self.mock_system.defaultAuthnMethod = "TMS_KEYS"
+        self.t.systems.getSystem.return_value = self.mock_system
+
+    def test_all_systems_already_ready(self):
+        # checkUserCredential succeeds = credentials exist
+        self.t.systems.checkUserCredential.return_value = Mock()
+        results = setup_tms_credentials(self.t, systems=["frontera", "ls6"])
+        self.assertEqual(results, {"frontera": "ready", "ls6": "ready"})
+        self.t.systems.createUserCredential.assert_not_called()
+
+    def test_creates_missing_credentials(self):
+        self.t.systems.checkUserCredential.side_effect = UnauthorizedError()
+        results = setup_tms_credentials(self.t, systems=["frontera"])
+        self.assertEqual(results, {"frontera": "created"})
+        self.t.systems.createUserCredential.assert_called_once_with(
+            systemId="frontera", userName="testuser", createTmsKeys=True
+        )
+
+    def test_skips_system_on_error(self):
+        self.t.systems.getSystem.side_effect = BaseTapyException("down")
+        results = setup_tms_credentials(self.t, systems=["frontera"])
+        self.assertEqual(results, {"frontera": "skipped"})
+
+    def test_skips_non_tms_system(self):
+        self.mock_system.defaultAuthnMethod = "PASSWORD"
+        results = setup_tms_credentials(self.t, systems=["cloud-system"])
+        self.assertEqual(results, {"cloud-system": "skipped"})
+
+    def test_mixed_results(self):
+        # frontera: creds exist, stampede3: needs creation, ls6: system error
+        def get_system_side_effect(systemId):
+            if systemId == "ls6":
+                raise BaseTapyException("not found")
+            return self.mock_system
+
+        def check_cred_side_effect(systemId, userName):
+            if systemId == "frontera":
+                return Mock()
+            raise UnauthorizedError()
+
+        self.t.systems.getSystem.side_effect = get_system_side_effect
+        self.t.systems.checkUserCredential.side_effect = check_cred_side_effect
+
+        results = setup_tms_credentials(
+            self.t, systems=["frontera", "stampede3", "ls6"]
+        )
+        self.assertEqual(results["frontera"], "ready")
+        self.assertEqual(results["stampede3"], "created")
+        self.assertEqual(results["ls6"], "skipped")
+
+    def test_no_username_skips_all(self):
+        self.t.username = None
+        results = setup_tms_credentials(self.t, systems=["frontera"])
+        self.assertEqual(results, {"frontera": "skipped"})
+
+    def test_uses_default_tacc_systems(self):
+        self.t.systems.checkUserCredential.return_value = Mock()
+        results = setup_tms_credentials(self.t)
+        self.assertIn("frontera", results)
+        self.assertIn("stampede3", results)
+        self.assertIn("ls6", results)
+
+    def test_create_failure_skips_gracefully(self):
+        self.t.systems.checkUserCredential.side_effect = UnauthorizedError()
+        self.t.systems.createUserCredential.side_effect = BaseTapyException("fail")
+        results = setup_tms_credentials(self.t, systems=["frontera"])
+        self.assertEqual(results, {"frontera": "skipped"})
 
 
 if __name__ == "__main__":

@@ -61,20 +61,13 @@ ds = DSClient()
 # Output: Authentication successful.
 ```
 
-### Step 1b: Establish TMS Credentials (One-Time)
+`DSClient()` automatically sets up TMS credentials on TACC execution systems (Frontera, Stampede3, LS6). You'll see a summary like:
 
-Before submitting jobs, ensure you have TMS credentials on the execution system:
-
-```python
-# One-time setup per system -- safe to call repeatedly
-ds.systems.establish_credentials("frontera")
-# Output: TMS credentials established for user 'myuser' on system 'frontera'.
-
-# Or if already established:
-# Output: Credentials already exist for user 'myuser' on system 'frontera'. No action taken.
+```
+TMS credentials ready: frontera, stampede3, ls6
 ```
 
-See the [Authentication Guide](authentication.md#tms-credentials-execution-system-access) for details.
+Systems where you don't have an allocation are silently skipped. See the [Authentication Guide](authentication.md#tms-credentials-execution-system-access) for manual control.
 
 ### Step 2: Explore Available Applications
 

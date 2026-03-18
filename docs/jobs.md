@@ -22,7 +22,7 @@ from dapi import DSClient
 
 ds = DSClient()
 
-# List all recent jobs (default: last 100)
+# List all recent jobs (default: last 100, returns DataFrame)
 df = ds.jobs.list()
 print(df[["name", "uuid", "status", "appId", "created_dt"]])
 
@@ -41,7 +41,22 @@ print(f"Finished jobs: {len(finished)}")
 print(finished.groupby("appId").size())
 ```
 
-The returned DataFrame includes formatted datetime columns (`created_dt`, `ended_dt`, `created_date`, etc.) for easy time-based analysis.
+### Output Formats
+
+By default `list()` returns a pandas DataFrame. Use the `output` parameter for other formats:
+
+```python
+# DataFrame (default) -- includes formatted datetime columns
+df = ds.jobs.list()
+
+# List of dicts -- lightweight, no pandas dependency
+jobs = ds.jobs.list(output="list")
+for job in jobs:
+    print(f"{job['name']}: {job['status']}")
+
+# Raw TapisResult objects -- for advanced Tapis API usage
+raw = ds.jobs.list(output="raw")
+```
 
 ## Application Discovery
 

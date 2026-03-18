@@ -1,7 +1,7 @@
 # dapi/systems.py
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException, UnauthorizedError, NotFoundError
-from typing import List, Any, Optional
+from typing import Dict, List, Any, Optional
 from .exceptions import SystemInfoError, CredentialError
 
 
@@ -292,3 +292,77 @@ def revoke_credentials(
             f"Unexpected error revoking credentials for user '{effective_username}' "
             f"on system '{system_id}': {e}"
         ) from e
+
+
+# Default TACC execution systems that use TMS_KEYS
+TACC_SYSTEMS = ["frontera", "stampede3", "ls6"]
+
+
+def setup_tms_credentials(
+    t: Tapis,
+    systems: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """Check and establish TMS credentials on execution systems.
+
+    For each system, checks if credentials exist and creates them if missing.
+    Failures are handled gracefully — a system that can't be reached or where
+    the user lacks an allocation is skipped with a warning.
+
+    Args:
+        t: Authenticated Tapis client instance.
+        systems: List of system IDs to set up. Defaults to TACC_SYSTEMS
+            (frontera, stampede3, ls6).
+
+    Returns:
+        Dict mapping system_id to status: "ready", "created", or "skipped".
+    """
+    if systems is None:
+        systems = TACC_SYSTEMS
+
+    username = getattr(t, "username", None)
+    if not username:
+        print("Warning: Could not determine username. Skipping TMS setup.")
+        return {s: "skipped" for s in systems}
+
+    results = {}
+
+    for system_id in systems:
+        try:
+            # Check if system uses TMS_KEYS
+            system_details = t.systems.getSystem(systemId=system_id)
+            authn_method = getattr(system_details, "defaultAuthnMethod", None)
+
+            if authn_method != "TMS_KEYS":
+                results[system_id] = "skipped"
+                continue
+
+            # Check existing credentials
+            if check_credentials(t, system_id, username):
+                results[system_id] = "ready"
+                continue
+
+            # Try to create credentials
+            t.systems.createUserCredential(
+                systemId=system_id,
+                userName=username,
+                createTmsKeys=True,
+            )
+            results[system_id] = "created"
+
+        except Exception:
+            results[system_id] = "skipped"
+
+    # Print summary
+    ready = [s for s, v in results.items() if v in ("ready", "created")]
+    created = [s for s, v in results.items() if v == "created"]
+    skipped = [s for s, v in results.items() if v == "skipped"]
+
+    if ready:
+        msg = f"TMS credentials ready: {', '.join(ready)}"
+        if created:
+            msg += f" (newly created: {', '.join(created)})"
+        print(msg)
+    if skipped:
+        print(f"TMS credentials skipped: {', '.join(skipped)}")
+
+    return results

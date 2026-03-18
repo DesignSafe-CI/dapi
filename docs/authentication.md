@@ -327,65 +327,37 @@ print(os.access('.env', os.R_OK))
 
 ### Database Connection Issues
 
-For database-specific authentication issues:
+Database connections use built-in public read-only credentials by default -- no `.env` setup is required for database access. If you need to override the defaults (e.g., for a private database instance), you can set environment variables:
 
-```python
-# Check database environment variables
-import os
-print("NGL_DB_USER:", os.getenv('NGL_DB_USER'))
-print("VP_DB_USER:", os.getenv('VP_DB_USER'))
-print("EQ_DB_USER:", os.getenv('EQ_DB_USER'))
-```
-
-Required database environment variables:
 ```bash
-# NGL Database
-export NGL_DB_USER="dspublic"
-export NGL_DB_PASSWORD="your_password"
-export NGL_DB_HOST="db_host"
-export NGL_DB_PORT="3306"
-
-# VP Database 
-export VP_DB_USER="dspublic"
-export VP_DB_PASSWORD="your_password"
-export VP_DB_HOST="db_host"
-export VP_DB_PORT="3306"
-
-# Earthquake Recovery Database
-export EQ_DB_USER="dspublic"
-export EQ_DB_PASSWORD="your_password"
-export EQ_DB_HOST="db_host"
-export EQ_DB_PORT="3306"
+# Optional: override database credentials via .env or environment
+NGL_DB_USER=your_user
+NGL_DB_PASSWORD=your_password
+NGL_DB_HOST=your_host
+NGL_DB_PORT=3306
 ```
+
+The same pattern applies for VP (`VP_DB_*`) and Earthquake Recovery (`EQ_DB_*`) databases.
 
 ## Example: Complete Setup
 
-Here's a complete example of setting up authentication:
-
 ```python
-# 1. Create .env file
+# 1. Create .env file (only Tapis credentials required)
 with open('.env', 'w') as f:
  f.write('DESIGNSAFE_USERNAME=your_username\n')
  f.write('DESIGNSAFE_PASSWORD=your_password\n')
- f.write('NGL_DB_USER=dspublic\n')
- f.write('NGL_DB_PASSWORD=your_db_password\n')
- f.write('NGL_DB_HOST=db_host\n')
- f.write('NGL_DB_PORT=3306\n')
 
-# 2. Initialize client
+# 2. Initialize client (auto-sets up TMS credentials)
 from dapi import DSClient
 ds = DSClient()
 
-# 3. Test authentication
-print("Testing TAPIS API access...")
+# 3. Test
 apps = ds.apps.find("matlab", verbose=False)
 print(f"Found {len(apps)} MATLAB apps")
 
-print("Testing database access...")
+# Database works out of the box -- no extra credentials needed
 df = ds.db.ngl.read_sql("SELECT COUNT(*) FROM SITE")
 print(f"NGL database has {df.iloc[0, 0]} sites")
-
-print("All authentication successful!")
 ```
 
 ## Troubleshooting

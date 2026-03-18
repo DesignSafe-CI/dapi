@@ -92,6 +92,9 @@ class DSClient:
         self.systems = SystemMethods(self.tapis)
         self.db = DatabaseAccessor()
 
+        # Auto-setup TMS credentials on TACC execution systems
+        systems_module.setup_tms_credentials(self.tapis)
+
 
 # --- AppMethods and FileMethods remain the same ---
 class AppMethods:
@@ -582,34 +585,41 @@ class JobMethods:
         app_id: Optional[str] = None,
         status: Optional[str] = None,
         limit: int = 100,
+        output: str = "df",
         verbose: bool = False,
     ):
-        """List jobs as a pandas DataFrame with optional filtering.
+        """List jobs with optional filtering.
 
-        Fetches jobs from Tapis ordered by creation date (newest first)
-        and returns them as a DataFrame. Filters are applied client-side.
+        Fetches jobs from Tapis ordered by creation date (newest first).
+        Filters are applied client-side.
 
         Args:
             app_id (str, optional): Filter by application ID.
             status (str, optional): Filter by job status (e.g., "FINISHED").
                 Case-insensitive.
             limit (int, optional): Maximum jobs to fetch. Defaults to 100.
+            output (str, optional): Output format. "df" for pandas DataFrame
+                (default), "list" for list of dicts, "raw" for TapisResult
+                objects.
             verbose (bool, optional): Print job count. Defaults to False.
 
         Returns:
-            pd.DataFrame: Job metadata with formatted datetime columns.
+            Depends on output: DataFrame, list of dicts, or list of
+            TapisResult objects.
 
         Raises:
             JobMonitorError: If the Tapis API call fails.
 
         Example:
             >>> df = ds.jobs.list(app_id="matlab-r2023a", status="FINISHED")
-            >>> print(df[["name", "uuid", "status", "created_dt"]])
+            >>> jobs = ds.jobs.list(output="list")
+            >>> raw = ds.jobs.list(limit=10, output="raw")
         """
         return jobs_module.list_jobs(
             self._tapis,
             app_id=app_id,
             status=status,
             limit=limit,
+            output=output,
             verbose=verbose,
         )

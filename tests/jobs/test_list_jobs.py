@@ -121,6 +121,40 @@ class TestListJobs(unittest.TestCase):
         uuids = set(df["uuid"])
         self.assertEqual(uuids, {"uuid-001", "uuid-002", "uuid-003", "uuid-004"})
 
+    # --- output format tests ---
+
+    def test_output_list(self):
+        result = list_jobs(self.t, output="list")
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 4)
+        self.assertIsInstance(result[0], dict)
+        self.assertIn("uuid", result[0])
+
+    def test_output_list_with_filter(self):
+        result = list_jobs(self.t, app_id="matlab-r2023a", output="list")
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(j["appId"] == "matlab-r2023a" for j in result))
+
+    def test_output_raw(self):
+        result = list_jobs(self.t, output="raw")
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 4)
+        # Raw returns the original Mock objects
+        self.assertNotIsInstance(result[0], dict)
+
+    def test_output_raw_with_filter(self):
+        result = list_jobs(self.t, status="RUNNING", output="raw")
+        self.assertEqual(len(result), 1)
+
+    def test_output_empty_list(self):
+        self.t.jobs.getJobList.return_value = []
+        self.assertEqual(list_jobs(self.t, output="list"), [])
+        self.assertEqual(list_jobs(self.t, output="raw"), [])
+
+    def test_invalid_output_raises(self):
+        with self.assertRaises(ValueError):
+            list_jobs(self.t, output="xml")
+
 
 if __name__ == "__main__":
     unittest.main()
