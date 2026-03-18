@@ -2,11 +2,11 @@
 
 This guide explains how to authenticate with DesignSafe using the dapi library. Authentication is required to access DesignSafe resources and submit jobs.
 
-## 🔐 Overview
+## Overview
 
 dapi uses your DesignSafe credentials to authenticate with the TAPIS v3 API. The library supports multiple methods for providing credentials, following a secure credential resolution hierarchy.
 
-## 🏆 Credential Resolution Hierarchy
+## Credential Resolution Hierarchy
 
 dapi looks for credentials in the following order:
 
@@ -15,7 +15,7 @@ dapi looks for credentials in the following order:
 3. **`.env` file** in your project directory
 4. **Interactive prompts** for missing credentials
 
-## 🔑 Authentication Methods
+## Authentication Methods
 
 ### Method 1: Environment Variables (Recommended)
 
@@ -55,8 +55,9 @@ DESIGNSAFE_USERNAME=your_username
 DESIGNSAFE_PASSWORD=your_password
 ```
 
-!!! warning "Security Note"
-    Never commit `.env` files to version control. Add `.env` to your `.gitignore` file.
+:::{warning} Security Note
+Never commit `.env` files to version control. Add `.env` to your `.gitignore` file.
+:::
 
 Initialize the client:
 
@@ -92,19 +93,19 @@ Pass credentials directly (not recommended for production):
 from dapi import DSClient
 
 client = DSClient(
-    username="your_username",
-    password="your_password"
+ username="your_username",
+ password="your_password"
 )
 ```
 
-## 🔒 Security Best Practices
+## Security Best Practices
 
 ### 1. Use Environment Variables or .env Files
 ```python
-# ✅ Good - uses environment variables
+# Good - uses environment variables
 client = DSClient()
 
-# ❌ Avoid - credentials in code
+# Avoid - credentials in code
 client = DSClient(username="user", password="pass")
 ```
 
@@ -125,7 +126,7 @@ chmod 600 .env
 - Change your DesignSafe password periodically
 - Update stored credentials when changed
 
-## 🏗️ DesignSafe Jupyter Environment
+## DesignSafe Jupyter Environment
 
 ### Setting Environment Variables in Jupyter
 
@@ -147,14 +148,14 @@ Create a `.env` file in your notebook directory:
 ```python
 # Create .env file programmatically
 with open('.env', 'w') as f:
-    f.write('DESIGNSAFE_USERNAME=your_username\n')
-    f.write('DESIGNSAFE_PASSWORD=your_password\n')
+ f.write('DESIGNSAFE_USERNAME=your_username\n')
+ f.write('DESIGNSAFE_PASSWORD=your_password\n')
 
 from dapi import DSClient
 client = DSClient()
 ```
 
-## 🔧 Advanced Configuration
+## Advanced Configuration
 
 ### Custom Base URL
 
@@ -162,9 +163,9 @@ client = DSClient()
 from dapi import DSClient
 
 client = DSClient(
-    base_url="https://designsafe.tapis.io",  # Default
-    username="your_username",
-    password="your_password"
+ base_url="https://designsafe.tapis.io", # Default
+ username="your_username",
+ password="your_password"
 )
 ```
 
@@ -180,12 +181,13 @@ dev_client = DSClient(env_file=".env.development")
 prod_client = DSClient(env_file=".env.production")
 ```
 
-## 🔑 TMS Credentials (Execution System Access)
+## TMS Credentials (Execution System Access)
 
 After authenticating with DesignSafe, you also need **TMS credentials** on any execution system where you plan to submit jobs. TMS (Trust Management System) manages SSH key pairs that allow Tapis to access TACC systems (Frontera, Stampede3, Lonestar6) on your behalf.
 
-!!! info "One-time setup"
-    TMS credentials only need to be established **once per system**. After that, they persist until you revoke them.
+:::{note} One-time setup
+TMS credentials only need to be established **once per system**. After that, they persist until you revoke them.
+:::
 
 ### Establish Credentials
 
@@ -259,7 +261,7 @@ CredentialError: System 'nonexistent' not found.
 ```
 **Solution**: Verify the system ID. Common system IDs: `frontera`, `stampede3`, `ls6`.
 
-## ✅ Verifying Authentication
+## Verifying Authentication
 
 ### Check Authentication Status
 
@@ -267,15 +269,15 @@ CredentialError: System 'nonexistent' not found.
 from dapi import DSClient
 
 try:
-    client = DSClient()
-    print("✅ Authentication successful!")
-    
-    # Test API access
-    apps = client.apps.find("", verbose=False)
-    print(f"✅ API access confirmed. Found {len(apps)} apps.")
-    
+ client = DSClient()
+ print("Authentication successful!")
+ 
+ # Test API access
+ apps = client.apps.find("", verbose=False)
+ print(f"API access confirmed. Found {len(apps)} apps.")
+ 
 except Exception as e:
-    print(f"❌ Authentication failed: {e}")
+ print(f"Authentication failed: {e}")
 ```
 
 ### Test Database Access
@@ -283,13 +285,13 @@ except Exception as e:
 ```python
 # Test database authentication
 try:
-    df = client.db.ngl.read_sql("SELECT COUNT(*) FROM SITE")
-    print("✅ Database access confirmed")
+ df = client.db.ngl.read_sql("SELECT COUNT(*) FROM SITE")
+ print("Database access confirmed")
 except Exception as e:
-    print(f"❌ Database access failed: {e}")
+ print(f"Database access failed: {e}")
 ```
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Authentication Issues
 
@@ -343,7 +345,7 @@ export NGL_DB_PASSWORD="your_password"
 export NGL_DB_HOST="db_host"
 export NGL_DB_PORT="3306"
 
-# VP Database  
+# VP Database 
 export VP_DB_USER="dspublic"
 export VP_DB_PASSWORD="your_password"
 export VP_DB_HOST="db_host"
@@ -356,19 +358,19 @@ export EQ_DB_HOST="db_host"
 export EQ_DB_PORT="3306"
 ```
 
-## 📖 Example: Complete Setup
+## Example: Complete Setup
 
 Here's a complete example of setting up authentication:
 
 ```python
 # 1. Create .env file
 with open('.env', 'w') as f:
-    f.write('DESIGNSAFE_USERNAME=your_username\n')
-    f.write('DESIGNSAFE_PASSWORD=your_password\n')
-    f.write('NGL_DB_USER=dspublic\n')
-    f.write('NGL_DB_PASSWORD=your_db_password\n')
-    f.write('NGL_DB_HOST=db_host\n')
-    f.write('NGL_DB_PORT=3306\n')
+ f.write('DESIGNSAFE_USERNAME=your_username\n')
+ f.write('DESIGNSAFE_PASSWORD=your_password\n')
+ f.write('NGL_DB_USER=dspublic\n')
+ f.write('NGL_DB_PASSWORD=your_db_password\n')
+ f.write('NGL_DB_HOST=db_host\n')
+ f.write('NGL_DB_PORT=3306\n')
 
 # 2. Initialize client
 from dapi import DSClient
@@ -383,10 +385,10 @@ print("Testing database access...")
 df = client.db.ngl.read_sql("SELECT COUNT(*) FROM SITE")
 print(f"NGL database has {df.iloc[0, 0]} sites")
 
-print("✅ All authentication successful!")
+print("All authentication successful!")
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### JWT Token Expiration
 
@@ -407,7 +409,7 @@ This will automatically handle token refresh and you can continue with your work
 
 **Why this happens:** Tapis authentication tokens have a limited lifespan for security purposes. Long-running Jupyter notebooks or scripts may encounter this after several hours of use.
 
-## ➡️ Next Steps
+## Next Steps
 
 After setting up authentication:
 

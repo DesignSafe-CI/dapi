@@ -1,13 +1,9 @@
-name: Deploy MkDocs
+name: deploy-book
 
 on:
   push:
     branches:
       - main
-      - dev
-    paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
   workflow_dispatch:
 
 permissions:
@@ -20,50 +16,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy-book:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          python-version: "3.12"
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+        run: |
+          pip install "jupyter-book<1"
+          pip install .
 
-      - name: Build MkDocs site
-        run: poetry run mkdocs build
+      - name: Build the book
+        run: |
+          jupyter-book build . --path-output out
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./site
+          path: ./out/_build/html
 
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: deploy-book
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

@@ -4,7 +4,7 @@ This example demonstrates how to submit and monitor an OpenSees simulation using
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/opensees-mp/OpenSeesMP-dapi.ipynb)
 
-## 🎯 Overview
+## Overview
 
 This example covers the essential workflow for running OpenSees simulations:
 
@@ -14,7 +14,7 @@ This example covers the essential workflow for running OpenSees simulations:
 - Submitting and monitoring structural analysis jobs
 - Post-processing results with response spectra analysis
 
-## 🚀 Complete Example
+## Complete Example
 
 ### Step 1: Install and Import dapi
 
@@ -55,15 +55,15 @@ ds = DSClient()
 
 ```python
 # Job configuration parameters
-ds_path = os.getcwd() + "/input"  # Path to OpenSees input files
-input_filename: str = "Main_multiMotion.tcl"  # Main OpenSees script
-tacc_allocation: str = "your-allocation"  # TACC allocation to charge
-app_id: str = "opensees-mp-s3"  # OpenSees-MP application ID
-max_job_minutes: int = 60  # Maximum runtime in minutes
+ds_path = os.getcwd() + "/input" # Path to OpenSees input files
+input_filename: str = "Main_multiMotion.tcl" # Main OpenSees script
+tacc_allocation: str = "your-allocation" # TACC allocation to charge
+app_id: str = "opensees-mp-s3" # OpenSees-MP application ID
+max_job_minutes: int = 60 # Maximum runtime in minutes
 
 # Resource configuration
-control_nodeCount: int = 1  # Number of compute nodes
-control_corespernode: int = 16  # Cores per node for parallel analysis
+control_nodeCount: int = 1 # Number of compute nodes
+control_corespernode: int = 16 # Cores per node for parallel analysis
 ```
 
 **What each parameter does:**
@@ -95,18 +95,18 @@ print(f"Input Directory Tapis URI: {input_uri}")
 ```python
 # Generate job request dictionary using app defaults
 job_dict = ds.jobs.generate_request(
-    app_id=app_id,
-    input_dir_uri=input_uri,
-    script_filename=input_filename,
-    max_minutes=max_job_minutes,
-    allocation=tacc_allocation,
-    # Archive configuration for organized result storage
-    archive_system="designsafe",
-    archive_path="opensees-results",  # Results go to MyData/opensees-results/
-    # OpenSees-specific job metadata
-    job_name="opensees_multi_motion_analysis",
-    description="Multi-free field analysis using OpenSees-MP",
-    tags=["research", "opensees", "earthquake", "site-response"]
+ app_id=app_id,
+ input_dir_uri=input_uri,
+ script_filename=input_filename,
+ max_minutes=max_job_minutes,
+ allocation=tacc_allocation,
+ # Archive configuration for organized result storage
+ archive_system="designsafe",
+ archive_path="opensees-results", # Results go to MyData/opensees-results/
+ # OpenSees-specific job metadata
+ job_name="opensees_multi_motion_analysis",
+ description="Multi-free field analysis using OpenSees-MP",
+ tags=["research", "opensees", "earthquake", "site-response"]
 )
 print(json.dumps(job_dict, indent=2, default=str))
 ```
@@ -126,26 +126,26 @@ print(json.dumps(job_dict, indent=2, default=str))
 ```python
 # Extended job configuration options
 job_dict = ds.jobs.generate_request(
-    app_id=app_id,
-    input_dir_uri=input_uri,
-    script_filename=input_filename,
-    max_minutes=max_job_minutes,
-    allocation=tacc_allocation,
-    
-    # Resource configuration
-    node_count=1,              # Number of compute nodes
-    cores_per_node=16,         # Cores per node (enables parallel processing)
-    memory_mb=192000,          # Memory in MB per node
-    queue="skx-dev",           # Queue: "skx-dev", "skx", "normal", etc.
-    
-    # Job metadata
-    job_name="my_opensees_analysis",                 # Custom job name
-    description="Nonlinear site response analysis", # Job description
-    tags=["research", "opensees", "seismic"],       # Searchable tags
-    
-    # Archive configuration
-    archive_system="designsafe",                     # Where to store results
-    archive_path="opensees-results/site-response",  # Custom archive path
+ app_id=app_id,
+ input_dir_uri=input_uri,
+ script_filename=input_filename,
+ max_minutes=max_job_minutes,
+ allocation=tacc_allocation,
+ 
+ # Resource configuration
+ node_count=1, # Number of compute nodes
+ cores_per_node=16, # Cores per node (enables parallel processing)
+ memory_mb=192000, # Memory in MB per node
+ queue="skx-dev", # Queue: "skx-dev", "skx", "normal", etc.
+ 
+ # Job metadata
+ job_name="my_opensees_analysis", # Custom job name
+ description="Nonlinear site response analysis", # Job description
+ tags=["research", "opensees", "seismic"], # Searchable tags
+ 
+ # Archive configuration
+ archive_system="designsafe", # Where to store results
+ archive_path="opensees-results/site-response", # Custom archive path
 )
 ```
 
@@ -191,7 +191,7 @@ print("Can also check in DesignSafe portal under - Workspace > Tools & Applicati
 
 ```python
 # Monitor job status using dapi
-final_status = submitted_job.monitor(interval=15)  # Check every 15 seconds
+final_status = submitted_job.monitor(interval=15) # Check every 15 seconds
 print(f"Job finished with status: {final_status}")
 ```
 
@@ -205,13 +205,13 @@ print(f"Job finished with status: {final_status}")
 **Job status meanings:**
 ```python
 job_statuses = {
-    "PENDING": "Job submitted but not yet processed",
-    "PROCESSING_INPUTS": "Input files being staged",
-    "QUEUED": "Job waiting in scheduler queue", 
-    "RUNNING": "Job actively executing",
-    "ARCHIVING": "Output files being archived",
-    "FINISHED": "Job completed successfully",
-    "FAILED": "Job failed during execution"
+ "PENDING": "Job submitted but not yet processed",
+ "PROCESSING_INPUTS": "Input files being staged",
+ "QUEUED": "Job waiting in scheduler queue", 
+ "RUNNING": "Job actively executing",
+ "ARCHIVING": "Output files being archived",
+ "FINISHED": "Job completed successfully",
+ "FAILED": "Job failed during execution"
 }
 ```
 
@@ -254,7 +254,7 @@ print(f"Local archive path: {local_archive_path}")
 archive_files = ds.files.list(archive_uri)
 print("\nArchive contents:")
 for item in archive_files:
-    print(f"- {item.name} ({item.type})")
+ print(f"- {item.name} ({item.type})")
 ```
 
 **What this does:**
@@ -267,13 +267,13 @@ for item in archive_files:
 **Typical OpenSees output files:**
 ```python
 typical_outputs = {
-    "inputDirectory/": "Copy of your input directory with results",
-    "tapisjob.out": "Console output from OpenSees analysis",
-    "tapisjob.err": "Error messages (if any)",
-    "tapisjob.sh": "Job script that was executed",
-    "Profile*_acc*.out": "Acceleration time histories",
-    "Profile*_Gstress*.out": "Stress time histories",
-    "opensees.zip": "Compressed results package"
+ "inputDirectory/": "Copy of your input directory with results",
+ "tapisjob.out": "Console output from OpenSees analysis",
+ "tapisjob.err": "Error messages (if any)",
+ "tapisjob.sh": "Job script that was executed",
+ "Profile*_acc*.out": "Acceleration time histories",
+ "Profile*_Gstress*.out": "Stress time histories",
+ "opensees.zip": "Compressed results package"
 }
 ```
 
@@ -283,19 +283,19 @@ typical_outputs = {
 # Download the inputDirectory folder which contains results
 input_dir_archive_uri = f"{archive_uri}/inputDirectory"
 try:
-    # List contents of inputDirectory in archive
-    input_dir_files = ds.files.list(input_dir_archive_uri)
-    print("\nFiles in inputDirectory:")
-    for item in input_dir_files:
-        print(f"- {item.name} ({item.type})")
-        
-    # Change to the archive directory for post-processing
-    archive_path = ds.files.translate_uri_to_path(input_dir_archive_uri)
-    os.chdir(archive_path)
-    print(f"\nChanged to directory: {archive_path}")
-    
+ # List contents of inputDirectory in archive
+ input_dir_files = ds.files.list(input_dir_archive_uri)
+ print("\nFiles in inputDirectory:")
+ for item in input_dir_files:
+ print(f"- {item.name} ({item.type})")
+ 
+ # Change to the archive directory for post-processing
+ archive_path = ds.files.translate_uri_to_path(input_dir_archive_uri)
+ os.chdir(archive_path)
+ print(f"\nChanged to directory: {archive_path}")
+ 
 except Exception as e:
-    print(f"Error accessing archive: {e}")
+ print(f"Error accessing archive: {e}")
 ```
 
 **What this does:**
@@ -305,68 +305,68 @@ except Exception as e:
 - Lists all available output files for post-processing
 - Provides access to acceleration and stress time histories
 
-## 📊 Post-processing Results
+## Post-processing Results
 
 ### Response Spectra Analysis
 
 ```python
 # Define response spectra function
 def resp_spectra(a, time, nstep):
-    """
-    This function builds response spectra from acceleration time history,
-    a should be a numpy array, T and nStep should be integers.
-    """
-    # Add initial zero value to acceleration
-    a = np.insert(a, 0, 0)
-    # Number of periods at which spectral values are computed
-    nperiod = 100
-    # Define range of considered periods by power of 10
-    minpower = -3.0
-    maxpower = 1.0
-    # Create vector of considered periods
-    p = np.logspace(minpower, maxpower, nperiod)
-    # Incremental circular frequency
-    dw = 2.0 * np.pi / time
-    # Vector of circular frequency
-    w = np.arange(0, (nstep + 1) * dw, dw)
-    # Fast fourier transform of acceleration
-    afft = np.fft.fft(a)
-    # Arbitrary stiffness value
-    k = 1000.0
-    # Damping ratio
-    damp = 0.05
-    umax = np.zeros(nperiod)
-    vmax = np.zeros(nperiod)
-    amax = np.zeros(nperiod)
-    
-    # Loop to compute spectral values at each period
-    for j in range(0, nperiod):
-        # Compute mass and dashpot coefficient for desired periods
-        m = ((p[j] / (2 * np.pi)) ** 2) * k
-        c = 2 * damp * (k * m) ** 0.5
-        h = np.zeros(nstep + 2, dtype=complex)
-        
-        # Compute transfer function
-        for l in range(0, int(nstep / 2 + 1)):
-            h[l] = 1.0 / (-m * w[l] * w[l] + 1j * c * w[l] + k)
-            # Mirror image of transfer function
-            h[nstep + 1 - l] = np.conj(h[l])
+ """
+ This function builds response spectra from acceleration time history,
+ a should be a numpy array, T and nStep should be integers.
+ """
+ # Add initial zero value to acceleration
+ a = np.insert(a, 0, 0)
+ # Number of periods at which spectral values are computed
+ nperiod = 100
+ # Define range of considered periods by power of 10
+ minpower = -3.0
+ maxpower = 1.0
+ # Create vector of considered periods
+ p = np.logspace(minpower, maxpower, nperiod)
+ # Incremental circular frequency
+ dw = 2.0 * np.pi / time
+ # Vector of circular frequency
+ w = np.arange(0, (nstep + 1) * dw, dw)
+ # Fast fourier transform of acceleration
+ afft = np.fft.fft(a)
+ # Arbitrary stiffness value
+ k = 1000.0
+ # Damping ratio
+ damp = 0.05
+ umax = np.zeros(nperiod)
+ vmax = np.zeros(nperiod)
+ amax = np.zeros(nperiod)
+ 
+ # Loop to compute spectral values at each period
+ for j in range(0, nperiod):
+ # Compute mass and dashpot coefficient for desired periods
+ m = ((p[j] / (2 * np.pi)) ** 2) * k
+ c = 2 * damp * (k * m) ** 0.5
+ h = np.zeros(nstep + 2, dtype=complex)
+ 
+ # Compute transfer function
+ for l in range(0, int(nstep / 2 + 1)):
+ h[l] = 1.0 / (-m * w[l] * w[l] + 1j * c * w[l] + k)
+ # Mirror image of transfer function
+ h[nstep + 1 - l] = np.conj(h[l])
 
-        # Compute displacement in frequency domain using transfer function
-        qfft = -m * afft
-        u = np.zeros(nstep + 1, dtype=complex)
-        for l in range(0, nstep + 1):
-            u[l] = h[l] * qfft[l]
+ # Compute displacement in frequency domain using transfer function
+ qfft = -m * afft
+ u = np.zeros(nstep + 1, dtype=complex)
+ for l in range(0, nstep + 1):
+ u[l] = h[l] * qfft[l]
 
-        # Compute displacement in time domain (ignore imaginary part)
-        utime = np.real(np.fft.ifft(u))
+ # Compute displacement in time domain (ignore imaginary part)
+ utime = np.real(np.fft.ifft(u))
 
-        # Spectral displacement, velocity, and acceleration
-        umax[j] = np.max(np.abs(utime))
-        vmax[j] = (2 * np.pi / p[j]) * umax[j]
-        amax[j] = (2 * np.pi / p[j]) * vmax[j]
+ # Spectral displacement, velocity, and acceleration
+ umax[j] = np.max(np.abs(utime))
+ vmax[j] = (2 * np.pi / p[j]) * umax[j]
+ amax[j] = (2 * np.pi / p[j]) * vmax[j]
 
-    return p, umax, vmax, amax
+ return p, umax, vmax, amax
 ```
 
 **What this function does:**
@@ -382,35 +382,35 @@ def resp_spectra(a, time, nstep):
 ```python
 # Define plotting function
 def plot_acc():
-    """
-    Plot acceleration response spectra on log-linear scale
-    """
-    plt.figure(figsize=(10, 6))
+ """
+ Plot acceleration response spectra on log-linear scale
+ """
+ plt.figure(figsize=(10, 6))
 
-    # Plot response spectra for each profile
-    for motion in ["motion1"]:
-        for profile in ["A", "B", "C", "D"]:
-            try:
-                # Load acceleration data
-                acc = np.loadtxt(f"Profile{profile}_acc{motion}.out")
-                
-                # Compute response spectra
-                [p, umax, vmax, amax] = resp_spectra(acc[:, -1], acc[-1, 0], acc.shape[0])
-                
-                # Plot spectral acceleration
-                plt.semilogx(p, amax, label=f"Profile {profile}", linewidth=2)
-                
-            except FileNotFoundError:
-                print(f"File Profile{profile}_acc{motion}.out not found")
+ # Plot response spectra for each profile
+ for motion in ["motion1"]:
+ for profile in ["A", "B", "C", "D"]:
+ try:
+ # Load acceleration data
+ acc = np.loadtxt(f"Profile{profile}_acc{motion}.out")
+ 
+ # Compute response spectra
+ [p, umax, vmax, amax] = resp_spectra(acc[:, -1], acc[-1, 0], acc.shape[0])
+ 
+ # Plot spectral acceleration
+ plt.semilogx(p, amax, label=f"Profile {profile}", linewidth=2)
+ 
+ except FileNotFoundError:
+ print(f"File Profile{profile}_acc{motion}.out not found")
 
-    # Format plot
-    plt.ylabel("$S_a$ (g)")
-    plt.xlabel("Period (s)")
-    plt.title("Acceleration Response Spectra (5% Damping)")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    plt.xlim([0.01, 10])
-    plt.show()
+ # Format plot
+ plt.ylabel("$S_a$ (g)")
+ plt.xlabel("Period (s)")
+ plt.title("Acceleration Response Spectra (5% Damping)")
+ plt.grid(True, alpha=0.3)
+ plt.legend()
+ plt.xlim([0.01, 10])
+ plt.show()
 
 # Execute the plotting function
 plot_acc()
@@ -429,35 +429,35 @@ plot_acc()
 ```python
 # Analyze stress time histories
 def analyze_stress_results():
-    """
-    Analyze stress time histories from OpenSees output
-    """
-    stress_files = [f for f in os.listdir('.') if 'Gstress' in f and f.endswith('.out')]
-    
-    print(f"Found {len(stress_files)} stress output files:")
-    for file in stress_files:
-        print(f"- {file}")
-        
-        # Load stress data
-        try:
-            stress_data = np.loadtxt(file)
-            
-            # Basic statistics
-            max_stress = np.max(np.abs(stress_data[:, 1:]))  # Skip time column
-            print(f"  Maximum stress magnitude: {max_stress:.2f}")
-            
-            # Plot time history
-            plt.figure(figsize=(10, 4))
-            plt.plot(stress_data[:, 0], stress_data[:, 1], label='Shear Stress')
-            plt.xlabel('Time (s)')
-            plt.ylabel('Stress (kPa)')
-            plt.title(f'Stress Time History - {file}')
-            plt.grid(True, alpha=0.3)
-            plt.legend()
-            plt.show()
-            
-        except Exception as e:
-            print(f"  Error loading {file}: {e}")
+ """
+ Analyze stress time histories from OpenSees output
+ """
+ stress_files = [f for f in os.listdir('.') if 'Gstress' in f and f.endswith('.out')]
+ 
+ print(f"Found {len(stress_files)} stress output files:")
+ for file in stress_files:
+ print(f"- {file}")
+ 
+ # Load stress data
+ try:
+ stress_data = np.loadtxt(file)
+ 
+ # Basic statistics
+ max_stress = np.max(np.abs(stress_data[:, 1:])) # Skip time column
+ print(f"Maximum stress magnitude: {max_stress:.2f}")
+ 
+ # Plot time history
+ plt.figure(figsize=(10, 4))
+ plt.plot(stress_data[:, 0], stress_data[:, 1], label='Shear Stress')
+ plt.xlabel('Time (s)')
+ plt.ylabel('Stress (kPa)')
+ plt.title(f'Stress Time History - {file}')
+ plt.grid(True, alpha=0.3)
+ plt.legend()
+ plt.show()
+ 
+ except Exception as e:
+ print(f"Error loading {file}: {e}")
 
 # Run stress analysis
 analyze_stress_results()

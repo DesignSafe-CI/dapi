@@ -4,12 +4,24 @@ Database connections and query execution for DesignSafe research databases.
 
 ## Database Accessor
 
-::: dapi.db.accessor.DatabaseAccessor
+```{eval-rst}
+.. autoclass:: dapi.db.accessor.DatabaseAccessor
+ :members:
+ :undoc-members:
+ :show-inheritance:
+```
 
 ## Database Engine
 
-::: dapi.db.db.DSDatabase
+```{eval-rst}
+.. autoclass:: dapi.db.db.DSDatabase
+ :members:
+ :undoc-members:
+ :show-inheritance:
+```
 
 ## Database Configuration
 
-::: dapi.db.config.db_config
+```{eval-rst}
+.. autodata:: dapi.db.config.db_config
+```

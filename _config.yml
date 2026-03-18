@@ -1,0 +1,48 @@
+# Book settings
+# Learn more at https://jupyterbook.org/customize/config.html
+
+title: DAPI - DesignSafe API
+author: Krishna Kumar, Pedro Arduino, Scott Brandenberg
+logo: docs/nheri.png
+copyright: "2024"
+
+# Force re-execution of notebooks on each build.
+# See https://jupyterbook.org/content/execute.html
+exclude_patterns:
+  - _build
+  - out
+  - "**.ipynb_checkpoints"
+  - examples
+  - README.md
+  - AUTHORS.md
+  - LICENSE.md
+  - mkdocs.yml
+
+execute:
+  execute_notebooks: "off"
+
+launch_buttons:
+  notebook_interface: "jupyterlab"
+  colab_url: "https://colab.research.google.com"
+
+# Information about where the book exists on the web
+repository:
+  url: https://github.com/DesignSafe-CI/dapi
+  branch: main
+
+# Add GitHub buttons to your book
+# See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: true
+  use_repository_button: true
+  extra_navbar: ""
+
+sphinx:
+  extra_extensions:
+    - sphinx.ext.autodoc
+    - sphinx.ext.napoleon
+    - sphinx.ext.viewcode
+  config:
+    napoleon_google_docstring: true
+    napoleon_numpy_docstring: true
+    autodoc_member_order: "bysource"

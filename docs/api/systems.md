@@ -4,7 +4,9 @@ System information, queue management, and TMS credential management for DesignSa
 
 ## System Queues
 
-::: dapi.systems.list_system_queues
+```{eval-rst}
+.. autofunction:: dapi.systems.list_system_queues
+```
 
 ## TMS Credential Management
 
@@ -12,12 +14,18 @@ Manage Tapis Managed Secrets (TMS) credentials on execution systems. TMS credent
 
 ### Check Credentials
 
-::: dapi.systems.check_credentials
+```{eval-rst}
+.. autofunction:: dapi.systems.check_credentials
+```
 
 ### Establish Credentials
 
-::: dapi.systems.establish_credentials
+```{eval-rst}
+.. autofunction:: dapi.systems.establish_credentials
+```
 
 ### Revoke Credentials
 
-::: dapi.systems.revoke_credentials
+```{eval-rst}
+.. autofunction:: dapi.systems.revoke_credentials
+```

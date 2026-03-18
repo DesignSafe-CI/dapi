@@ -56,13 +56,13 @@ app_id = "opensees-express"
 app_details = ds.apps.get_details(app_id, verbose=True)
 
 if app_details:
-    print(f"App ID: {app_details.id}")
-    print(f"Version: {app_details.version}")
-    print(f"Description: {app_details.description}")
-    print(f"Owner: {app_details.owner}")
-    print(f"Execution System: {app_details.jobAttributes.execSystemId}")
+ print(f"App ID: {app_details.id}")
+ print(f"Version: {app_details.version}")
+ print(f"Description: {app_details.description}")
+ print(f"Owner: {app_details.owner}")
+ print(f"Execution System: {app_details.jobAttributes.execSystemId}")
 else:
-    print(f"App '{app_id}' not found")
+ print(f"App '{app_id}' not found")
 ```
 
 ### Understanding App Parameters
@@ -77,19 +77,19 @@ param_set = job_attrs.parameterSet
 # Check file inputs
 print("File Inputs:")
 for file_input in job_attrs.fileInputs:
-    print(f"  - {file_input.name}: {file_input.description}")
+ print(f" - {file_input.name}: {file_input.description}")
 
 # Check app arguments
 print("\nApp Arguments:")
 for arg in param_set.appArgs:
-    print(f"  - {arg.name}: {arg.description}")
+ print(f" - {arg.name}: {arg.description}")
 
 # Check environment variables
 print("\nEnvironment Variables:")
 for env_var in param_set.envVariables:
-    print(f"  - {env_var.key}: {env_var.description}")
-    if hasattr(env_var, 'enum_values') and env_var.enum_values:
-        print(f"    Options: {list(env_var.enum_values.keys())}")
+ print(f" - {env_var.key}: {env_var.description}")
+ if hasattr(env_var, 'enum_values') and env_var.enum_values:
+ print(f"Options: {list(env_var.enum_values.keys())}")
 ```
 
 ### Resource Requirements
@@ -117,17 +117,17 @@ all_apps = ds.apps.find("", verbose=False)
 # Extract basic app information
 app_data = []
 for app in all_apps:
-    app_data.append({
-        'id': app.id,
-        'version': app.version,
-        'owner': app.owner,
-        'description': app.description,
-        'enabled': app.enabled,
-        'execution_system': getattr(app.jobAttributes, 'execSystemId', 'N/A'),
-        'max_minutes': getattr(app.jobAttributes, 'maxMinutes', 'N/A'),
-        'node_count': getattr(app.jobAttributes, 'nodeCount', 'N/A'),
-        'cores_per_node': getattr(app.jobAttributes, 'coresPerNode', 'N/A'),
-    })
+ app_data.append({
+ 'id': app.id,
+ 'version': app.version,
+ 'owner': app.owner,
+ 'description': app.description,
+ 'enabled': app.enabled,
+ 'execution_system': getattr(app.jobAttributes, 'execSystemId', 'N/A'),
+ 'max_minutes': getattr(app.jobAttributes, 'maxMinutes', 'N/A'),
+ 'node_count': getattr(app.jobAttributes, 'nodeCount', 'N/A'),
+ 'cores_per_node': getattr(app.jobAttributes, 'coresPerNode', 'N/A'),
+ })
 
 apps_df = pd.DataFrame(app_data)
 print(apps_df.head())
@@ -168,8 +168,9 @@ Use `ds.tapis` when you need to:
 - Debug or troubleshoot API calls
 - Access experimental or new Tapis features
 
-!!! warning "Using Raw Tapis Client"
-    When using the raw Tapis client, you'll need to handle errors and data formatting yourself. The dapi wrapper provides error handling and user-friendly formatting that you'll lose with direct Tapis calls.
+:::{warning} Using Raw Tapis Client
+When using the raw Tapis client, you'll need to handle errors and data formatting yourself. The dapi wrapper provides error handling and user-friendly formatting that you'll lose with direct Tapis calls.
+:::
 
 ## Common App Categories
 
@@ -179,7 +180,7 @@ Here are some common application categories available on DesignSafe:
 # Structural analysis applications
 structural_keywords = ["opensees", "abaqus", "ansys", "ls-dyna"]
 
-# Fluid dynamics applications  
+# Fluid dynamics applications 
 fluid_keywords = ["openfoam", "adcirc", "swan"]
 
 # Geotechnical applications
@@ -190,16 +191,16 @@ materials_keywords = ["lammps", "matlab"]
 
 # Search for each category
 for category, keywords in [
-    ("Structural", structural_keywords),
-    ("Fluid Dynamics", fluid_keywords), 
-    ("Geotechnical", geo_keywords),
-    ("Materials", materials_keywords)
+ ("Structural", structural_keywords),
+ ("Fluid Dynamics", fluid_keywords), 
+ ("Geotechnical", geo_keywords),
+ ("Materials", materials_keywords)
 ]:
-    print(f"\n{category} Applications:")
-    for keyword in keywords:
-        apps = ds.apps.find(keyword, verbose=False)
-        if apps:
-            print(f"  {keyword}: {len(apps)} apps found")
+ print(f"\n{category} Applications:")
+ for keyword in keywords:
+ apps = ds.apps.find(keyword, verbose=False)
+ if apps:
+ print(f" {keyword}: {len(apps)} apps found")
 ```
 
 ## Next Steps

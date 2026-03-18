@@ -2,7 +2,7 @@
 
 This section provides comprehensive API documentation for all DAPI modules and classes, automatically generated from docstrings.
 
-## 📋 Overview
+## Overview
 
 The DAPI package is organized into several core modules:
 
@@ -22,7 +22,7 @@ The DAPI package is organized into several core modules:
 ### **Utilities**
 - **[Exceptions](exceptions.md)** - Custom exception classes
 
-## 🚀 Quick Navigation
+## Quick Navigation
 
 ### **Getting Started**
 ```python
@@ -50,7 +50,7 @@ client.db.ngl.read_sql(...)
 - **Parametric Studies**: Batch job submission and monitoring
 - **Error Handling**: Comprehensive exception hierarchy
 
-## 📖 Documentation Conventions
+## Documentation Conventions
 
 ### **Parameter Types**
 - `Optional[Type]` - Parameter can be `None`
@@ -70,7 +70,7 @@ Each method includes practical usage examples showing:
 - Error handling
 - Integration with other DAPI components
 
-## 🔗 Cross-References
+## Cross-References
 
 The API documentation includes extensive cross-references:
 - **Method signatures** link to parameter and return types

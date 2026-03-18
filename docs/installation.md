@@ -10,7 +10,7 @@ This guide will help you install the DesignSafe API (dapi) package and set up yo
 
 ## Installation Methods
 
-### 📦 Install from PyPI (Recommended)
+### Install from PyPI (Recommended)
 
 The easiest way to install dapi is using pip:
 
@@ -18,7 +18,7 @@ The easiest way to install dapi is using pip:
 pip install dapi
 ```
 
-### 🔄 Install Latest Development Version
+### Install Latest Development Version
 
 To get the latest features and bug fixes:
 
@@ -26,7 +26,7 @@ To get the latest features and bug fixes:
 pip install git+https://github.com/DesignSafe-CI/dapi.git@dev
 ```
 
-### 🛠️ Install for Development
+### Install for Development
 
 If you want to contribute to dapi or modify the source code:
 
@@ -49,7 +49,7 @@ pip install -e .
 ```
 
 
-## 🏗️ DesignSafe Jupyter Environment
+## DesignSafe Jupyter Environment
 
 ### Installing on DesignSafe Jupyter Hub
 
@@ -66,8 +66,9 @@ If you're using [DesignSafe Jupyter](https://jupyter.designsafe-ci.org/), instal
 # Kernel >> Restart Kernel (in Jupyter menu)
 ```
 
-!!! tip "Kernel Restart Required"
-    After installing dapi in a Jupyter notebook, you must restart the kernel for the changes to take effect. Go to **Kernel → Restart Kernel** in the Jupyter menu.
+:::{tip} Kernel Restart Required
+After installing dapi in a Jupyter notebook, you must restart the kernel for the changes to take effect. Go to **Kernel -> Restart Kernel** in the Jupyter menu.
+:::
 
 ### Persistent Installation
 
@@ -78,7 +79,7 @@ For a persistent installation across Jupyter sessions:
 pip install --user dapi
 ```
 
-## 🔧 Dependencies
+## Dependencies
 
 dapi automatically installs the following key dependencies:
 
@@ -89,7 +90,7 @@ dapi automatically installs the following key dependencies:
 - **tqdm**: Progress bars
 - **python-dotenv**: Environment variable management
 
-## ✅ Verify Installation
+## Verify Installation
 
 Test your installation by importing dapi:
 
@@ -109,7 +110,7 @@ Available functions:
 ['DSClient', 'SubmittedJob', 'interpret_job_status', ...]
 ```
 
-## 🐍 Python Environment Management
+## Python Environment Management
 
 ### Using Virtual Environments
 
@@ -142,7 +143,7 @@ conda activate dapi-env
 pip install dapi
 ```
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Installation Issues
 
@@ -177,7 +178,7 @@ pip install dapi --force-reinstall
 #### Linux
 - Install development packages: `sudo apt-get install python3-dev build-essential`
 
-## 🔄 Updating
+## Updating
 
 ### Update to Latest Version
 ```bash
@@ -190,19 +191,19 @@ import dapi
 print(dapi.__version__)
 ```
 
-## 🆘 Getting Help
+## Getting Help
 
 If you encounter issues during installation:
 
 1. **Check the [Issues page](https://github.com/DesignSafe-CI/dapi/issues)** for known problems
 2. **Search existing issues** before creating a new one
 3. **Provide details** when reporting issues:
-   - Operating system and version
-   - Python version
-   - Complete error messages
-   - Installation method used
+ - Operating system and version
+ - Python version
+ - Complete error messages
+ - Installation method used
 
-## ➡️ Next Steps
+## Next Steps
 
 After successful installation:
 
