@@ -79,7 +79,7 @@ from .jobs import (
     TAPIS_TERMINAL_STATES,
 )
 
-__version__ = "0.4.5"
+__version__ = "0.5.0"
 
 __all__ = [
     "DSClient",
