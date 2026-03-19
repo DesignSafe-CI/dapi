@@ -10,15 +10,15 @@ used for environment variables that contain connection credentials.
 
 Example:
     To access the NGL database configuration:
-    
+
     >>> from .config import db_config
     >>> ngl_config = db_config["ngl"]
     >>> print(ngl_config["dbname"])  # "sjbrande_ngl_db"
     >>> print(ngl_config["env_prefix"])  # "NGL_"
-    
+
     Environment variables would be:
     - NGL_DB_USER
-    - NGL_DB_PASSWORD  
+    - NGL_DB_PASSWORD
     - NGL_DB_HOST
     - NGL_DB_PORT
 """

@@ -13,5 +13,6 @@ Example:
     >>> results = db.read_sql("SELECT * FROM table_name LIMIT 5")
 """
 
+from .db import DSDatabase as DSDatabase
+
 name = "designsafe_db"
-from .db import DSDatabase

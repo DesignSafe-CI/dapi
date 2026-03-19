@@ -2,13 +2,10 @@
 import time
 import json
 import os
-import urllib.parse
-import logging  # Import logging for the timeout warning
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import Dict, Any, Optional, List
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
-from dataclasses import dataclass, field, asdict
 from tqdm.auto import tqdm
 import pandas as pd
 from .apps import get_app_details
@@ -163,21 +160,31 @@ def generate_job_request(
             "archiveSystemId": archive_system_id,
             **({"archiveSystemDir": archive_system_dir} if archive_system_dir else {}),
             "archiveOnAppError": getattr(job_attrs, "archiveOnAppError", True),
-            "execSystemLogicalQueue": queue
-            if queue is not None
-            else getattr(job_attrs, "execSystemLogicalQueue", None),
-            "nodeCount": node_count
-            if node_count is not None
-            else getattr(job_attrs, "nodeCount", None),
-            "coresPerNode": cores_per_node
-            if cores_per_node is not None
-            else getattr(job_attrs, "coresPerNode", None),
-            "maxMinutes": max_minutes
-            if max_minutes is not None
-            else getattr(job_attrs, "maxMinutes", None),
-            "memoryMB": memory_mb
-            if memory_mb is not None
-            else getattr(job_attrs, "memoryMB", None),
+            "execSystemLogicalQueue": (
+                queue
+                if queue is not None
+                else getattr(job_attrs, "execSystemLogicalQueue", None)
+            ),
+            "nodeCount": (
+                node_count
+                if node_count is not None
+                else getattr(job_attrs, "nodeCount", None)
+            ),
+            "coresPerNode": (
+                cores_per_node
+                if cores_per_node is not None
+                else getattr(job_attrs, "coresPerNode", None)
+            ),
+            "maxMinutes": (
+                max_minutes
+                if max_minutes is not None
+                else getattr(job_attrs, "maxMinutes", None)
+            ),
+            "memoryMB": (
+                memory_mb
+                if memory_mb is not None
+                else getattr(job_attrs, "memoryMB", None)
+            ),
             **(
                 {"isMpi": getattr(job_attrs, "isMpi", None)}
                 if getattr(job_attrs, "isMpi", None) is not None
@@ -893,7 +900,7 @@ class SubmittedJob:
             return current_status  # Should be a terminal state if loops finished
 
         except KeyboardInterrupt:
-            print(f"\nMonitoring interrupted by user.")
+            print("\nMonitoring interrupted by user.")
             return STATUS_INTERRUPTED
         except JobMonitorError as e:
             print(f"\nError during monitoring: {e}")
@@ -906,12 +913,12 @@ class SubmittedJob:
             if pbar_waiting is not None:
                 try:
                     pbar_waiting.close()
-                except:
+                except Exception:
                     pass
             if pbar_monitoring is not None:
                 try:
                     pbar_monitoring.close()
-                except:
+                except Exception:
                     pass
 
     def print_runtime_summary(self, verbose: bool = False):

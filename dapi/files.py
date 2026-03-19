@@ -6,7 +6,6 @@ import urllib.parse
 # import jwt
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
-import json
 from .exceptions import FileOperationError, AuthenticationError
 from typing import List
 
@@ -57,7 +56,7 @@ def _parse_tapis_uri(tapis_uri: str) -> (str, str):
     Example:
         >>> system_id, path = _parse_tapis_uri("tapis://mysystem/folder/file.txt")
         >>> print(system_id)  # "mysystem"
-        >>> print(path)       # "folder/file.txt"
+        >>> print(path)  # "folder/file.txt"
     """
     if not tapis_uri.startswith("tapis://"):
         raise ValueError(
@@ -95,10 +94,14 @@ def tapis_uri_to_local_path(tapis_uri: str) -> str:
         ValueError: If the Tapis URI format is invalid.
 
     Example:
-        >>> local_path = tapis_uri_to_local_path("tapis://designsafe.storage.default/user/data/file.txt")
+        >>> local_path = tapis_uri_to_local_path(
+        ...     "tapis://designsafe.storage.default/user/data/file.txt"
+        ... )
         >>> print(local_path)  # "/home/jupyter/MyData/data/file.txt"
 
-        >>> local_path = tapis_uri_to_local_path("tapis://designsafe.storage.community/datasets/earthquake.csv")
+        >>> local_path = tapis_uri_to_local_path(
+        ...     "tapis://designsafe.storage.community/datasets/earthquake.csv"
+        ... )
         >>> print(local_path)  # "/home/jupyter/CommunityData/datasets/earthquake.csv"
     """
     if not tapis_uri.startswith("tapis://"):
@@ -352,7 +355,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
             # involve checking the result count or specific item name, but this
             # basic check catches non-existent parent directories.
             t.files.listFiles(systemId=system_id, path=encoded_remote_path, limit=1)
-            print(f"Verification successful: Path exists.")
+            print("Verification successful: Path exists.")
         except BaseTapyException as e:
             # Specifically check for 404 on the listFiles call
             if hasattr(e, "response") and e.response and e.response.status_code == 404:
@@ -437,7 +440,9 @@ def download_file(t: Tapis, remote_uri: str, local_path: str):
         FileOperationError: If the download operation fails or remote file not found.
 
     Example:
-        >>> download_file(client, "tapis://mysystem/data/results.txt", "/local/results.txt")
+        >>> download_file(
+        ...     client, "tapis://mysystem/data/results.txt", "/local/results.txt"
+        ... )
         Downloading from system 'mysystem' path 'data/results.txt' to '/local/results.txt'...
         Download complete.
     """

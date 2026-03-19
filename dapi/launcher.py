@@ -128,7 +128,7 @@ def generate_sweep(
             f'pylauncher.ClassicLauncher("runsList.txt", debug="{debug}")\n'
         )
     else:
-        script = "import pylauncher\n" 'pylauncher.ClassicLauncher("runsList.txt")\n'
+        script = 'import pylauncher\npylauncher.ClassicLauncher("runsList.txt")\n'
     (dirpath / "call_pylauncher.py").write_text(script, encoding="utf-8")
 
     return commands

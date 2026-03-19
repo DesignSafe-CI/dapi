@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from dapi.files import get_ds_path_uri
 from tapipy.tapis import Tapis
 

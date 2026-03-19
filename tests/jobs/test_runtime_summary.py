@@ -3,7 +3,6 @@ from unittest.mock import Mock
 from io import StringIO
 import sys
 from datetime import datetime, timedelta
-import re
 
 import dapi as ds
 

@@ -9,7 +9,7 @@ from . import launcher as launcher_module
 from .db.accessor import DatabaseAccessor
 
 # Import only the necessary classes/functions from jobs
-from .jobs import SubmittedJob, interpret_job_status
+from .jobs import SubmittedJob
 from typing import List, Optional, Dict, Any
 
 
@@ -196,7 +196,9 @@ class FileMethods:
             str: The corresponding DesignSafe local path (e.g., /home/jupyter/MyData/path).
 
         Example:
-            >>> local_path = ds.files.to_path("tapis://designsafe.storage.default/user/data")
+            >>> local_path = ds.files.to_path(
+            ...     "tapis://designsafe.storage.default/user/data"
+            ... )
             >>> print(local_path)  # "/home/jupyter/MyData/data"
         """
         return files_module.tapis_uri_to_local_path(*args, **kwargs)
@@ -562,7 +564,7 @@ class JobMethods:
             ...     input_dir_uri="tapis://designsafe.storage.default/username/input/",
             ...     script_filename="run_analysis.m",
             ...     max_minutes=120,
-            ...     allocation="MyProject-123"
+            ...     allocation="MyProject-123",
             ... )
         """
         return jobs_module.generate_job_request(
@@ -674,7 +676,9 @@ class JobMethods:
             job_uuid (str, optional): The job UUID for context in the message.
 
         Example:
-            >>> ds.jobs.interpret_status("FINISHED", "12345678-1234-1234-1234-123456789abc")
+            >>> ds.jobs.interpret_status(
+            ...     "FINISHED", "12345678-1234-1234-1234-123456789abc"
+            ... )
             Job 12345678-1234-1234-1234-123456789abc completed successfully.
         """
         jobs_module.interpret_job_status(final_status, job_uuid)

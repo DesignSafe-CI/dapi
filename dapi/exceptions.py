@@ -9,7 +9,7 @@ Typical Usage:
     ...     client.auth.authenticate()
     ... except AuthenticationError as e:
     ...     print(f"Authentication failed: {e}")
-    
+
     >>> try:
     ...     client.files.upload("/local/file.txt", "tapis://system/path/file.txt")
     ... except FileOperationError as e:

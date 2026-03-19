@@ -14,7 +14,7 @@ Example:
     >>> db = DSDatabase("ngl")
     Creating SQLAlchemy engine for database 'sjbrande_ngl_db' (ngl)...
     Engine for 'ngl' created.
-    
+
     >>> df = db.read_sql("SELECT * FROM table_name LIMIT 5")
     >>> db.close()
 """
@@ -48,7 +48,7 @@ class DSDatabase:
     Example:
         >>> db = DSDatabase("ngl")
         >>> df = db.read_sql("SELECT COUNT(*) as total FROM users")
-        >>> print(df.iloc[0]['total'])
+        >>> print(df.iloc[0]["total"])
         >>> db.close()
     """
 
@@ -69,7 +69,7 @@ class DSDatabase:
 
         Example:
             >>> db = DSDatabase("ngl")  # Connect to NGL database
-            >>> db = DSDatabase("vp")   # Connect to VP database
+            >>> db = DSDatabase("vp")  # Connect to VP database
         """
         if dbname not in db_config:
             raise ValueError(
@@ -131,8 +131,10 @@ class DSDatabase:
             >>> print(df.columns.tolist())  # ['name', 'age']
 
             >>> # Get dictionary result
-            >>> results = db.read_sql("SELECT COUNT(*) as total FROM users", output_type="dict")
-            >>> print(results[0]['total'])  # 150
+            >>> results = db.read_sql(
+            ...     "SELECT COUNT(*) as total FROM users", output_type="dict"
+            ... )
+            >>> print(results[0]["total"])  # 150
         """
         if not sql:
             raise ValueError("SQL query string is required")
