@@ -1,10 +1,11 @@
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from io import StringIO
 import sys
 from datetime import datetime, timedelta
 
 import dapi as ds
+from dapi.jobs import SubmittedJob
 
 
 class TestRuntimeSummary(unittest.TestCase):
@@ -95,7 +96,18 @@ class TestRuntimeSummary(unittest.TestCase):
         try:
             out = StringIO()
             sys.stdout = out
-            ds.jobs.runtime_summary(t_mock, job_id, verbose)
+            # Patch SubmittedJob.__init__ to skip the isinstance check
+            with patch.object(
+                SubmittedJob,
+                "__init__",
+                lambda self, tc, ju: (
+                    setattr(self, "_tapis", tc)
+                    or setattr(self, "uuid", ju)
+                    or setattr(self, "_last_status", None)
+                    or setattr(self, "_job_details", None)
+                ),
+            ):
+                ds.jobs.get_runtime_summary(t_mock, job_id, verbose)
             return out.getvalue().strip()
         finally:
             sys.stdout = saved_stdout

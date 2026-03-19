@@ -1,6 +1,15 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 from dapi.jobs import generate_job_request
+
+
+def _make_app_arg(name, arg="", input_mode="INCLUDE_ON_DEMAND"):
+    """Create a mock app arg with a real .name attribute."""
+    m = Mock()
+    m.name = name
+    m.arg = arg
+    m.inputMode = input_mode
+    return m
 
 
 class TestArchiveConfiguration(unittest.TestCase):
@@ -30,12 +39,19 @@ class TestArchiveConfiguration(unittest.TestCase):
         self.mock_job_attrs.memoryMB = 1000
         self.mock_job_attrs.isMpi = False
 
-        # Mock parameter set
-        self.mock_param_set = MagicMock()
-        self.mock_param_set.appArgs = [MagicMock(name="Main Script")]
+        # Mock parameter set with properly named appArgs
+        self.mock_param_set = Mock()
+        self.mock_param_set.appArgs = [_make_app_arg("Main Script")]
         self.mock_param_set.envVariables = []
         self.mock_param_set.schedulerOptions = []
         self.mock_job_attrs.parameterSet = self.mock_param_set
+
+        # Mock fileInputs so input directory detection works
+        input_dir_fi = Mock()
+        input_dir_fi.name = "Input Directory"
+        input_dir_fi.targetPath = None
+        input_dir_fi.autoMountLocal = True
+        self.mock_job_attrs.fileInputs = [input_dir_fi]
 
         self.mock_app.jobAttributes = self.mock_job_attrs
 

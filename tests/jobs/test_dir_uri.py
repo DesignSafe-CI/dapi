@@ -1,18 +1,20 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 from dapi.files import get_ds_path_uri
-from tapipy.tapis import Tapis
 
 
 class TestGetDsPathUri(unittest.TestCase):
     def setUp(self):
-        # Mocking the Tapis object
-        self.t = MagicMock(spec=Tapis)
+        # Use MagicMock without spec so dynamic attributes like .systems work
+        self.t = MagicMock()
         self.t.username = "testuser"
 
-        # Correctly mocking the get method
-        self.t.get = MagicMock()
-        self.t.get.return_value.json.return_value = {"baseProject": {"uuid": "12345"}}
+        # Mock the systems.getSystems call for project path lookups
+        # Return a single matching system for any project query
+        mock_system = Mock()
+        mock_system.id = "project-12345"
+        mock_system.description = "ProjA ProjB project"
+        self.t.systems.getSystems.return_value = [mock_system]
 
     def test_directory_patterns(self):
         test_cases = [
