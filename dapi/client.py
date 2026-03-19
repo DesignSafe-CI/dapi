@@ -425,6 +425,8 @@ class ParametricSweepMethods:
         cores_per_node: Optional[int] = None,
         max_minutes: Optional[int] = None,
         queue: Optional[str] = None,
+        archive_system: Optional[str] = "designsafe",
+        archive_path: Optional[str] = None,
         **kwargs,
     ):
         """Submit a PyLauncher sweep job.
@@ -432,16 +434,23 @@ class ParametricSweepMethods:
         Translates *directory* to a Tapis URI, builds a job request with
         ``call_pylauncher.py`` as the script, and submits it.
 
+        Archives to the user's DesignSafe storage by default (not the
+        app's archive path, which may belong to the app owner).
+
         Args:
             directory: Path to the input directory containing
                 ``runsList.txt`` and ``call_pylauncher.py``
                 (e.g. ``"/MyData/sweep/"``).
-            app_id: Tapis application ID (e.g. ``"openseespy-s3"``).
+            app_id: Tapis application ID (e.g. ``"designsafe-agnostic-app"``).
             allocation: TACC allocation to charge.
             node_count: Number of compute nodes.
             cores_per_node: Cores per node.
             max_minutes: Maximum runtime in minutes.
             queue: Execution queue name.
+            archive_system: Archive system. Defaults to ``"designsafe"``
+                (the user's own storage).
+            archive_path: Archive directory path. If None, uses the
+                default ``tapis-jobs-archive/`` under the user's MyData.
             **kwargs: Additional arguments passed to
                 ``ds.jobs.generate()``.
 
@@ -459,6 +468,8 @@ class ParametricSweepMethods:
             max_minutes=max_minutes,
             queue=queue,
             allocation=allocation,
+            archive_system=archive_system,
+            archive_path=archive_path,
             **kwargs,
         )
         return jobs_module.submit_job_request(self._tapis, job_request)

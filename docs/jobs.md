@@ -95,11 +95,19 @@ print(f"Default Cores: {app_details.jobAttributes.coresPerNode}")
 
 | Application | App ID | Description |
 |-------------|--------|-------------|
+| Agnostic | `designsafe-agnostic-app` | General-purpose Python/OpenSees/PyLauncher execution |
 | MATLAB | `matlab-r2023a` | MATLAB computational environment |
 | OpenSees | `opensees-express` | Structural analysis framework |
+| OpenSees MP | `opensees-mp-s3` | OpenSees parallel (MPI) analysis |
 | MPM | `mpm-s3` | Material Point Method simulations |
 | ADCIRC | `adcirc-v55` | Coastal circulation modeling |
 | LS-DYNA | `ls-dyna` | Explicit finite element analysis |
+
+The **Agnostic App** (`designsafe-agnostic-app`) is DesignSafe's general-purpose app for running Python scripts, OpenSeesPy, and PyLauncher parameter sweeps on TACC systems. It supports:
+- Python 3.12 with OpenSeesPy pre-installed
+- PyLauncher for running many independent tasks in a single allocation
+- Configurable TACC module loading
+- Serial execution (`isMpi: false`) — ideal for PyLauncher workflows
 
 ## Job Submission
 
@@ -461,7 +469,7 @@ ds.jobs.parametric_sweep.generate(
 # Submit the job
 job = ds.jobs.parametric_sweep.submit(
     "/MyData/sweep_demo/",
-    app_id="agnostic",
+    app_id="designsafe-agnostic-app",
     allocation="your_allocation",
     node_count=1,
     cores_per_node=48,

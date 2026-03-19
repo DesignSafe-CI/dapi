@@ -59,7 +59,7 @@ ds.jobs.parametric_sweep.generate(
 ```python
 job = ds.jobs.parametric_sweep.submit(
     "/MyData/pylauncher_demo/",
-    app_id="agnostic",
+    app_id="designsafe-agnostic-app",
     allocation="your_allocation",
     node_count=1,
     cores_per_node=48,
@@ -104,7 +104,7 @@ ds.jobs.parametric_sweep.generate(
 
 job = ds.jobs.parametric_sweep.submit(
     "/MyData/opensees_sweep/",
-    app_id="openseespy-s3",
+    app_id="designsafe-agnostic-app",
     allocation="your_allocation",
     node_count=2,
     cores_per_node=48,
@@ -127,5 +127,5 @@ $WORK/sweep_$SLURM_JOB_ID/run_ALPHA_BETA
 ## Notes
 
 - **PyLauncher is NOT a dapi dependency** — it's pre-installed on TACC compute nodes. dapi only generates the input files.
-- **MPI is disabled** — PyLauncher's `ClassicLauncher` runs independent serial tasks. The apps used (`agnostic`, `openseespy-s3`) already have `isMpi: false`.
+- **MPI is disabled** — PyLauncher's `ClassicLauncher` runs independent serial tasks. The `designsafe-agnostic-app` already has `isMpi: false`.
 - **Works with any app** — OpenSees, Python, MATLAB, Fortran binaries. The task list is just shell commands.
