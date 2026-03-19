@@ -8,11 +8,17 @@ from dapi.jobs import list_jobs
 from dapi.exceptions import JobMonitorError
 
 
-def _make_job(uuid, name, status, app_id, app_version="1.0",
-              created="2025-06-15T10:00:00.000Z",
-              ended="2025-06-15T11:00:00.000Z",
-              remote_started="2025-06-15T10:05:00.000Z",
-              last_updated="2025-06-15T11:00:00.000Z"):
+def _make_job(
+    uuid,
+    name,
+    status,
+    app_id,
+    app_version="1.0",
+    created="2025-06-15T10:00:00.000Z",
+    ended="2025-06-15T11:00:00.000Z",
+    remote_started="2025-06-15T10:05:00.000Z",
+    last_updated="2025-06-15T11:00:00.000Z",
+):
     """Create a mock TapisResult job object."""
     job = Mock()
     job.__dict__ = {
@@ -37,8 +43,14 @@ MOCK_JOBS = [
     _make_job("uuid-001", "matlab-run-1", "FINISHED", "matlab-r2023a"),
     _make_job("uuid-002", "opensees-run-1", "FINISHED", "opensees-mp-s3"),
     _make_job("uuid-003", "matlab-run-2", "FAILED", "matlab-r2023a"),
-    _make_job("uuid-004", "mpm-run-1", "RUNNING", "mpm-s3",
-              ended=None, remote_started="2025-06-15T10:10:00.000Z"),
+    _make_job(
+        "uuid-004",
+        "mpm-run-1",
+        "RUNNING",
+        "mpm-s3",
+        ended=None,
+        remote_started="2025-06-15T10:10:00.000Z",
+    ),
 ]
 
 
@@ -79,8 +91,14 @@ class TestListJobs(unittest.TestCase):
 
     def test_datetime_columns_exist(self):
         df = list_jobs(self.t)
-        for col in ["created_dt", "created_date", "ended_dt", "ended_date",
-                     "remoteStarted_dt", "lastUpdated_dt"]:
+        for col in [
+            "created_dt",
+            "created_date",
+            "ended_dt",
+            "ended_date",
+            "remoteStarted_dt",
+            "lastUpdated_dt",
+        ]:
             self.assertIn(col, df.columns)
 
     def test_datetime_nat_for_missing(self):
@@ -91,9 +109,16 @@ class TestListJobs(unittest.TestCase):
 
     def test_priority_column_order(self):
         df = list_jobs(self.t)
-        expected_first = ["name", "uuid", "status", "appId", "appVersion",
-                          "created_dt", "ended_dt"]
-        actual_first = list(df.columns[:len(expected_first)])
+        expected_first = [
+            "name",
+            "uuid",
+            "status",
+            "appId",
+            "appVersion",
+            "created_dt",
+            "ended_dt",
+        ]
+        actual_first = list(df.columns[: len(expected_first)])
         self.assertEqual(actual_first, expected_first)
 
     def test_passes_limit_to_api(self):

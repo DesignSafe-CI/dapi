@@ -119,9 +119,7 @@ def generate_sweep(
     dirpath.mkdir(parents=True, exist_ok=True)
 
     # Write runsList.txt
-    (dirpath / "runsList.txt").write_text(
-        "\n".join(commands) + "\n", encoding="utf-8"
-    )
+    (dirpath / "runsList.txt").write_text("\n".join(commands) + "\n", encoding="utf-8")
 
     # Write call_pylauncher.py
     if debug is not None:
@@ -130,10 +128,7 @@ def generate_sweep(
             f'pylauncher.ClassicLauncher("runsList.txt", debug="{debug}")\n'
         )
     else:
-        script = (
-            "import pylauncher\n"
-            'pylauncher.ClassicLauncher("runsList.txt")\n'
-        )
+        script = "import pylauncher\n" 'pylauncher.ClassicLauncher("runsList.txt")\n'
     (dirpath / "call_pylauncher.py").write_text(script, encoding="utf-8")
 
     return commands

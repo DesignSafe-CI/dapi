@@ -287,9 +287,7 @@ class SystemMethods:
             self._tapis, system_id, verbose=verbose
         )
 
-    def check_credentials(
-        self, system_id: str, username: str = None
-    ) -> bool:
+    def check_credentials(self, system_id: str, username: str = None) -> bool:
         """Check whether TMS credentials exist for a user on a system.
 
         Args:
@@ -407,8 +405,12 @@ class ParametricSweepMethods:
             *preview* is ``True``.
         """
         return launcher_module.generate_sweep(
-            command, sweep, directory,
-            placeholder_style=placeholder_style, debug=debug, preview=preview,
+            command,
+            sweep,
+            directory,
+            placeholder_style=placeholder_style,
+            debug=debug,
+            preview=preview,
         )
 
     def submit(

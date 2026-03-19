@@ -17,14 +17,18 @@ class TestGenerate(unittest.TestCase):
 
     def test_single_param(self):
         with tempfile.TemporaryDirectory() as d:
-            cmds = generate_sweep("python run.py --alpha ALPHA", {"ALPHA": [1, 2, 3]}, d)
+            cmds = generate_sweep(
+                "python run.py --alpha ALPHA", {"ALPHA": [1, 2, 3]}, d
+            )
             self.assertEqual(len(cmds), 3)
             self.assertEqual(cmds[0], "python run.py --alpha 1")
             self.assertEqual(cmds[2], "python run.py --alpha 3")
 
     def test_multi_param_cartesian_product(self):
         with tempfile.TemporaryDirectory() as d:
-            cmds = generate_sweep("python run.py --a A --b B", {"A": [1, 2], "B": [10, 20]}, d)
+            cmds = generate_sweep(
+                "python run.py --a A --b B", {"A": [1, 2], "B": [10, 20]}, d
+            )
             self.assertEqual(len(cmds), 4)
             self.assertIn("python run.py --a 1 --b 10", cmds)
             self.assertIn("python run.py --a 2 --b 20", cmds)
@@ -36,17 +40,23 @@ class TestGenerate(unittest.TestCase):
 
     def test_token_placeholder(self):
         with tempfile.TemporaryDirectory() as d:
-            cmds = generate_sweep("echo ALPHA", {"ALPHA": [1]}, d, placeholder_style="token")
+            cmds = generate_sweep(
+                "echo ALPHA", {"ALPHA": [1]}, d, placeholder_style="token"
+            )
             self.assertEqual(cmds, ["echo 1"])
 
     def test_braces_placeholder(self):
         with tempfile.TemporaryDirectory() as d:
-            cmds = generate_sweep("echo {ALPHA}", {"ALPHA": [1]}, d, placeholder_style="braces")
+            cmds = generate_sweep(
+                "echo {ALPHA}", {"ALPHA": [1]}, d, placeholder_style="braces"
+            )
             self.assertEqual(cmds, ["echo 1"])
 
     def test_env_vars_preserved(self):
         with tempfile.TemporaryDirectory() as d:
-            cmds = generate_sweep('run --out "$WORK/$SLURM_JOB_ID" --a A', {"A": [1]}, d)
+            cmds = generate_sweep(
+                'run --out "$WORK/$SLURM_JOB_ID" --a A', {"A": [1]}, d
+            )
             self.assertIn("$WORK", cmds[0])
             self.assertIn("$SLURM_JOB_ID", cmds[0])
 

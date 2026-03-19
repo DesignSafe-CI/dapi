@@ -118,9 +118,7 @@ def _resolve_username(t: Tapis, username: Optional[str] = None) -> str:
     return effective
 
 
-def check_credentials(
-    t: Tapis, system_id: str, username: Optional[str] = None
-) -> bool:
+def check_credentials(t: Tapis, system_id: str, username: Optional[str] = None) -> bool:
     """Check whether TMS credentials exist for a user on a Tapis system.
 
     Args:
@@ -141,9 +139,7 @@ def check_credentials(
     effective_username = _resolve_username(t, username)
 
     try:
-        t.systems.checkUserCredential(
-            systemId=system_id, userName=effective_username
-        )
+        t.systems.checkUserCredential(systemId=system_id, userName=effective_username)
         return True
     except (UnauthorizedError, NotFoundError):
         return False
@@ -194,12 +190,8 @@ def establish_credentials(
         authn_method = getattr(system_details, "defaultAuthnMethod", None)
     except BaseTapyException as e:
         if hasattr(e, "response") and e.response and e.response.status_code == 404:
-            raise CredentialError(
-                f"System '{system_id}' not found."
-            ) from e
-        raise CredentialError(
-            f"Failed to retrieve system '{system_id}': {e}"
-        ) from e
+            raise CredentialError(f"System '{system_id}' not found.") from e
+        raise CredentialError(f"Failed to retrieve system '{system_id}': {e}") from e
 
     if authn_method != "TMS_KEYS":
         raise CredentialError(
@@ -268,9 +260,7 @@ def revoke_credentials(
     effective_username = _resolve_username(t, username)
 
     try:
-        t.systems.removeUserCredential(
-            systemId=system_id, userName=effective_username
-        )
+        t.systems.removeUserCredential(systemId=system_id, userName=effective_username)
         if verbose:
             print(
                 f"Credentials revoked for user '{effective_username}' "

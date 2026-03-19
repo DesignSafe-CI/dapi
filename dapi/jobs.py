@@ -1412,8 +1412,7 @@ def list_jobs(
             results = [j for j in results if getattr(j, "appId", None) == app_id]
         if status:
             results = [
-                j for j in results
-                if getattr(j, "status", "").upper() == status.upper()
+                j for j in results if getattr(j, "status", "").upper() == status.upper()
             ]
         if verbose:
             print(f"Found {len(results)} jobs.")
@@ -1451,8 +1450,13 @@ def list_jobs(
 
     # Reorder: priority columns first
     priority = [
-        "name", "uuid", "status", "appId", "appVersion",
-        "created_dt", "ended_dt",
+        "name",
+        "uuid",
+        "status",
+        "appId",
+        "appVersion",
+        "created_dt",
+        "ended_dt",
     ]
     priority_present = [c for c in priority if c in df.columns]
     remaining = [c for c in df.columns if c not in priority_present]

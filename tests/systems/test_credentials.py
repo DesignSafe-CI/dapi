@@ -144,9 +144,7 @@ class TestEstablishCredentials(unittest.TestCase):
 
     def test_uses_explicit_username(self):
         self.t.systems.checkUserCredential.side_effect = UnauthorizedError()
-        establish_credentials(
-            self.t, "frontera", username="otheruser", verbose=False
-        )
+        establish_credentials(self.t, "frontera", username="otheruser", verbose=False)
         self.t.systems.createUserCredential.assert_called_once_with(
             systemId="frontera", userName="otheruser", createTmsKeys=True
         )
@@ -159,7 +157,9 @@ class TestEstablishCredentials(unittest.TestCase):
         with self.assertRaises(CredentialError):
             establish_credentials(self.t, "frontera", verbose=False)
 
-    def test_verbose_prints_skip_message(self, ):
+    def test_verbose_prints_skip_message(
+        self,
+    ):
         self.t.systems.checkUserCredential.return_value = Mock()
         # Should not raise; just prints a message
         establish_credentials(self.t, "frontera", verbose=True)
