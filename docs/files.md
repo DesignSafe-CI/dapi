@@ -30,14 +30,14 @@ Verify a path exists before using it:
 ds.files.to_uri("/MyData/analysis/input/", verify_exists=True)
 ```
 
-Reverse translation (URI back to Jupyter path):
+Reverse translation (URI back to Jupyter path, where `~` is `/home/jupyter` on DesignSafe JupyterHub):
 
 ```python
 ds.files.to_path("tapis://designsafe.storage.default/<username>/data/file.txt")
-# /home/jupyter/MyData/data/file.txt
+# ~/MyData/data/file.txt
 
 ds.files.to_path("tapis://designsafe.storage.community/datasets/eq.csv")
-# /home/jupyter/CommunityData/datasets/eq.csv
+# ~/CommunityData/datasets/eq.csv
 ```
 
 ### Supported path formats
@@ -45,7 +45,7 @@ ds.files.to_path("tapis://designsafe.storage.community/datasets/eq.csv")
 | Input path | Tapis system |
 |---|---|
 | `/MyData/...` | `designsafe.storage.default/<username>/...` |
-| `/home/jupyter/MyData/...` | `designsafe.storage.default/<username>/...` |
+| `~/MyData/...` | `designsafe.storage.default/<username>/...` |
 | `jupyter/MyData/...` | `designsafe.storage.default/<username>/...` |
 | `/CommunityData/...` | `designsafe.storage.community/...` |
 | `/projects/PRJ-XXXX/...` | `project-<uuid>/...` (auto-discovered) |
