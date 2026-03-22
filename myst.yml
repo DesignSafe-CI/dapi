@@ -28,7 +28,7 @@ project:
         - file: docs/examples/pylauncher.md
         - file: docs/examples/tms_credentials.md
         - file: docs/examples/database.md
-    - url: /api/
+    - url: /dapi/api/
       title: API Reference
   exclude:
     - _build/**
@@ -40,6 +40,7 @@ project:
     - AUTHORS.md
     - LICENSE.md
 site:
+  base_url: /dapi
   template: book-theme
   options:
     logo: docs/nheri.png
