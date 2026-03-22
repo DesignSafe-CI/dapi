@@ -8,7 +8,7 @@ Run many independent tasks within a single SLURM allocation using [PyLauncher](h
 
 - You have many independent serial runs (parameter studies, Monte Carlo, etc.)
 - Each run writes to its own output directory
-- You want efficient use of multi-core allocations without MPI
+- You want to use multi-core allocations without MPI
 
 ## End-to-End Workflow
 
@@ -72,13 +72,13 @@ job.monitor()
 
 Two styles are supported for command templates:
 
-**Token style** (default) — bare uppercase placeholders:
+**Token style** (default) -- bare uppercase placeholders:
 
 ```python
 "python run.py --mass MASS --length LENGTH"
 ```
 
-**Braces style** — for when token names might collide with other text:
+**Braces style** -- for when token names might collide with other text:
 
 ```python
 "python run.py --mass {MASS} --length {LENGTH}"
@@ -87,7 +87,7 @@ Two styles are supported for command templates:
 
 ## OpenSees Example
 
-A realistic parameter sweep for a cantilever pushover analysis:
+A parameter sweep for a cantilever pushover analysis:
 
 ```python
 sweep = {
@@ -120,12 +120,12 @@ Use TACC environment variables for collision-free output directories:
 $WORK/sweep_$SLURM_JOB_ID/run_ALPHA_BETA
 ```
 
-- `$WORK` — TACC Work filesystem (avoids archiving overhead)
-- `$SLURM_JOB_ID` — unique per job submission
-- `$LAUNCHER_JID` / `$LAUNCHER_TSK_ID` — unique per PyLauncher task
+- `$WORK` -- TACC Work filesystem (avoids archiving overhead)
+- `$SLURM_JOB_ID` -- unique per job submission
+- `$LAUNCHER_JID` / `$LAUNCHER_TSK_ID` -- unique per PyLauncher task
 
 ## Notes
 
-- **PyLauncher is NOT a dapi dependency** — it's pre-installed on TACC compute nodes. dapi only generates the input files.
-- **MPI is disabled** — PyLauncher's `ClassicLauncher` runs independent serial tasks. The `designsafe-agnostic-app` already has `isMpi: false`.
-- **Works with any app** — OpenSees, Python, MATLAB, Fortran binaries. The task list is just shell commands.
+- **PyLauncher is NOT a dapi dependency** -- it's pre-installed on TACC compute nodes. dapi only generates the input files.
+- **MPI is disabled** -- PyLauncher's `ClassicLauncher` runs independent serial tasks. The `designsafe-agnostic-app` already has `isMpi: false`.
+- **Works with any app** -- OpenSees, Python, MATLAB, Fortran binaries. The task list is just shell commands.

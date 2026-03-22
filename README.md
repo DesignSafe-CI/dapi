@@ -5,7 +5,7 @@
 [![PyPI version](https://badge.fury.io/py/dapi.svg)](https://badge.fury.io/py/dapi)
 [![Docs](https://img.shields.io/badge/view-docs-8A2BE2?color=8A2BE2)](https://designsafe-ci.github.io/dapi/)
 
-`dapi` is a Python library that simplifies the process of submitting, running, and monitoring [TAPIS v3](https://tapis.readthedocs.io/en/latest/) jobs on [DesignSafe](https://designsafe-ci.org) via [Jupyter Notebooks](https://jupyter.designsafe-ci.org) or from the command line.
+`dapi` is a Python library for submitting, running, and monitoring [TAPIS v3](https://tapis.readthedocs.io/en/latest/) jobs on [DesignSafe](https://designsafe-ci.org) via [Jupyter Notebooks](https://jupyter.designsafe-ci.org) or the command line.
 
 <img src="https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png" alt="dapi" width="300">
 
@@ -50,10 +50,29 @@ For e.g., to add the environment variable `NGL_DB_USER` edit `~/.bashrc`, `~/.zs
 pip install dapi
 ```
 
-To install the current development version:
+To install the development version:
 
 ```shell
-pip install git+https://github.com/DesignSafe-CI/dapi.git --quiet
+pip install git+https://github.com/DesignSafe-CI/dapi.git@dev --quiet
+```
+
+In Jupyter notebooks:
+
+```python
+%pip install dapi --quiet
+```
+
+To test the latest dev branch in a notebook:
+
+```python
+%pip uninstall dapi --yes
+%pip install git+https://github.com/DesignSafe-CI/dapi.git@dev --quiet
+```
+
+For local development (editable install — changes to source are reflected immediately):
+
+```shell
+pip install -e .
 ```
 
 ## Quick Start

@@ -1,13 +1,6 @@
 version: 1
 project:
   title: DAPI - DesignSafe API
-  authors:
-    - name: Krishna Kumar
-      email: krishnak@utexas.edu
-    - name: Pedro Arduino
-      email: parduino@uw.edu
-    - name: Scott Brandenberg
-      email: sjbrandenberg@ucla.edu
   copyright: "2024"
   github: https://github.com/DesignSafe-CI/dapi
   license: MIT
@@ -32,18 +25,8 @@ project:
         - file: docs/examples/pylauncher.md
         - file: docs/examples/tms_credentials.md
         - file: docs/examples/database.md
-    - title: API Reference
-      children:
-        - file: docs/api/index.md
-        - file: docs/api/client.md
-        - file: docs/api/jobs.md
-        - file: docs/api/launcher.md
-        - file: docs/api/files.md
-        - file: docs/api/apps.md
-        - file: docs/api/systems.md
-        - file: docs/api/database.md
-        - file: docs/api/auth.md
-        - file: docs/api/exceptions.md
+    - url: /api/
+      title: API Reference
   exclude:
     - _build/**
     - out/**
