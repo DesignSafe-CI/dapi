@@ -1,0 +1,47 @@
+version: 1
+project:
+  title: DAPI - DesignSafe API
+  copyright: "2024"
+  github: https://github.com/DesignSafe-CI/dapi
+  license: MIT
+  toc:
+    - file: docs/index.md
+    - title: Getting Started
+      children:
+        - file: docs/installation.md
+        - file: docs/authentication.md
+        - file: docs/quickstart.md
+    - title: User Guide
+      children:
+        - file: docs/apps.md
+        - file: docs/files.md
+        - file: docs/jobs.md
+        - file: docs/systems.md
+        - file: docs/database.md
+    - title: Examples
+      children:
+        - file: docs/examples.md
+        - file: docs/examples/apps.md
+        - file: docs/examples/mpm.md
+        - file: docs/examples/opensees.md
+        - file: docs/examples/openfoam.md
+        - file: docs/examples/pylauncher.md
+        - file: docs/examples/tms_credentials.md
+        - file: docs/examples/database.md
+    - url: /api/
+      title: API Reference
+  exclude:
+    - _build/**
+    - out/**
+    - "**.ipynb_checkpoints"
+    - examples/**
+    - docs-api/**
+    - README.md
+    - AUTHORS.md
+    - LICENSE.md
+site:
+  template: book-theme
+  options:
+    logo: docs/nheri.png
+    favicon: docs/favicon.ico
+    hide_footer_text: true

@@ -1,8 +1,7 @@
 import unittest
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 from dapi.files import _safe_quote, _parse_tapis_uri, get_ds_path_uri
 from tapipy.tapis import Tapis
-import urllib.parse
 
 
 class TestEncodingConsistency(unittest.TestCase):

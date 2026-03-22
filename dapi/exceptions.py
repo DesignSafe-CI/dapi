@@ -9,7 +9,7 @@ Typical Usage:
     ...     client.auth.authenticate()
     ... except AuthenticationError as e:
     ...     print(f"Authentication failed: {e}")
-    
+
     >>> try:
     ...     client.files.upload("/local/file.txt", "tapis://system/path/file.txt")
     ... except FileOperationError as e:
@@ -109,9 +109,29 @@ class SystemInfoError(DapiException):
 
     Example:
         >>> try:
-        ...     queues = client.systems.list_queues("nonexistent-system")
+        ...     queues = client.systems.queues("nonexistent-system")
         ... except SystemInfoError as e:
         ...     print(f"System info retrieval failed: {e}")
+    """
+
+    pass
+
+
+class CredentialError(DapiException):
+    """Exception raised when credential management operations fail.
+
+    This exception is raised when operations involving Tapis Managed Secrets (TMS)
+    credentials fail, such as checking, establishing, or revoking user credentials
+    on a Tapis execution system.
+
+    Args:
+        message (str): Description of the credential operation failure.
+
+    Example:
+        >>> try:
+        ...     client.systems.establish_credentials("frontera")
+        ... except CredentialError as e:
+        ...     print(f"Credential operation failed: {e}")
     """
 
     pass
@@ -135,7 +155,7 @@ class JobSubmissionError(DapiException):
 
     Example:
         >>> try:
-        ...     job = client.jobs.submit_request(invalid_job_request)
+        ...     job = client.jobs.submit(invalid_job_request)
         ... except JobSubmissionError as e:
         ...     print(f"Job submission failed: {e}")
         ...     if e.response:

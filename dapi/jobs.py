@@ -2,14 +2,12 @@
 import time
 import json
 import os
-import urllib.parse
-import logging  # Import logging for the timeout warning
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import Dict, Any, Optional, List
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
-from dataclasses import dataclass, field, asdict
 from tqdm.auto import tqdm
+import pandas as pd
 from .apps import get_app_details
 from .exceptions import (
     JobSubmissionError,
@@ -162,21 +160,31 @@ def generate_job_request(
             "archiveSystemId": archive_system_id,
             **({"archiveSystemDir": archive_system_dir} if archive_system_dir else {}),
             "archiveOnAppError": getattr(job_attrs, "archiveOnAppError", True),
-            "execSystemLogicalQueue": queue
-            if queue is not None
-            else getattr(job_attrs, "execSystemLogicalQueue", None),
-            "nodeCount": node_count
-            if node_count is not None
-            else getattr(job_attrs, "nodeCount", None),
-            "coresPerNode": cores_per_node
-            if cores_per_node is not None
-            else getattr(job_attrs, "coresPerNode", None),
-            "maxMinutes": max_minutes
-            if max_minutes is not None
-            else getattr(job_attrs, "maxMinutes", None),
-            "memoryMB": memory_mb
-            if memory_mb is not None
-            else getattr(job_attrs, "memoryMB", None),
+            "execSystemLogicalQueue": (
+                queue
+                if queue is not None
+                else getattr(job_attrs, "execSystemLogicalQueue", None)
+            ),
+            "nodeCount": (
+                node_count
+                if node_count is not None
+                else getattr(job_attrs, "nodeCount", None)
+            ),
+            "coresPerNode": (
+                cores_per_node
+                if cores_per_node is not None
+                else getattr(job_attrs, "coresPerNode", None)
+            ),
+            "maxMinutes": (
+                max_minutes
+                if max_minutes is not None
+                else getattr(job_attrs, "maxMinutes", None)
+            ),
+            "memoryMB": (
+                memory_mb
+                if memory_mb is not None
+                else getattr(job_attrs, "memoryMB", None)
+            ),
             **(
                 {"isMpi": getattr(job_attrs, "isMpi", None)}
                 if getattr(job_attrs, "isMpi", None) is not None
@@ -892,7 +900,7 @@ class SubmittedJob:
             return current_status  # Should be a terminal state if loops finished
 
         except KeyboardInterrupt:
-            print(f"\nMonitoring interrupted by user.")
+            print("\nMonitoring interrupted by user.")
             return STATUS_INTERRUPTED
         except JobMonitorError as e:
             print(f"\nError during monitoring: {e}")
@@ -905,12 +913,12 @@ class SubmittedJob:
             if pbar_waiting is not None:
                 try:
                     pbar_waiting.close()
-                except:
+                except Exception:
                     pass
             if pbar_monitoring is not None:
                 try:
                     pbar_monitoring.close()
-                except:
+                except Exception:
                     pass
 
     def print_runtime_summary(self, verbose: bool = False):
@@ -1340,3 +1348,127 @@ def interpret_job_status(final_status: str, job_uuid: Optional[str] = None):
         print(f"{job_id_str} ended with status: {final_status}")
     else:
         print(f"{job_id_str} ended with an unexpected status: {final_status}")
+
+
+def list_jobs(
+    tapis_client: Tapis,
+    app_id: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 100,
+    output: str = "df",
+    verbose: bool = False,
+):
+    """Fetch Tapis jobs with optional filtering.
+
+    Retrieves jobs from Tapis ordered by creation date (newest first)
+    and optionally filters by app ID and/or status. Filters are applied
+    client-side after fetching.
+
+    Args:
+        tapis_client: Authenticated Tapis client instance.
+        app_id: Filter by application ID (e.g., "opensees-mp-s3").
+        status: Filter by job status (e.g., "FINISHED", "FAILED").
+            Case-insensitive.
+        limit: Maximum number of jobs to fetch from Tapis. Defaults to 100.
+        output: Output format. "df" returns a pandas DataFrame (default),
+            "list" returns a list of dicts, "raw" returns the raw
+            TapisResult objects.
+        verbose: If True, prints the number of jobs found.
+
+    Returns:
+        Depends on ``output``:
+        - "df": pandas DataFrame with formatted datetime columns.
+        - "list": list of dicts with job metadata.
+        - "raw": list of TapisResult objects as returned by the API.
+
+    Raises:
+        JobMonitorError: If the Tapis API call fails.
+        ValueError: If output format is not recognized.
+
+    Example:
+        >>> df = list_jobs(t, app_id="matlab-r2023a", status="FINISHED")
+        >>> jobs = list_jobs(t, output="list")
+        >>> raw = list_jobs(t, limit=10, output="raw")
+    """
+    if output not in ("df", "list", "raw"):
+        raise ValueError(f"output must be 'df', 'list', or 'raw', got '{output}'")
+
+    try:
+        jobs_list = tapis_client.jobs.getJobList(
+            limit=limit,
+            orderBy="created(desc)",
+        )
+    except BaseTapyException as e:
+        raise JobMonitorError(f"Failed to list jobs: {e}") from e
+    except Exception as e:
+        raise JobMonitorError(f"Unexpected error listing jobs: {e}") from e
+
+    if not jobs_list:
+        if verbose:
+            print("Found 0 jobs.")
+        if output == "raw":
+            return []
+        if output == "list":
+            return []
+        return pd.DataFrame()
+
+    # For raw output, apply filters manually on TapisResult objects
+    if output == "raw":
+        results = jobs_list
+        if app_id:
+            results = [j for j in results if getattr(j, "appId", None) == app_id]
+        if status:
+            results = [
+                j for j in results if getattr(j, "status", "").upper() == status.upper()
+            ]
+        if verbose:
+            print(f"Found {len(results)} jobs.")
+        return results
+
+    # Convert TapisResult objects to dicts
+    jobs_dicts = [job.__dict__ for job in jobs_list]
+
+    # Apply client-side filters
+    if app_id:
+        jobs_dicts = [j for j in jobs_dicts if j.get("appId") == app_id]
+    if status:
+        jobs_dicts = [
+            j for j in jobs_dicts if j.get("status", "").upper() == status.upper()
+        ]
+
+    if verbose:
+        print(f"Found {len(jobs_dicts)} jobs.")
+
+    if output == "list":
+        return jobs_dicts
+
+    # Build DataFrame
+    df = pd.DataFrame(jobs_dicts)
+
+    if df.empty:
+        return df
+
+    # Add formatted datetime columns
+    time_cols = ["created", "ended", "remoteStarted", "lastUpdated"]
+    for col in time_cols:
+        if col in df.columns:
+            df[f"{col}_dt"] = pd.to_datetime(df[col], utc=True, errors="coerce")
+            df[f"{col}_date"] = df[f"{col}_dt"].dt.date
+
+    # Reorder: priority columns first
+    priority = [
+        "name",
+        "uuid",
+        "status",
+        "appId",
+        "appVersion",
+        "created_dt",
+        "ended_dt",
+    ]
+    priority_present = [c for c in priority if c in df.columns]
+    remaining = [c for c in df.columns if c not in priority_present]
+    df = df[priority_present + remaining]
+
+    df = df.reset_index(drop=True)
+
+    return df

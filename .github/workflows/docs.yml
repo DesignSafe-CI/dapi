@@ -1,4 +1,4 @@
-name: deploy-book
+name: deploy-docs
 
 on:
   push:
@@ -16,36 +16,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-book:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       - name: Install dependencies
-        run: |
-          pip install "jupyter-book<1"
-          pip install .
+        run: uv pip install --system ".[docs]"
 
-      - name: Build the book
-        run: |
-          jupyter-book build . --path-output out
+      # Build narrative docs (guides, examples) with Jupyter Book / MyST
+      - name: Build narrative docs
+        run: jupyter-book build --html
+
+      # Build API reference with Sphinx
+      - name: Build API docs
+        run: sphinx-build -b html docs-api _build/html/api
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out/_build/html
+          path: ./_build/html
 
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: deploy-book
+    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

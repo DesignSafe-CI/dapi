@@ -1,6 +1,6 @@
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
-from typing import List, Any, Optional
+from typing import List, Optional
 from .exceptions import AppDiscoveryError
 
 
@@ -105,7 +105,7 @@ def get_app_details(
             app_info = t.apps.getAppLatestVersion(appId=app_id)
 
         if verbose:
-            print(f"\nApp Details:")
+            print("\nApp Details:")
             print(f"  ID: {app_info.id}")
             print(f"  Version: {app_info.version}")
             print(f"  Owner: {app_info.owner}")

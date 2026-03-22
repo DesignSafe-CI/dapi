@@ -23,6 +23,7 @@ class TestAuthInit(unittest.TestCase):
             base_url="https://designsafe.tapis.io",
             username="test_user",
             password="test_password",
+            download_latest_specs=False,
         )
         mock_tapis_obj.get_tokens.assert_called_once()
         self.assertEqual(result, mock_tapis_obj)
@@ -49,6 +50,7 @@ class TestAuthInit(unittest.TestCase):
             base_url="https://designsafe.tapis.io",
             username="test_user",
             password="test_password",
+            download_latest_specs=False,
         )
         mock_tapis_obj.get_tokens.assert_called_once()
         self.assertEqual(result, mock_tapis_obj)

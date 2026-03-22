@@ -5,10 +5,11 @@ from . import apps as apps_module
 from . import files as files_module
 from . import jobs as jobs_module
 from . import systems as systems_module
+from . import launcher as launcher_module
 from .db.accessor import DatabaseAccessor
 
 # Import only the necessary classes/functions from jobs
-from .jobs import SubmittedJob, interpret_job_status
+from .jobs import SubmittedJob
 from typing import List, Optional, Dict, Any
 
 
@@ -40,21 +41,21 @@ class DSClient:
     Example:
         Basic usage with automatic authentication:
 
-        >>> client = DSClient()
+        >>> ds = DSClient()
         Enter DesignSafe Username: myuser
         Enter DesignSafe Password: [hidden]
         Authentication successful.
 
         Using explicit credentials:
 
-        >>> client = DSClient(username="myuser", password="mypass")
+        >>> ds = DSClient(username="myuser", password="mypass")
         Authentication successful.
 
         Using a pre-authenticated Tapis client:
 
         >>> tapis = Tapis(base_url="https://designsafe.tapis.io", ...)
         >>> tapis.get_tokens()
-        >>> client = DSClient(tapis_client=tapis)
+        >>> ds = DSClient(tapis_client=tapis)
     """
 
     def __init__(self, tapis_client: Optional[Tapis] = None, **auth_kwargs):
@@ -91,6 +92,9 @@ class DSClient:
         self.jobs = JobMethods(self.tapis)
         self.systems = SystemMethods(self.tapis)
         self.db = DatabaseAccessor()
+
+        # Auto-setup TMS credentials on TACC execution systems
+        systems_module.setup_tms_credentials(self.tapis)
 
 
 # --- AppMethods and FileMethods remain the same ---
@@ -165,10 +169,8 @@ class FileMethods:
         """
         self._tapis = tapis_client
 
-    def translate_path_to_uri(self, *args, **kwargs) -> str:
+    def to_uri(self, *args, **kwargs) -> str:
         """Translate DesignSafe-style paths to Tapis URIs.
-
-        This is a convenience wrapper around files_module.get_ds_path_uri().
 
         Args:
             *args: Positional arguments passed to get_ds_path_uri().
@@ -183,10 +185,8 @@ class FileMethods:
         """
         return files_module.get_ds_path_uri(self._tapis, *args, **kwargs)
 
-    def translate_uri_to_path(self, *args, **kwargs) -> str:
+    def to_path(self, *args, **kwargs) -> str:
         """Translate Tapis URIs to DesignSafe local paths.
-
-        This is a convenience wrapper around files_module.tapis_uri_to_local_path().
 
         Args:
             *args: Positional arguments passed to tapis_uri_to_local_path().
@@ -196,7 +196,9 @@ class FileMethods:
             str: The corresponding DesignSafe local path (e.g., /home/jupyter/MyData/path).
 
         Example:
-            >>> local_path = client.files.translate_uri_to_path("tapis://designsafe.storage.default/user/data")
+            >>> local_path = ds.files.to_path(
+            ...     "tapis://designsafe.storage.default/user/data"
+            ... )
             >>> print(local_path)  # "/home/jupyter/MyData/data"
         """
         return files_module.tapis_uri_to_local_path(*args, **kwargs)
@@ -266,7 +268,7 @@ class SystemMethods:
         """
         self._tapis = tapis_client
 
-    def list_queues(self, system_id: str, verbose: bool = True) -> List[Any]:
+    def queues(self, system_id: str, verbose: bool = True) -> List[Any]:
         """List logical queues available on a Tapis execution system.
 
         This is a convenience wrapper around systems_module.list_system_queues().
@@ -287,6 +289,191 @@ class SystemMethods:
             self._tapis, system_id, verbose=verbose
         )
 
+    def check_credentials(self, system_id: str, username: str = None) -> bool:
+        """Check whether TMS credentials exist for a user on a system.
+
+        Args:
+            system_id (str): The ID of the Tapis system (e.g., 'frontera').
+            username (str, optional): Username to check. Defaults to
+                the authenticated user.
+
+        Returns:
+            bool: True if credentials exist, False otherwise.
+
+        Raises:
+            CredentialError: If the credential check fails unexpectedly.
+            ValueError: If system_id is empty.
+        """
+        return systems_module.check_credentials(
+            self._tapis, system_id, username=username
+        )
+
+    def establish_credentials(
+        self,
+        system_id: str,
+        username: str = None,
+        force: bool = False,
+        verbose: bool = True,
+    ) -> None:
+        """Establish TMS credentials for a user on a Tapis system.
+
+        Idempotent: skips creation if credentials already exist (unless force=True).
+        Only supported for systems using TMS_KEYS authentication.
+
+        Args:
+            system_id (str): The ID of the Tapis system (e.g., 'frontera').
+            username (str, optional): Username. Defaults to the authenticated user.
+            force (bool, optional): Re-create even if credentials exist.
+                Defaults to False.
+            verbose (bool, optional): Print status messages. Defaults to True.
+
+        Raises:
+            CredentialError: If the system is not TMS_KEYS or creation fails.
+            ValueError: If system_id is empty.
+        """
+        return systems_module.establish_credentials(
+            self._tapis,
+            system_id,
+            username=username,
+            force=force,
+            verbose=verbose,
+        )
+
+    def revoke_credentials(
+        self,
+        system_id: str,
+        username: str = None,
+        verbose: bool = True,
+    ) -> None:
+        """Remove TMS credentials for a user on a Tapis system.
+
+        Idempotent: succeeds silently if credentials do not exist.
+
+        Args:
+            system_id (str): The ID of the Tapis system (e.g., 'frontera').
+            username (str, optional): Username. Defaults to the authenticated user.
+            verbose (bool, optional): Print status messages. Defaults to True.
+
+        Raises:
+            CredentialError: If credential removal fails unexpectedly.
+            ValueError: If system_id is empty.
+        """
+        return systems_module.revoke_credentials(
+            self._tapis, system_id, username=username, verbose=verbose
+        )
+
+
+class ParametricSweepMethods:
+    """Interface for PyLauncher parameter sweeps.
+
+    - ``generate`` — preview (``preview=True``) or write sweep files.
+    - ``submit`` — submit the sweep job to TACC.
+    """
+
+    def __init__(self, tapis_client):
+        self._tapis = tapis_client
+
+    def generate(
+        self,
+        command: str,
+        sweep: Dict[str, Any],
+        directory: str = None,
+        *,
+        placeholder_style: str = "token",
+        debug: str = None,
+        preview: bool = False,
+    ):
+        """Generate PyLauncher sweep files or preview the parameter grid.
+
+        With ``preview=True``, returns a DataFrame of all parameter
+        combinations — no files are written.
+
+        Otherwise, expands *command* into one command per combination
+        and writes ``runsList.txt`` and ``call_pylauncher.py`` into
+        *directory*. Returns the list of generated commands.
+
+        Args:
+            command: Command template with placeholders matching sweep keys.
+            sweep: Mapping of placeholder name to sequence of values.
+            directory: Directory to write files into (created if needed).
+                Required when *preview* is ``False``.
+            placeholder_style: ``"token"`` (default) for bare ``ALPHA``,
+                or ``"braces"`` for ``{ALPHA}``.
+            debug: Optional debug string (e.g. ``"host+job"``).
+            preview: If ``True``, return a DataFrame (dry run).
+
+        Returns:
+            ``List[str]`` of commands, or ``pandas.DataFrame`` when
+            *preview* is ``True``.
+        """
+        return launcher_module.generate_sweep(
+            command,
+            sweep,
+            directory,
+            placeholder_style=placeholder_style,
+            debug=debug,
+            preview=preview,
+        )
+
+    def submit(
+        self,
+        directory: str,
+        app_id: str,
+        allocation: str,
+        *,
+        node_count: Optional[int] = None,
+        cores_per_node: Optional[int] = None,
+        max_minutes: Optional[int] = None,
+        queue: Optional[str] = None,
+        archive_system: Optional[str] = "designsafe",
+        archive_path: Optional[str] = None,
+        **kwargs,
+    ):
+        """Submit a PyLauncher sweep job.
+
+        Translates *directory* to a Tapis URI, builds a job request with
+        ``call_pylauncher.py`` as the script, and submits it.
+
+        Archives to the user's DesignSafe storage by default (not the
+        app's archive path, which may belong to the app owner).
+
+        Args:
+            directory: Path to the input directory containing
+                ``runsList.txt`` and ``call_pylauncher.py``
+                (e.g. ``"/MyData/sweep/"``).
+            app_id: Tapis application ID (e.g. ``"designsafe-agnostic-app"``).
+            allocation: TACC allocation to charge.
+            node_count: Number of compute nodes.
+            cores_per_node: Cores per node.
+            max_minutes: Maximum runtime in minutes.
+            queue: Execution queue name.
+            archive_system: Archive system. Defaults to ``"designsafe"``
+                (the user's own storage).
+            archive_path: Archive directory path. If None, uses the
+                default ``tapis-jobs-archive/`` under the user's MyData.
+            **kwargs: Additional arguments passed to
+                ``ds.jobs.generate()``.
+
+        Returns:
+            SubmittedJob: A job object for monitoring via ``.monitor()``.
+        """
+        input_uri = files_module.get_ds_path_uri(self._tapis, directory)
+        job_request = jobs_module.generate_job_request(
+            tapis_client=self._tapis,
+            app_id=app_id,
+            input_dir_uri=input_uri,
+            script_filename="call_pylauncher.py",
+            node_count=node_count,
+            cores_per_node=cores_per_node,
+            max_minutes=max_minutes,
+            queue=queue,
+            allocation=allocation,
+            archive_system=archive_system,
+            archive_path=archive_path,
+            **kwargs,
+        )
+        return jobs_module.submit_job_request(self._tapis, job_request)
+
 
 class JobMethods:
     """Interface for Tapis job submission, monitoring, and management.
@@ -296,6 +483,10 @@ class JobMethods:
 
     Args:
         tapis_client (Tapis): Authenticated Tapis client instance.
+
+    Attributes:
+        parametric_sweep (ParametricSweepMethods): Interface for PyLauncher
+            parameter sweep generation.
     """
 
     def __init__(self, tapis_client: Tapis):
@@ -305,9 +496,10 @@ class JobMethods:
             tapis_client (Tapis): Authenticated Tapis client instance.
         """
         self._tapis = tapis_client
+        self.parametric_sweep = ParametricSweepMethods(tapis_client)
 
     # Method to generate the request dictionary
-    def generate_request(
+    def generate(
         self,
         app_id: str,
         input_dir_uri: str,
@@ -378,12 +570,12 @@ class JobMethods:
             JobSubmissionError: If job request generation fails.
 
         Example:
-            >>> job_request = client.jobs.generate_request(
+            >>> job_request = ds.jobs.generate(
             ...     app_id="matlab-r2023a",
             ...     input_dir_uri="tapis://designsafe.storage.default/username/input/",
             ...     script_filename="run_analysis.m",
             ...     max_minutes=120,
-            ...     allocation="MyProject-123"
+            ...     allocation="MyProject-123",
             ... )
         """
         return jobs_module.generate_job_request(
@@ -413,47 +605,45 @@ class JobMethods:
         )
 
     # Method to submit the generated request dictionary
-    def submit_request(self, job_request: Dict[str, Any]) -> SubmittedJob:
-        """Submit a pre-generated job request dictionary to Tapis.
+    def submit(self, job_request: Dict[str, Any]) -> SubmittedJob:
+        """Submit a job request dictionary to Tapis.
 
-        This method takes a complete job request dictionary (typically generated
-        by generate_request) and submits it to Tapis for execution.
+        Takes a job request dictionary (typically from ``generate()``) and
+        submits it to Tapis for execution.
 
         Args:
-            job_request (Dict[str, Any]): Complete job request dictionary containing
-                all necessary job parameters and configuration.
+            job_request (Dict[str, Any]): Complete job request dictionary.
 
         Returns:
             SubmittedJob: A SubmittedJob object for monitoring and managing the job.
 
         Raises:
             ValueError: If job_request is not a dictionary.
-            JobSubmissionError: If the Tapis submission fails or encounters an error.
+            JobSubmissionError: If the Tapis submission fails.
 
         Example:
-            >>> job_request = client.jobs.generate_request(...)
-            >>> submitted_job = client.jobs.submit_request(job_request)
-            >>> print(f"Job submitted with UUID: {submitted_job.uuid}")
+            >>> job_request = ds.jobs.generate(...)
+            >>> job = ds.jobs.submit(job_request)
+            >>> print(f"Job submitted with UUID: {job.uuid}")
         """
         return jobs_module.submit_job_request(self._tapis, job_request)
 
-    # --- Management methods remain the same ---
-    def get(self, job_uuid: str) -> SubmittedJob:
-        """Get a SubmittedJob object for managing an existing job by UUID.
+    def job(self, job_uuid: str) -> SubmittedJob:
+        """Get a SubmittedJob object for an existing job by UUID.
 
         Args:
             job_uuid (str): The UUID of an existing Tapis job.
 
         Returns:
-            SubmittedJob: A SubmittedJob object for monitoring and managing the job.
+            SubmittedJob: A job object for monitoring via ``.monitor()``.
 
         Example:
-            >>> job = client.jobs.get("12345678-1234-1234-1234-123456789abc")
-            >>> status = job.status
+            >>> job = ds.jobs.job("12345678-1234-1234-1234-123456789abc")
+            >>> job.monitor()
         """
         return SubmittedJob(self._tapis, job_uuid)
 
-    def get_status(self, job_uuid: str) -> str:
+    def status(self, job_uuid: str) -> str:
         """Get the current status of a job by UUID.
 
         Args:
@@ -466,12 +656,12 @@ class JobMethods:
             JobMonitorError: If status retrieval fails.
 
         Example:
-            >>> status = client.jobs.get_status("12345678-1234-1234-1234-123456789abc")
-            >>> print(f"Job status: {status}")
+            >>> ds.jobs.status("12345678-1234-1234-1234-123456789abc")
+            'FINISHED'
         """
         return jobs_module.get_job_status(self._tapis, job_uuid)
 
-    def get_runtime_summary(self, job_uuid: str, verbose: bool = False):
+    def runtime_summary(self, job_uuid: str, verbose: bool = False):
         """Print the runtime summary for a job by UUID.
 
         Args:
@@ -480,7 +670,7 @@ class JobMethods:
                 Defaults to False.
 
         Example:
-            >>> client.jobs.get_runtime_summary("12345678-1234-1234-1234-123456789abc")
+            >>> ds.jobs.runtime_summary("12345678-1234-1234-1234-123456789abc")
             Runtime Summary
             ---------------
             QUEUED  time: 00:05:30
@@ -497,7 +687,53 @@ class JobMethods:
             job_uuid (str, optional): The job UUID for context in the message.
 
         Example:
-            >>> client.jobs.interpret_status("FINISHED", "12345678-1234-1234-1234-123456789abc")
+            >>> ds.jobs.interpret_status(
+            ...     "FINISHED", "12345678-1234-1234-1234-123456789abc"
+            ... )
             Job 12345678-1234-1234-1234-123456789abc completed successfully.
         """
         jobs_module.interpret_job_status(final_status, job_uuid)
+
+    def list(
+        self,
+        app_id: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 100,
+        output: str = "df",
+        verbose: bool = False,
+    ):
+        """List jobs with optional filtering.
+
+        Fetches jobs from Tapis ordered by creation date (newest first).
+        Filters are applied client-side.
+
+        Args:
+            app_id (str, optional): Filter by application ID.
+            status (str, optional): Filter by job status (e.g., "FINISHED").
+                Case-insensitive.
+            limit (int, optional): Maximum jobs to fetch. Defaults to 100.
+            output (str, optional): Output format. "df" for pandas DataFrame
+                (default), "list" for list of dicts, "raw" for TapisResult
+                objects.
+            verbose (bool, optional): Print job count. Defaults to False.
+
+        Returns:
+            Depends on output: DataFrame, list of dicts, or list of
+            TapisResult objects.
+
+        Raises:
+            JobMonitorError: If the Tapis API call fails.
+
+        Example:
+            >>> df = ds.jobs.list(app_id="matlab-r2023a", status="FINISHED")
+            >>> jobs = ds.jobs.list(output="list")
+            >>> raw = ds.jobs.list(limit=10, output="raw")
+        """
+        return jobs_module.list_jobs(
+            self._tapis,
+            app_id=app_id,
+            status=status,
+            limit=limit,
+            output=output,
+            verbose=verbose,
+        )

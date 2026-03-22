@@ -167,8 +167,8 @@ class DatabaseAccessor:
         Example:
             >>> accessor = DatabaseAccessor()
             >>> ngl_db = accessor.ngl  # Creates connection
-            >>> vp_db = accessor.vp    # Creates connection
-            >>> accessor.close_all()   # Closes both connections
+            >>> vp_db = accessor.vp  # Creates connection
+            >>> accessor.close_all()  # Closes both connections
             Closing all active database engines/pools...
             Closing connection pool for database 'sjbrande_ngl_db'.
             Closing connection pool for database 'sjbrande_vpdb'.
@@ -181,9 +181,9 @@ class DatabaseAccessor:
                 try:
                     # Call the close method on the DSDatabase instance
                     db_instance.close()
-                    self._connections[
-                        dbname
-                    ] = None  # Clear instance after closing engine
+                    self._connections[dbname] = (
+                        None  # Clear instance after closing engine
+                    )
                     closed_count += 1
                 except Exception as e:
                     print(f"Error closing engine for '{dbname}': {e}")

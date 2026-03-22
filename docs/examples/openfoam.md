@@ -90,7 +90,7 @@ solvers = {
 
 ```python
 # Convert DesignSafe path to Tapis URI format
-input_uri = ds.files.translate_path_to_uri(ds_path)
+input_uri = ds.files.to_uri(ds_path)
 print(f"Input Directory Tapis URI: {input_uri}")
 ```
 
@@ -104,7 +104,7 @@ print(f"Input Directory Tapis URI: {input_uri}")
 
 ```python
 # Generate job request dictionary using app defaults
-job_dict = ds.jobs.generate_request(
+job_dict = ds.jobs.generate(
  app_id=app_id_to_use,
  input_dir_uri=input_uri,
  max_minutes=max_job_minutes,
@@ -130,7 +130,7 @@ print(json.dumps(job_dict, indent=2, default=str))
 
 ```python
 # Extended job configuration options
-job_dict = ds.jobs.generate_request(
+job_dict = ds.jobs.generate(
  app_id=app_id_to_use,
  input_dir_uri=input_uri,
  max_minutes=max_job_minutes,
@@ -191,7 +191,7 @@ resources = {
 
 ```python
 # Submit the job to TACC
-submitted_job = ds.jobs.submit_request(job_dict)
+submitted_job = ds.jobs.submit(job_dict)
 print(f"Job UUID: {submitted_job.uuid}")
 ```
 
@@ -239,7 +239,7 @@ ds.jobs.interpret_status(final_status, submitted_job.uuid)
 submitted_job.print_runtime_summary(verbose=False)
 
 # Get current job status
-current_status = ds.jobs.get_status(submitted_job.uuid)
+current_status = ds.jobs.status(submitted_job.uuid)
 print(f"Current status: {current_status}")
 
 # Display last status message from TACC
@@ -250,7 +250,7 @@ print(f"Last message: {submitted_job.last_message}")
 
 - **`interpret_status`**: Provides human-readable explanation of job outcome
 - **`print_runtime_summary`**: Shows time spent in each job phase (queued, running, etc.)
-- **`get_status`**: Gets current job status (useful for checking later)
+- **`status`**: Gets current job status (useful for checking later)
 - **`last_message`**: Shows last status message from the job scheduler
 
 ### Step 10: View Job Output
@@ -302,7 +302,7 @@ typical_outputs = {
 
 ```python
 # Convert archive URI to local path for analysis
-archive_path = ds.files.translate_uri_to_path(archive_uri)
+archive_path = ds.files.to_path(archive_uri)
 print(f"Archive path: {archive_path}")
 
 # Import plotting libraries
@@ -322,7 +322,7 @@ print(f"Loaded force coefficients data with shape: {data.shape}")
 
 **What this does:**
 
-- **`translate_uri_to_path`**: Converts Tapis URI to local file system path
+- **`to_path`**: Converts Tapis URI to local file system path
 - **`pandas.read_csv`**: Reads force coefficient data (much cleaner than manual parsing)
 - **`skiprows=9`**: Skips OpenFOAM header lines
 - **`sep='\t'`**: Uses tab separator (OpenFOAM default)
@@ -434,7 +434,7 @@ systems = {
 
 ```python
 # Full-featured job request showing all options
-complete_job = ds.jobs.generate_request(
+complete_job = ds.jobs.generate(
  # Required parameters
  app_id="openfoam-stampede3",
  input_dir_uri=input_uri,

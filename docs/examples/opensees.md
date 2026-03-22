@@ -80,7 +80,7 @@ control_corespernode: int = 16 # Cores per node for parallel analysis
 
 ```python
 # Convert DesignSafe path to Tapis URI format
-input_uri = ds.files.translate_path_to_uri(ds_path)
+input_uri = ds.files.to_uri(ds_path)
 print(f"Input Directory Tapis URI: {input_uri}")
 ```
 
@@ -94,7 +94,7 @@ print(f"Input Directory Tapis URI: {input_uri}")
 
 ```python
 # Generate job request dictionary using app defaults
-job_dict = ds.jobs.generate_request(
+job_dict = ds.jobs.generate(
  app_id=app_id,
  input_dir_uri=input_uri,
  script_filename=input_filename,
@@ -125,7 +125,7 @@ print(json.dumps(job_dict, indent=2, default=str))
 
 ```python
 # Extended job configuration options
-job_dict = ds.jobs.generate_request(
+job_dict = ds.jobs.generate(
  app_id=app_id,
  input_dir_uri=input_uri,
  script_filename=input_filename,
@@ -175,7 +175,7 @@ Visit [OpenSees userguide on DesignSafe](https://www.designsafe-ci.org/user-guid
 
 ```python
 # Submit job using dapi
-submitted_job = ds.jobs.submit_request(job_dict)
+submitted_job = ds.jobs.submit(job_dict)
 print(f"Job launched with UUID: {submitted_job.uuid}")
 print("Can also check in DesignSafe portal under - Workspace > Tools & Application > Job Status")
 ```
@@ -225,7 +225,7 @@ ds.jobs.interpret_status(final_status, submitted_job.uuid)
 submitted_job.print_runtime_summary(verbose=False)
 
 # Get current job status
-current_status = ds.jobs.get_status(submitted_job.uuid)
+current_status = ds.jobs.status(submitted_job.uuid)
 print(f"Current status: {current_status}")
 
 # Display last status message from TACC
@@ -236,7 +236,7 @@ print(f"Last message: {submitted_job.last_message}")
 
 - **`interpret_status`**: Provides human-readable explanation of job outcome
 - **`print_runtime_summary`**: Shows time spent in each job phase (queued, running, etc.)
-- **`get_status`**: Gets current job status (useful for checking later)
+- **`status`**: Gets current job status (useful for checking later)
 - **`last_message`**: Shows last status message from the job scheduler
 
 ### Step 10: Access Job Archive and Results
@@ -247,7 +247,7 @@ archive_uri = submitted_job.archive_uri
 print(f"Archive URI: {archive_uri}")
 
 # Translate archive URI to local DesignSafe path
-local_archive_path = ds.files.translate_uri_to_path(archive_uri)
+local_archive_path = ds.files.to_path(archive_uri)
 print(f"Local archive path: {local_archive_path}")
 
 # List archive contents
@@ -260,7 +260,7 @@ for item in archive_files:
 **What this does:**
 
 - **`archive_uri`**: Location where job results are stored
-- **`translate_uri_to_path`**: Converts Tapis URI to local path for analysis
+- **`to_path`**: Converts Tapis URI to local path for analysis
 - **`ds.files.list`**: Lists all files and directories in the archive
 - Shows output files like analysis results, output data, and logs
 
@@ -290,7 +290,7 @@ try:
  print(f"- {item.name} ({item.type})")
  
  # Change to the archive directory for post-processing
- archive_path = ds.files.translate_uri_to_path(input_dir_archive_uri)
+ archive_path = ds.files.to_path(input_dir_archive_uri)
  os.chdir(archive_path)
  print(f"\nChanged to directory: {archive_path}")
  
