@@ -7,7 +7,16 @@ Discover and manage applications on DesignSafe.
 
 ---
 
-### Material Point Method (MPM) Jobs
+### Database Queries
+Access DesignSafe research databases (NGL, Earthquake Recovery, Vp).
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/db.ipynb)
+
+[Full documentation](examples/database.md)
+
+---
+
+### Material Point Method (MPM)
 Submit and monitor MPM simulations.
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/mpm/mpm-minimal.ipynb)
@@ -16,12 +25,12 @@ Submit and monitor MPM simulations.
 
 ---
 
-### PyLauncher Parameter Sweeps
-Run many independent tasks within a single SLURM allocation.
+### OpenFOAM CFD
+Computational fluid dynamics with OpenFOAM.
 
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_sweep.ipynb)
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/openfoam/openfoam-minimal.ipynb)
 
-[Full documentation](examples/pylauncher.md)
+[Full documentation](examples/openfoam.md)
 
 ---
 
@@ -34,28 +43,16 @@ Earthquake engineering simulations with OpenSees.
 
 ---
 
-### OpenFOAM CFD
+### PyLauncher Parameter Sweeps
+Run many independent tasks within a single SLURM allocation.
 
-Computational fluid dynamics with OpenFOAM.
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_sweep.ipynb)
 
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/openfoam/openfoam-minimal.ipynb)
-
-[Full documentation](examples/openfoam.md)
-
----
-
-### Database Queries
-
-Access DesignSafe research databases (NGL, Earthquake Recovery, Vp).
-
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/db.ipynb)
-
-[Full documentation](examples/database.md)
+[Full documentation](examples/pylauncher.md)
 
 ---
 
 ### TMS Credentials
-
 Manage SSH credentials on TACC execution systems.
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/tms_credentials.ipynb)

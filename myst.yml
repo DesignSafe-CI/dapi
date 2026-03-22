@@ -22,12 +22,13 @@ project:
       children:
         - file: docs/examples.md
         - file: docs/examples/apps.md
-        - file: docs/examples/mpm.md
-        - file: docs/examples/opensees.md
-        - file: docs/examples/openfoam.md
-        - file: docs/examples/pylauncher.md
-        - file: docs/examples/tms_credentials.md
         - file: docs/examples/database.md
+        - file: docs/examples/mpm.md
+        - file: docs/examples/openfoam.md
+        - file: docs/examples/opensees.md
+        - file: docs/examples/pylauncher.md
+        - file: docs/examples/pylauncher_opensees.md
+        - file: docs/examples/tms_credentials.md
     - url: /dapi/api/
       title: API Reference
   exclude:
@@ -40,9 +41,9 @@ project:
     - AUTHORS.md
     - LICENSE.md
 site:
-  base_url: /dapi
   template: book-theme
   options:
+    base_url: /dapi
     logo: docs/nheri.png
     favicon: docs/favicon.ico
     hide_footer_text: true

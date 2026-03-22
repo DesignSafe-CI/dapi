@@ -87,7 +87,7 @@ Two styles are supported for command templates:
 
 ## OpenSees Example
 
-A parameter sweep for a cantilever pushover analysis:
+A parameter sweep for a cantilever pushover analysis. See the full notebook: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_opensees.ipynb)
 
 ```python
 sweep = {
