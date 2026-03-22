@@ -47,7 +47,7 @@ Submit and monitor MPM simulations for large deformation problems.
 ### PyLauncher Parameter Sweeps
 Run many independent tasks within a single SLURM allocation using PyLauncher.
 
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher_sweep.ipynb)
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_sweep.ipynb)
 
 **What you'll learn:**
 - Generating parameter sweep commands from templates

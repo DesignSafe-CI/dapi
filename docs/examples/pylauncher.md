@@ -2,7 +2,7 @@
 
 Run many independent tasks within a single SLURM allocation using [PyLauncher](https://github.com/TACC/pylauncher) and dapi's parameter sweep utilities.
 
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher_sweep.ipynb)
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_sweep.ipynb)
 
 ## When to Use PyLauncher
 
