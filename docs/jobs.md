@@ -490,6 +490,6 @@ if final_status == "FAILED":
 frontera_queues = ds.systems.queues("frontera")
 for queue in frontera_queues:
  print(f"Queue: {queue.name}")
- print(f"Max runtime: {queue.maxRequestedTime} minutes")
- print(f"Max nodes: {queue.maxNodesPerJob}")
+ print(f"Max runtime: {queue.maxMinutes} min")
+ print(f"Max nodes: {queue.maxNodeCount}")
 ```

@@ -13,7 +13,10 @@ project:
         - file: docs/quickstart.md
     - title: User Guide
       children:
+        - file: docs/apps.md
+        - file: docs/files.md
         - file: docs/jobs.md
+        - file: docs/systems.md
         - file: docs/database.md
     - title: Examples
       children:
