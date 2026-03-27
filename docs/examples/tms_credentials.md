@@ -41,4 +41,4 @@ for system_id in systems:
 
 All methods auto-detect your username. Pass `username="other_user"` to override.
 
-See the [Systems API Reference](../api/systems.md) for full details.
+See [Systems](../systems.md) for full details.

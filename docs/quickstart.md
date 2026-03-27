@@ -1,6 +1,6 @@
 # Quick Start
 
-```python
+```bash
 pip install dapi
 ```
 

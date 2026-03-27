@@ -11,23 +11,21 @@
 ```python
 from dapi import DSClient
 
-# Initialize client (handles authentication automatically)
 ds = DSClient()
 
-# Submit a job
+input_uri = ds.files.to_uri("/MyData/analysis/input/")
+
 job_request = ds.jobs.generate(
  app_id="matlab-r2023a",
- input_dir_uri="/MyData/analysis/input/",
- script_filename="run_analysis.m"
+ input_dir_uri=input_uri,
+ script_filename="run_analysis.m",
+ allocation="your_allocation",
 )
 job = ds.jobs.submit(job_request)
-
-# Monitor progress
-final_status = job.monitor()
-
-# Query research databases
-df = ds.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
+job.monitor()
 ```
+
+For background on DesignSafe compute environments, storage, and workflow design, see the [DesignSafe Workflows guide](https://kks32.github.io/ds-workflows/).
 
 ## Getting Started
 
@@ -38,11 +36,16 @@ df = ds.db.ngl.read_sql("SELECT * FROM SITE LIMIT 10")
 ## User Guide
 
 - [Jobs](jobs.md) -- submit and monitor computational jobs
+- [Apps](apps.md) -- find applications and their IDs
+- [Files](files.md) -- path translation, upload, download
+- [Systems](systems.md) -- queues and TMS credentials
 - [Database Access](database.md) -- query DesignSafe research databases
 
 ## Examples
 
 - [MPM Job Submission](examples/mpm.md)
+- [OpenSees MP](examples/opensees.md)
+- [OpenFOAM](examples/openfoam.md)
 - [PyLauncher Parameter Sweeps](examples/pylauncher.md)
 - [Database Queries](examples/database.md)
 

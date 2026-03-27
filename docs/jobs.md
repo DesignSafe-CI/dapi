@@ -45,44 +45,7 @@ for job in jobs:
 raw = ds.jobs.list(output="raw")
 ```
 
-## Application Discovery
-
-### Finding Applications
-
-```python
-all_apps = ds.apps.find("", verbose=False)
-print(f"Found {len(all_apps)} applications")
-
-matlab_apps = ds.apps.find("matlab", verbose=True)
-opensees_apps = ds.apps.find("opensees", verbose=True)
-mpm_apps = ds.apps.find("mpm", verbose=True)
-```
-
-### Getting Application Details
-
-```python
-app_details = ds.apps.get_details("mpm-s3", verbose=True)
-
-print(f"App: {app_details.id}")
-print(f"Version: {app_details.version}")
-print(f"Execution System: {app_details.jobAttributes.execSystemId}")
-print(f"Max Runtime: {app_details.jobAttributes.maxMinutes} minutes")
-print(f"Default Cores: {app_details.jobAttributes.coresPerNode}")
-```
-
-### Available Applications
-
-| Application | App ID | Description |
-|-------------|--------|-------------|
-| Agnostic | `designsafe-agnostic-app` | General-purpose Python/OpenSees/PyLauncher execution |
-| MATLAB | `matlab-r2023a` | MATLAB computational environment |
-| OpenSees | `opensees-express` | Structural analysis framework |
-| OpenSees MP | `opensees-mp-s3` | OpenSees parallel (MPI) analysis |
-| MPM | `mpm-s3` | Material Point Method simulations |
-| ADCIRC | `adcirc-v55` | Coastal circulation modeling |
-| LS-DYNA | `ls-dyna` | Explicit finite element analysis |
-
-The Agnostic App (`designsafe-agnostic-app`) runs Python scripts, OpenSeesPy, and PyLauncher parameter sweeps on TACC systems. It includes Python 3.12 with OpenSeesPy pre-installed and supports configurable TACC module loading. It runs in serial mode (`isMpi: false`), which is what PyLauncher workflows need.
+For finding applications and their IDs, see [Apps](apps.md).
 
 ## Job Submission
 
@@ -106,6 +69,29 @@ job_request = ds.jobs.generate(
 job = ds.jobs.submit(job_request)
 print(f"Job submitted: {job.uuid}")
 ```
+
+### `generate()` Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `app_id` | str | Tapis application ID (see [Apps](apps.md)) |
+| `input_dir_uri` | str | Tapis URI of the input directory (use `ds.files.to_uri()`) |
+| `script_filename` | str | Main script file in the input directory |
+| `max_minutes` | int | Wall-clock time limit |
+| `allocation` | str | TACC project allocation code |
+| `node_count` | int | Number of compute nodes |
+| `cores_per_node` | int | CPU cores per node |
+| `memory_mb` | int | Memory per node in MB |
+| `queue` | str | SLURM queue/partition name |
+| `job_name` | str | Human-readable job name |
+| `description` | str | Job description |
+| `tags` | list | List of string tags for filtering |
+| `archive_system` | str | Tapis system for output archiving (default: DesignSafe storage) |
+| `archive_path` | str | Path on archive system for outputs |
+| `input_dir_param_name` | str | Name of the file input parameter (default: `"Input Directory"`, some apps use different names like `"Case Directory"` for OpenFOAM) |
+| `extra_file_inputs` | list | Additional file inputs beyond the main input directory |
+| `extra_env_vars` | list | Environment variables as `[{"key": "...", "value": "..."}]` |
+| `extra_scheduler_options` | list | SLURM scheduler options as `[{"name": "...", "arg": "..."}]` |
 
 ### Advanced Configuration
 
@@ -306,62 +292,23 @@ Cancellation may not be immediate. Jobs in terminal states (FINISHED, FAILED, et
 
 ## Resuming Monitoring
 
-```python
-from dapi import SubmittedJob
+Reconnect to a previously submitted job using its UUID.
 
-job_uuid = "12345678-1234-1234-1234-123456789abc"
-resumed_job = SubmittedJob(ds._tapis, job_uuid)
-final_status = resumed_job.monitor()
+```python
+job = ds.jobs.get("12345678-1234-1234-1234-123456789abc")
+final_status = job.monitor()
 ```
 
 (pylauncher)=
 ## Parameter Sweeps with PyLauncher
 
-[PyLauncher](https://github.com/TACC/pylauncher) runs many independent tasks within a single SLURM allocation -- ideal for parameter studies. dapi generates sweep commands, task lists, and launcher scripts.
-
-```python
-ds = DSClient()
-
-sweep = {
-    "ALPHA": [0.3, 0.5, 3.7],
-    "BETA":  [1.1, 2.0, 3.0],
-}
-
-# Preview (dry run)
-ds.jobs.parametric_sweep.generate(
-    'python3 simulate.py --alpha ALPHA --beta BETA',
-    sweep,
-    preview=True,
-)
-
-# Generate sweep files
-ds.jobs.parametric_sweep.generate(
-    'python3 simulate.py --alpha ALPHA --beta BETA '
-    '--output "$WORK/sweep_$SLURM_JOB_ID/run_ALPHA_BETA"',
-    sweep,
-    "/home/jupyter/MyData/sweep_demo/",
-    debug="host+job",
-)
-
-# Submit
-job = ds.jobs.parametric_sweep.submit(
-    "/MyData/sweep_demo/",
-    app_id="designsafe-agnostic-app",
-    allocation="your_allocation",
-    node_count=1,
-    cores_per_node=48,
-    max_minutes=30,
-)
-job.monitor()
-```
-
-For a full walkthrough with OpenSees, see the [PyLauncher example](examples/pylauncher.md).
+See the [PyLauncher example](examples/pylauncher.md) for a full walkthrough, or the [PyLauncher OpenSees example](examples/pylauncher_opensees.md) for a structural engineering use case.
 
 ## Bulk Operations
 
 ```python
 job_uuids = ["uuid1", "uuid2", "uuid3"]
-jobs = [SubmittedJob(ds._tapis, uuid) for uuid in job_uuids]
+jobs = [ds.jobs.get(uuid) for uuid in job_uuids]
 
 for job in jobs:
  status = job.get_status()

@@ -209,8 +209,8 @@ After discovering applications, you can:
 
 1. **[Submit jobs](../jobs.md)** using the discovered applications
 2. **[Explore job examples](mpm.md)** for specific workflows
-3. **[Check system resources](../api/systems.md)** for execution requirements
-4. **[Manage files](../api/files.md)** for job inputs and outputs
+3. **[Check system resources](../systems.md)** for execution requirements
+4. **[Manage files](../files.md)** for job inputs and outputs
 
 ## Troubleshooting
 
