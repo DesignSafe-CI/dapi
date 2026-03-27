@@ -87,3 +87,11 @@ ds.files.download(
 ```
 
 Local parent directories are created automatically. The local path must be a file path, not a directory.
+
+## Error handling
+
+File operations raise exceptions on failure:
+
+- **File not found**: raised if the remote path does not exist (for `download`, `list`) or local file does not exist (for `upload`).
+- **Permission denied**: raised if the user does not have access to the storage system or directory.
+- **`verify_exists=True`**: when used with `to_uri()`, raises an error immediately if the path does not exist on DesignSafe, instead of failing later during job submission.

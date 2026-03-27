@@ -1,5 +1,7 @@
 # Installation
 
+Requires Python 3.9 or later.
+
 ## From PyPI
 
 ```bash

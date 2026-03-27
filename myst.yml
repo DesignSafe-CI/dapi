@@ -8,26 +8,26 @@ project:
     - file: docs/index.md
     - title: Getting Started
       children:
+        - file: docs/quickstart.md
         - file: docs/installation.md
         - file: docs/authentication.md
-        - file: docs/quickstart.md
     - title: User Guide
       children:
+        - file: docs/jobs.md
         - file: docs/apps.md
         - file: docs/files.md
-        - file: docs/jobs.md
         - file: docs/systems.md
         - file: docs/database.md
     - title: Examples
       children:
         - file: docs/examples.md
-        - file: docs/examples/apps.md
-        - file: docs/examples/database.md
-        - file: docs/examples/mpm.md
-        - file: docs/examples/openfoam.md
         - file: docs/examples/opensees.md
+        - file: docs/examples/openfoam.md
+        - file: docs/examples/mpm.md
         - file: docs/examples/pylauncher.md
         - file: docs/examples/pylauncher_opensees.md
+        - file: docs/examples/database.md
+        - file: docs/examples/apps.md
         - file: docs/examples/tms_credentials.md
     - url: /dapi/api/
       title: API Reference

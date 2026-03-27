@@ -29,13 +29,13 @@ For background on DesignSafe compute environments, storage, and workflow design,
 
 ## Getting Started
 
-- [Installation](installation.md)
-- [Authentication](authentication.md)
-- [Quick Start](quickstart.md)
+- [Quick Start](quickstart.md) -- get running in 5 minutes
+- [Installation](installation.md) -- install options and updates
+- [Authentication](authentication.md) -- credentials and environment setup
 
 ## User Guide
 
-- [Jobs](jobs.md) -- submit and monitor computational jobs
+- [Jobs](jobs.md) -- submit, monitor, and manage computational jobs
 - [Apps](apps.md) -- find applications and their IDs
 - [Files](files.md) -- path translation, upload, download
 - [Systems](systems.md) -- queues and TMS credentials
@@ -43,11 +43,7 @@ For background on DesignSafe compute environments, storage, and workflow design,
 
 ## Examples
 
-- [MPM Job Submission](examples/mpm.md)
-- [OpenSees MP](examples/opensees.md)
-- [OpenFOAM](examples/openfoam.md)
-- [PyLauncher Parameter Sweeps](examples/pylauncher.md)
-- [Database Queries](examples/database.md)
+- [Examples](examples.md) -- full worked examples with runnable notebooks
 
 ## Support
 

@@ -177,6 +177,17 @@ final_status = job.monitor(
 ds.jobs.interpret_status(final_status, job.uuid)
 ```
 
+### Interpreting Status
+
+`interpret_status()` prints a human-readable summary of the job outcome, including suggestions for common failure cases:
+
+```python
+ds.jobs.interpret_status(final_status, job.uuid)
+# FINISHED: Job completed successfully. UUID: 12345678-...
+# -- or --
+# FAILED: Job failed. Check tapisjob.err for error messages.
+```
+
 ### Manual Status Checking
 
 ```python
@@ -295,7 +306,9 @@ Cancellation may not be immediate. Jobs in terminal states (FINISHED, FAILED, et
 Reconnect to a previously submitted job using its UUID.
 
 ```python
-job = ds.jobs.get("12345678-1234-1234-1234-123456789abc")
+from dapi import SubmittedJob
+
+job = SubmittedJob(ds._tapis, "12345678-1234-1234-1234-123456789abc")
 final_status = job.monitor()
 ```
 
@@ -308,7 +321,7 @@ See the [PyLauncher example](examples/pylauncher.md) for a full walkthrough, or 
 
 ```python
 job_uuids = ["uuid1", "uuid2", "uuid3"]
-jobs = [ds.jobs.get(uuid) for uuid in job_uuids]
+jobs = [SubmittedJob(ds._tapis, uuid) for uuid in job_uuids]
 
 for job in jobs:
  status = job.get_status()
@@ -431,12 +444,4 @@ if final_status == "FAILED":
  print(f"Full history: job.print_runtime_summary(verbose=True)")
 ```
 
-## System Queues
-
-```python
-frontera_queues = ds.systems.queues("frontera")
-for queue in frontera_queues:
- print(f"Queue: {queue.name}")
- print(f"Max runtime: {queue.maxMinutes} min")
- print(f"Max nodes: {queue.maxNodeCount}")
-```
+For system queues, see [Systems](systems.md). For resource sizing guidance, see [DesignSafe Workflows: Running HPC Jobs](https://kks32.github.io/ds-workflows/guide/job-resources.html).

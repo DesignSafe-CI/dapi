@@ -20,7 +20,7 @@ This example covers the essential workflow for running MPM simulations:
 
 ```python
 # Install dapi package
-!pip install dapi --user --quiet
+%pip install dapi --quiet
 
 # Import required modules
 from dapi import DSClient

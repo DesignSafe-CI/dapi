@@ -83,78 +83,21 @@ region_sites = ds.db.ngl.read_sql(
 
 ## NGL Database (Next Generation Liquefaction)
 
-### Exploring Tables
-
 ```python
-tables_info = ds.db.ngl.read_sql("SHOW TABLES")
-print(tables_info)
+# Explore tables
+ds.db.ngl.read_sql("SHOW TABLES")
+ds.db.ngl.read_sql("DESCRIBE SITE")
 
-site_structure = ds.db.ngl.read_sql("DESCRIBE SITE")
-print(site_structure)
-```
-
-### Example Queries
-
-```python
-# Active sites
+# Query active sites
 sites = ds.db.ngl.read_sql("""
- SELECT SITE_ID, SITE_NAME, SITE_LAT, SITE_LON, SITE_GEOL
+ SELECT SITE_ID, SITE_NAME, SITE_LAT, SITE_LON
  FROM SITE
  WHERE SITE_STAT = 1
  ORDER BY SITE_NAME
 """)
-
-# Sites with liquefaction data
-liquefaction_sites = ds.db.ngl.read_sql("""
- SELECT DISTINCT s.SITE_NAME, s.SITE_LAT, s.SITE_LON
- FROM SITE s
- JOIN RECORD r ON s.SITE_ID = r.SITE_ID
- WHERE r.RECORD_STAT = 1
- ORDER BY s.SITE_NAME
-""")
-
-# Recent earthquakes
-earthquakes = ds.db.ngl.read_sql("""
- SELECT DISTINCT EVENT_NAME, EVENT_DATE, EVENT_MAG
- FROM EVENT
- WHERE EVENT_STAT = 1
- ORDER BY EVENT_DATE DESC
- LIMIT 20
-""")
-
-# CPT data summary
-cpt_summary = ds.db.ngl.read_sql("""
- SELECT
- COUNT(*) as total_cpts,
- AVG(CPT_DEPTH) as avg_depth,
- MIN(CPT_DEPTH) as min_depth,
- MAX(CPT_DEPTH) as max_depth
- FROM CPT
- WHERE CPT_STAT = 1
-""")
 ```
 
-### Joins
-
-```python
-# Sites with multiple liquefaction events
-high_risk_sites = ds.db.ngl.read_sql("""
- SELECT
- s.SITE_NAME,
- s.SITE_LAT,
- s.SITE_LON,
- COUNT(l.LIQ_ID) as liquefaction_events,
- AVG(e.EVENT_MAG) as avg_magnitude
- FROM SITE s
- JOIN RECORD r ON s.SITE_ID = r.SITE_ID
- JOIN LIQUEFACTION l ON r.RECORD_ID = l.RECORD_ID
- JOIN EVENT e ON r.EVENT_ID = e.EVENT_ID
- WHERE s.SITE_STAT = 1 AND r.RECORD_STAT = 1
- GROUP BY s.SITE_ID
- HAVING liquefaction_events > 2
- ORDER BY liquefaction_events DESC, avg_magnitude DESC
-""")
-```
+For more NGL queries (joins, geographic filtering, liquefaction analysis), see the [Database example](examples/database.md).
 
 ## Earthquake Recovery Database
 

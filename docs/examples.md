@@ -1,5 +1,7 @@
 # Examples
 
+Complete worked examples showing dapi workflows. Each links to a runnable notebook on DesignSafe JupyterHub.
+
 ### Application Management
 Discover and manage applications on DesignSafe.
 
