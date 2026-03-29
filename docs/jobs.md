@@ -306,9 +306,7 @@ Cancellation may not be immediate. Jobs in terminal states (FINISHED, FAILED, et
 Reconnect to a previously submitted job using its UUID.
 
 ```python
-from dapi import SubmittedJob
-
-job = SubmittedJob(ds._tapis, "12345678-1234-1234-1234-123456789abc")
+job = ds.jobs.job("12345678-1234-1234-1234-123456789abc")
 final_status = job.monitor()
 ```
 
@@ -321,7 +319,7 @@ See the [PyLauncher example](examples/pylauncher.md) for a full walkthrough, or 
 
 ```python
 job_uuids = ["uuid1", "uuid2", "uuid3"]
-jobs = [SubmittedJob(ds._tapis, uuid) for uuid in job_uuids]
+jobs = [ds.jobs.job(uuid) for uuid in job_uuids]
 
 for job in jobs:
  status = job.get_status()
