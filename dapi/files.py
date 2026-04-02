@@ -542,6 +542,8 @@ def list_files(
     """
     try:
         system_id, path = _parse_tapis_uri(remote_uri)
+        if not path:
+            path = "/"
         print(f"Listing files in system '{system_id}' at path '{path}'...")
         # URL-encode the path for API call
         encoded_path = _safe_quote(path)
