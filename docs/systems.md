@@ -31,16 +31,14 @@ DesignSafe jobs run on TACC execution systems. For hardware specs, node types, q
 
 ## Queues
 
-List available batch queues on a TACC execution system.
+Returns a DataFrame of batch queues on an execution system.
 
 ```python
-from dapi import DSClient
+# DataFrame with name, hpcQueue, maxNodes, maxCoresPerNode, maxMinutes, maxMemoryMB, maxJobsPerUser
+ds.systems.queues("stampede3")
 
-ds = DSClient()
-
-queues = ds.systems.queues("stampede3")
-for q in queues:
-    print(f"{q.name}: max {q.maxNodeCount} nodes, {q.maxMinutes} min")
+# Raw Tapis queue objects
+ds.systems.queues("stampede3", output="raw")
 ```
 
 ## TMS Credentials

@@ -1,6 +1,6 @@
 [project]
 name = "dapi"
-version = "0.5.1"
+version = "0.5.2"
 description = "DesignSafe API"
 readme = "README.md"
 license = "MIT"

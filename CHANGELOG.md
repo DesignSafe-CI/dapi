@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.5.2
+
+### New features
+
+- **Publications module** (`ds.publications`): search and access published datasets on DesignSafe
+  - `ds.publications.list()`: DataFrame of all published datasets (1,500+)
+  - `ds.publications.search()`: filter by `query`, `pi`, `keyword`, `publication_type` (AND logic)
+  - `ds.publications.get("PRJ-XXXX")`: full metadata with DOIs, description, keywords
+  - `ds.publications.files("PRJ-XXXX")`: list files in a published dataset
+- **Systems listing** (`ds.systems.list()`): DataFrame of available HPC and storage systems
+  - Filter by category: `"hpc"`, `"storage"`, `"all"`
+  - Shows TMS credential status for HPC systems
+  - Filters out internal, duplicate, and project-specific systems
+- **`ds.systems.queues()`** now returns a clean DataFrame instead of printing verbose output
+
+### Documentation
+
+- New `docs/publications.md` with search filter reference
+- Updated `docs/systems.md` with `list()` and DataFrame queues
+- Added `examples/publications.ipynb` and `examples/systems.ipynb`
+- Updated examples sidebar with all new notebooks
+
 ## v0.5.1
 
 ### New features
