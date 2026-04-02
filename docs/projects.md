@@ -95,11 +95,11 @@ Both `/MyProjects/PRJ-XXXX/` and `/projects/PRJ-XXXX/` are accepted.
 
 ## How it works
 
-1. **Project listing and metadata** — dapi queries the DesignSafe portal API (`https://designsafe-ci.org/api/projects/v2/`) using your Tapis authentication token. This API returns project metadata including the project UUID.
+1. **Project listing and metadata**: dapi queries the DesignSafe portal API (`https://designsafe-ci.org/api/projects/v2/`) using your Tapis authentication token. This API returns project metadata including the project UUID.
 
-2. **PRJ-to-UUID resolution** — Each project's Tapis storage system ID is `project-<uuid>`. When you use a PRJ number (e.g., `PRJ-6270`), dapi looks up the UUID via the portal API.
+2. **PRJ-to-UUID resolution**: Each project's Tapis storage system ID is `project-<uuid>`. When you use a PRJ number (e.g., `PRJ-6270`), dapi looks up the UUID via the portal API.
 
-3. **File operations** — File listings use the standard Tapis Files API (`t.files.listFiles`) against the resolved `project-<uuid>` system.
+3. **File operations**: File listings use the standard Tapis Files API (`t.files.listFiles`) against the resolved `project-<uuid>` system.
 
 ## Error handling
 
