@@ -1,6 +1,6 @@
 # Projects
 
-DesignSafe projects (MyProjects) are collaborative workspaces where team members share files, curate datasets, and publish research. Each project has a PRJ number (e.g., PRJ-6270), a UUID, and a corresponding Tapis storage system.
+DesignSafe projects are collaborative workspaces where team members share files, curate datasets, and publish research. Projects include both your own projects (MyProjects) and published projects (NHERI-Published). Each project has a PRJ number (e.g., PRJ-6270), a UUID, and a corresponding Tapis storage system.
 
 Project metadata is fetched from the [DesignSafe portal API](https://designsafe-ci.org) (`/api/projects/v2/`), which provides project details, team information, and DOIs. File listings use the Tapis Files API against the project's storage system (`project-<uuid>`).
 
