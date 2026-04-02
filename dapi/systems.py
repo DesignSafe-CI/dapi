@@ -1,8 +1,125 @@
 # dapi/systems.py
+import pandas as pd
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException, UnauthorizedError, NotFoundError
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 from .exceptions import SystemInfoError, CredentialError
+
+
+# Known DesignSafe system categories
+_KNOWN_HPC = {"stampede3", "frontera", "ls6", "vista"}
+_KNOWN_STORAGE = {
+    "designsafe.storage.default",
+    "designsafe.storage.community",
+    "designsafe.storage.published",
+    "nees.public",
+}
+_INTERNAL_PREFIXES = ("project-", "apcd.", "wma-", "ds-stko", "cloud.data", "c4-")
+_DUPLICATE_SUFFIXES = (".tms", ".designsafe", "-simcenter")
+_STORAGE_PREFIXES = ("designsafe.storage.",)
+
+
+def list_systems(
+    t: Tapis,
+    category: Optional[str] = None,
+    output: str = "df",
+) -> Union[pd.DataFrame, List[Dict]]:
+    """List Tapis systems the user has access to.
+
+    Filters out internal, duplicate, and project-specific systems by default,
+    showing only the systems useful for job submission and data access.
+
+    Args:
+        t (Tapis): Authenticated Tapis client instance.
+        category (str, optional): Filter by category:
+            "hpc" for execution systems (stampede3, frontera, ls6, vista),
+            "storage" for storage systems (MyData, CommunityData, etc.),
+            "all" for all systems without filtering.
+            If None, shows HPC + storage (excludes internal/project systems).
+        output (str, optional): "df" for DataFrame (default), "list" for dicts.
+
+    Returns:
+        Union[pd.DataFrame, List[Dict]]: Systems with id, host, type, category, credentials.
+
+    Raises:
+        SystemInfoError: If the API request fails.
+        ValueError: If output or category is invalid.
+    """
+    if output not in ("df", "list"):
+        raise ValueError(f"output must be 'df' or 'list', got '{output}'")
+    if category is not None and category not in ("hpc", "storage", "all"):
+        raise ValueError(
+            f"category must be 'hpc', 'storage', 'all', or None, got '{category}'"
+        )
+
+    try:
+        all_systems = t.systems.getSystems(listType="ALL", limit=200)
+    except BaseTapyException as e:
+        raise SystemInfoError(f"Failed to list systems: {e}") from e
+
+    username = getattr(t, "username", None)
+    rows = []
+
+    for s in all_systems:
+        sid = s.id
+        host = getattr(s, "host", "")
+        can_exec = getattr(s, "canExec", False)
+        authn = getattr(s, "defaultAuthnMethod", "")
+
+        # Classify
+        if sid in _KNOWN_HPC:
+            cat = "hpc"
+        elif sid in _KNOWN_STORAGE:
+            cat = "storage"
+        elif (
+            any(sid.startswith(pfx) for pfx in _STORAGE_PREFIXES)
+            and sid not in _KNOWN_STORAGE
+        ):
+            cat = "internal"
+        elif sid.startswith("project-"):
+            cat = "project"
+        elif any(sid.endswith(sfx) for sfx in _DUPLICATE_SUFFIXES):
+            cat = "internal"
+        elif any(sid.startswith(pfx) for pfx in _INTERNAL_PREFIXES):
+            cat = "internal"
+        elif sid == "maverick2":
+            cat = "internal"
+        elif can_exec:
+            cat = "hpc"
+        else:
+            cat = "other"
+
+        # Filter
+        if category == "hpc" and cat != "hpc":
+            continue
+        if category == "storage" and cat != "storage":
+            continue
+        if category is None and cat not in ("hpc", "storage"):
+            continue
+        # category == "all" shows everything
+
+        # Check TMS credentials for HPC systems
+        has_creds = None
+        if cat == "hpc" and authn == "TMS_KEYS" and username:
+            try:
+                has_creds = check_credentials(t, sid, username)
+            except Exception:
+                has_creds = None
+
+        rows.append(
+            {
+                "id": sid,
+                "host": host,
+                "category": cat,
+                "authn": authn,
+                "credentials": has_creds,
+            }
+        )
+
+    if output == "list":
+        return rows
+
+    return pd.DataFrame(rows)
 
 
 def list_system_queues(t: Tapis, system_id: str, verbose: bool = True) -> List[Any]:

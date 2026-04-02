@@ -23,20 +23,26 @@ DataFrame columns: `projectId`, `title`, `pi`, `type`, `keywords`, `created`.
 
 ## Search publications
 
-Search across titles, descriptions, keywords, and PI names. Case-insensitive.
+Search with specific filters or general text. All filters are case-insensitive and combined with AND logic.
 
 ```python
-# By topic
+# General text search (across title, description, keywords, PI)
 ds.publications.search("liquefaction")
 
-# By PI
-ds.publications.search("Rathje")
+# Filter by PI name
+ds.publications.search(pi="Rathje")
 
-# By project type keyword
-ds.publications.search("storm surge")
+# Filter by keyword
+ds.publications.search(keyword="storm surge")
+
+# Filter by publication type: simulation, experimental, field_recon, other, hybrid_simulation
+ds.publications.search(publication_type="simulation")
+
+# Combine filters (AND logic)
+ds.publications.search(keyword="storm surge", publication_type="simulation")
 
 # Increase search pool (API returns 100 by default)
-ds.publications.search("earthquake", limit=500)
+ds.publications.search(keyword="earthquake", limit=500)
 ```
 
 ## Get publication details

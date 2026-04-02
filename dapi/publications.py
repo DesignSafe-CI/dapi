@@ -88,19 +88,27 @@ def list_publications(
 
 def search_publications(
     t: Tapis,
-    query: str,
+    query: Optional[str] = None,
+    *,
+    pi: Optional[str] = None,
+    keyword: Optional[str] = None,
+    publication_type: Optional[str] = None,
     limit: int = 100,
     output: str = "df",
 ) -> Union[pd.DataFrame, List[Dict]]:
-    """Search published datasets by keyword, title, or PI name.
+    """Search published datasets with optional filters.
 
-    Searches across title, description, keywords, and PI name fields.
-    Filtering is done client-side since the API doesn't support server-side search.
+    All filters are case-insensitive and combined with AND logic.
+    At least one filter (query, pi, keyword, or publication_type) must be provided.
 
     Args:
         t (Tapis): Authenticated Tapis client instance.
-        query (str): Search term (case-insensitive).
-        limit (int, optional): Maximum publications to fetch before filtering. Defaults to 100.
+        query (str, optional): General search across title, description, keywords, and PI.
+        pi (str, optional): Filter by PI name (partial match).
+        keyword (str, optional): Filter by keyword (partial match against keywords list).
+        publication_type (str, optional): Filter by type: "simulation", "experimental",
+            "field_recon", "other", "hybrid_simulation".
+        limit (int, optional): Max publications to fetch before filtering. Defaults to 100.
         output (str, optional): "df" for DataFrame (default), "list" for list of dicts.
 
     Returns:
@@ -108,10 +116,15 @@ def search_publications(
 
     Raises:
         FileOperationError: If the API request fails.
-        ValueError: If output format is invalid.
+        ValueError: If output format is invalid or no filters provided.
     """
     if output not in ("df", "list"):
         raise ValueError(f"output must be 'df' or 'list', got '{output}'")
+
+    if not any([query, pi, keyword, publication_type]):
+        raise ValueError(
+            "At least one filter must be provided: query, pi, keyword, or publication_type."
+        )
 
     headers = _get_auth_headers(t)
     try:
@@ -125,31 +138,48 @@ def search_publications(
     except requests.RequestException as e:
         raise FileOperationError(f"Failed to search publications: {e}") from e
 
-    q = query.lower()
     data = resp.json()
     matches = []
     for p in data.get("result", []):
-        searchable = " ".join(
-            [
-                str(p.get("title", "")),
-                str(p.get("description", "")),
-                " ".join(p.get("keywords", [])),
-                _pi_display(p.get("pi")),
-                str(p.get("projectId", "")),
-            ]
-        ).lower()
-        if q in searchable:
-            pi = p.get("pi")
-            matches.append(
-                {
-                    "projectId": p.get("projectId"),
-                    "title": p.get("title"),
-                    "pi": _pi_display(pi),
-                    "type": p.get("type"),
-                    "keywords": p.get("keywords", []),
-                    "created": p.get("created"),
-                }
-            )
+        # Apply filters with AND logic
+        if query:
+            searchable = " ".join(
+                [
+                    str(p.get("title", "")),
+                    str(p.get("description", "")),
+                    " ".join(p.get("keywords", [])),
+                    _pi_display(p.get("pi")),
+                    str(p.get("projectId", "")),
+                ]
+            ).lower()
+            if query.lower() not in searchable:
+                continue
+
+        if pi:
+            pi_name = _pi_display(p.get("pi")).lower()
+            if pi.lower() not in pi_name:
+                continue
+
+        if keyword:
+            kw_lower = keyword.lower()
+            kw_list = [k.lower() for k in p.get("keywords", [])]
+            if not any(kw_lower in k for k in kw_list):
+                continue
+
+        if publication_type:
+            if (p.get("type") or "").lower() != publication_type.lower():
+                continue
+
+        matches.append(
+            {
+                "projectId": p.get("projectId"),
+                "title": p.get("title"),
+                "pi": _pi_display(p.get("pi")),
+                "type": p.get("type"),
+                "keywords": p.get("keywords", []),
+                "created": p.get("created"),
+            }
+        )
 
     if output == "list":
         return matches

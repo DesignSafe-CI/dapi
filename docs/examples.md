@@ -23,6 +23,13 @@ Search and browse published datasets on DesignSafe.
 
 ---
 
+### Systems
+List HPC and storage systems, check credentials, and view queues.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/systems.ipynb)
+
+---
+
 ### Application Management
 Discover and manage applications on DesignSafe.
 

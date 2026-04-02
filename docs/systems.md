@@ -1,5 +1,24 @@
 # Systems
 
+## List available systems
+
+```python
+from dapi import DSClient
+ds = DSClient()
+
+# HPC + storage systems (default)
+ds.systems.list()
+
+# HPC execution systems only (with credential status)
+ds.systems.list("hpc")
+
+# Storage systems only
+ds.systems.list("storage")
+
+# All systems including internal
+ds.systems.list("all")
+```
+
 ## TACC Systems
 
 DesignSafe jobs run on TACC execution systems. For hardware specs, node types, queues, and allocations, see the [DesignSafe Workflows: Compute Environments](https://kks32.github.io/ds-workflows/guide/compute-environments.html).

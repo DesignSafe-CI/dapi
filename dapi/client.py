@@ -361,12 +361,27 @@ class PublicationMethods:
             self._tapis, limit=limit, offset=offset, output=output
         )
 
-    def search(self, query: str, limit: int = 100, output: str = "df"):
-        """Search published datasets by keyword, title, or PI name.
+    def search(
+        self,
+        query: Optional[str] = None,
+        *,
+        pi: Optional[str] = None,
+        keyword: Optional[str] = None,
+        publication_type: Optional[str] = None,
+        limit: int = 100,
+        output: str = "df",
+    ):
+        """Search published datasets with optional filters.
+
+        All filters are AND-combined and case-insensitive.
 
         Args:
-            query (str): Search term (case-insensitive).
-            limit (int, optional): Max publications to fetch before filtering. Defaults to 100.
+            query (str, optional): General search across title, description, keywords, PI.
+            pi (str, optional): Filter by PI name.
+            keyword (str, optional): Filter by keyword.
+            publication_type (str, optional): Filter by type: "simulation",
+                "experimental", "field_recon", "other", "hybrid_simulation".
+            limit (int, optional): Max publications to fetch. Defaults to 100.
             output (str, optional): "df" for DataFrame (default), "list" for dicts.
 
         Returns:
@@ -374,10 +389,19 @@ class PublicationMethods:
 
         Example:
             >>> ds.publications.search("liquefaction")
-            >>> ds.publications.search("lateral spreading", limit=500)
+            >>> ds.publications.search(pi="Rathje")
+            >>> ds.publications.search(
+            ...     keyword="storm surge", publication_type="simulation"
+            ... )
         """
         return publications_module.search_publications(
-            self._tapis, query, limit=limit, output=output
+            self._tapis,
+            query,
+            pi=pi,
+            keyword=keyword,
+            publication_type=publication_type,
+            limit=limit,
+            output=output,
         )
 
     def get(self, project_id: str) -> Dict:
@@ -434,6 +458,30 @@ class SystemMethods:
             tapis_client (Tapis): Authenticated Tapis client instance.
         """
         self._tapis = tapis_client
+
+    def list(self, category: Optional[str] = None, output: str = "df"):
+        """List Tapis systems you have access to.
+
+        Filters out internal and project-specific systems by default.
+
+        Args:
+            category (str, optional): "hpc" for execution systems,
+                "storage" for storage systems, "all" for everything,
+                None for HPC + storage (default).
+            output (str, optional): "df" for DataFrame (default), "list" for dicts.
+
+        Returns:
+            DataFrame or List[Dict]: Systems with id, host, category, authn, credentials.
+
+        Example:
+            >>> ds.systems.list()  # HPC + storage
+            >>> ds.systems.list("hpc")  # HPC only with credential status
+            >>> ds.systems.list("storage")  # Storage only
+            >>> ds.systems.list("all")  # Everything including internal
+        """
+        return systems_module.list_systems(
+            self._tapis, category=category, output=output
+        )
 
     def queues(self, system_id: str, verbose: bool = True) -> List[Any]:
         """List logical queues available on a Tapis execution system.
