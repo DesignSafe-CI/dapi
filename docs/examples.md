@@ -16,6 +16,13 @@ List, inspect, and access files in DesignSafe projects.
 
 ---
 
+### Publications
+Search and browse published datasets on DesignSafe.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/publications.ipynb)
+
+---
+
 ### Application Management
 Discover and manage applications on DesignSafe.
 

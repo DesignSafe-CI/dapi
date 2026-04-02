@@ -7,6 +7,7 @@ from . import jobs as jobs_module
 from . import systems as systems_module
 from . import launcher as launcher_module
 from . import projects as projects_module
+from . import publications as publications_module
 from .db.accessor import DatabaseAccessor
 
 # Import only the necessary classes/functions from jobs
@@ -33,6 +34,7 @@ class DSClient:
         files (FileMethods): Interface for file operations (upload, download, list).
         jobs (JobMethods): Interface for job submission and monitoring.
         projects (ProjectMethods): Interface for DesignSafe project management.
+        publications (PublicationMethods): Interface for published datasets.
         systems (SystemMethods): Interface for system information and queues.
         db (DatabaseAccessor): Interface for database connections and queries.
 
@@ -93,6 +95,7 @@ class DSClient:
         self.files = FileMethods(self.tapis)
         self.jobs = JobMethods(self.tapis)
         self.projects = ProjectMethods(self.tapis)
+        self.publications = PublicationMethods(self.tapis)
         self.systems = SystemMethods(self.tapis)
         self.db = DatabaseAccessor()
 
@@ -323,6 +326,93 @@ class ProjectMethods:
             >>> ds.projects.files("PRJ-1305", output="raw")
         """
         return projects_module.list_project_files(
+            self._tapis, project_id, path=path, limit=limit, output=output
+        )
+
+
+class PublicationMethods:
+    """Interface for DesignSafe published datasets.
+
+    Provides methods for listing, searching, and inspecting published datasets
+    and their files on DesignSafe.
+
+    Args:
+        tapis_client (Tapis): Authenticated Tapis client instance.
+    """
+
+    def __init__(self, tapis_client: Tapis):
+        self._tapis = tapis_client
+
+    def list(self, limit: int = 100, offset: int = 0, output: str = "df"):
+        """List published datasets on DesignSafe.
+
+        Args:
+            limit (int, optional): Maximum publications to return. Defaults to 100.
+            offset (int, optional): Number to skip. Defaults to 0.
+            output (str, optional): "df" for DataFrame (default), "list" for dicts.
+
+        Returns:
+            DataFrame or List[Dict]: Publications with projectId, title, pi, type, keywords, created.
+
+        Example:
+            >>> ds.publications.list()
+        """
+        return publications_module.list_publications(
+            self._tapis, limit=limit, offset=offset, output=output
+        )
+
+    def search(self, query: str, limit: int = 100, output: str = "df"):
+        """Search published datasets by keyword, title, or PI name.
+
+        Args:
+            query (str): Search term (case-insensitive).
+            limit (int, optional): Max publications to fetch before filtering. Defaults to 100.
+            output (str, optional): "df" for DataFrame (default), "list" for dicts.
+
+        Returns:
+            DataFrame or List[Dict]: Matching publications.
+
+        Example:
+            >>> ds.publications.search("liquefaction")
+            >>> ds.publications.search("lateral spreading", limit=500)
+        """
+        return publications_module.search_publications(
+            self._tapis, query, limit=limit, output=output
+        )
+
+    def get(self, project_id: str) -> Dict:
+        """Get detailed metadata for a published dataset.
+
+        Args:
+            project_id (str): Project ID (e.g., "PRJ-1271").
+
+        Returns:
+            Dict: Publication metadata including title, description, DOIs, keywords, PI.
+
+        Example:
+            >>> info = ds.publications.get("PRJ-6270")
+            >>> print(info["dois"])
+        """
+        return publications_module.get_publication(self._tapis, project_id)
+
+    def files(
+        self, project_id: str, path: str = "/", limit: int = 100, output: str = "df"
+    ):
+        """List files in a published dataset.
+
+        Args:
+            project_id (str): Project ID (e.g., "PRJ-1271").
+            path (str, optional): Path within the publication. Defaults to "/".
+            limit (int, optional): Max items to return. Defaults to 100.
+            output (str, optional): "df" for DataFrame (default), "raw" for Tapis objects.
+
+        Returns:
+            DataFrame or List: Files with name, type, size, lastModified, path.
+
+        Example:
+            >>> ds.publications.files("PRJ-1271")
+        """
+        return publications_module.list_publication_files(
             self._tapis, project_id, path=path, limit=limit, output=output
         )
 
