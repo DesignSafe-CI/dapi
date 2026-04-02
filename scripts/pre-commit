@@ -1,0 +1,15 @@
+#!/bin/sh
+# Auto-format and lint with ruff before committing
+ruff format . 2>/dev/null || .venv/bin/ruff format .
+git add -u
+
+# Lint check — blocks commit on failure
+if ruff check . 2>/dev/null; then
+    exit 0
+elif .venv/bin/ruff check . 2>/dev/null; then
+    exit 0
+else
+    echo ""
+    echo "Commit blocked: ruff check found errors. Fix them and try again."
+    exit 1
+fi

@@ -42,6 +42,15 @@ cd dapi
 pip install -e .
 ```
 
+### Set up pre-commit hook
+
+The repo includes a pre-commit hook that auto-formats with `ruff format` and blocks commits that fail `ruff check`:
+
+```bash
+cp scripts/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
 ## Update
 
 ```bash
