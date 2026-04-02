@@ -2,7 +2,6 @@
 import os
 import urllib.parse
 
-import requests
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
 from .exceptions import FileOperationError, AuthenticationError
@@ -155,48 +154,6 @@ def tapis_uri_to_local_path(tapis_uri: str) -> str:
     except ValueError:
         # Invalid URI format, return original
         return tapis_uri
-
-
-def _resolve_project_uuid(t: Tapis, project_id: str) -> str:
-    """Resolve a DesignSafe project ID (e.g., PRJ-1305) to its Tapis system UUID.
-
-    Queries the DesignSafe projects API to find the project UUID, then
-    returns the corresponding Tapis system ID.
-
-    Args:
-        t (Tapis): Authenticated Tapis client instance (used for the access token).
-        project_id (str): The DesignSafe project ID (e.g., "PRJ-1305").
-
-    Returns:
-        str: The Tapis system ID (e.g., "project-7997906542076432871-242ac11c-0001-012").
-
-    Raises:
-        FileOperationError: If the project cannot be found or the API request fails.
-    """
-    token = t.access_token.access_token
-    headers = {"X-Tapis-Token": token, "Authorization": f"Bearer {token}"}
-    try:
-        resp = requests.get(
-            "https://designsafe-ci.org/api/projects/v2/",
-            headers=headers,
-            params={"limit": 100},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        projects = resp.json().get("result", [])
-        for p in projects:
-            val = p.get("value", {})
-            if val.get("projectId", "") == project_id:
-                uuid = p["uuid"]
-                return f"project-{uuid}"
-    except requests.RequestException as e:
-        raise FileOperationError(
-            f"Failed to query DesignSafe projects API for '{project_id}': {e}"
-        ) from e
-
-    raise FileOperationError(
-        f"Project '{project_id}' not found. Ensure you have access to this project."
-    )
 
 
 def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
@@ -352,7 +309,11 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                         )
                 else:
                     # Resolve PRJ number via DesignSafe projects API
-                    found_system_id = _resolve_project_uuid(t, project_id_part)
+                    from . import projects as projects_module
+
+                    found_system_id = projects_module.resolve_project_uuid(
+                        t, project_id_part
+                    )
 
                 input_uri = f"tapis://{found_system_id}/{path_within_project}"
                 print(f"Translated '{path}' to '{input_uri}'")

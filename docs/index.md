@@ -38,6 +38,7 @@ For background on DesignSafe compute environments, storage, and workflow design,
 - [Jobs](jobs.md) -- submit, monitor, and manage computational jobs
 - [Apps](apps.md) -- find applications and their IDs
 - [Files](files.md) -- path translation, upload, download
+- [Projects](projects.md) -- list, inspect, and access project files
 - [Systems](systems.md) -- queues and TMS credentials
 - [Database Access](database.md) -- query DesignSafe research databases
 

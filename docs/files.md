@@ -48,7 +48,10 @@ ds.files.to_path("tapis://designsafe.storage.community/datasets/eq.csv")
 | `~/MyData/...` | `designsafe.storage.default/<username>/...` |
 | `jupyter/MyData/...` | `designsafe.storage.default/<username>/...` |
 | `/CommunityData/...` | `designsafe.storage.community/...` |
+| `/NHERI-Published/...` | `designsafe.storage.published/...` |
+| `/NEES/...` | `nees.public/...` |
 | `/projects/PRJ-XXXX/...` | `project-<uuid>/...` (auto-discovered) |
+| `/MyProjects/PRJ-XXXX/...` | `project-<uuid>/...` (auto-discovered) |
 | `tapis://...` | passed through unchanged |
 
 ## List files

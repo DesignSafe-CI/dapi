@@ -63,7 +63,7 @@ class TestGetDsPathUri(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(get_ds_path_uri(self.t, path), expected)
 
-    @patch("dapi.files._resolve_project_uuid")
+    @patch("dapi.projects.resolve_project_uuid")
     def test_project_patterns(self, mock_resolve):
         mock_resolve.return_value = "project-12345"
         test_cases = [

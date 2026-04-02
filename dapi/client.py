@@ -6,6 +6,7 @@ from . import files as files_module
 from . import jobs as jobs_module
 from . import systems as systems_module
 from . import launcher as launcher_module
+from . import projects as projects_module
 from .db.accessor import DatabaseAccessor
 
 # Import only the necessary classes/functions from jobs
@@ -31,6 +32,7 @@ class DSClient:
         apps (AppMethods): Interface for application discovery and details.
         files (FileMethods): Interface for file operations (upload, download, list).
         jobs (JobMethods): Interface for job submission and monitoring.
+        projects (ProjectMethods): Interface for DesignSafe project management.
         systems (SystemMethods): Interface for system information and queues.
         db (DatabaseAccessor): Interface for database connections and queries.
 
@@ -90,6 +92,7 @@ class DSClient:
         self.apps = AppMethods(self.tapis)
         self.files = FileMethods(self.tapis)
         self.jobs = JobMethods(self.tapis)
+        self.projects = ProjectMethods(self.tapis)
         self.systems = SystemMethods(self.tapis)
         self.db = DatabaseAccessor()
 
@@ -248,6 +251,74 @@ class FileMethods:
             FileOperationError: If the listing operation fails.
         """
         return files_module.list_files(self._tapis, *args, **kwargs)
+
+
+class ProjectMethods:
+    """Interface for DesignSafe project management.
+
+    Provides methods for listing projects, getting project metadata,
+    and listing files within projects.
+
+    Args:
+        tapis_client (Tapis): Authenticated Tapis client instance.
+    """
+
+    def __init__(self, tapis_client: Tapis):
+        self._tapis = tapis_client
+
+    def list(self, limit: int = 100, offset: int = 0) -> List[Dict]:
+        """List DesignSafe projects you have access to.
+
+        Args:
+            limit (int, optional): Maximum projects to return. Defaults to 100.
+            offset (int, optional): Number of projects to skip. Defaults to 0.
+
+        Returns:
+            List[Dict]: List of project dicts with uuid, projectId, title, pi, etc.
+
+        Example:
+            >>> projects = ds.projects.list()
+            >>> for p in projects[:3]:
+            ...     print(f"{p['projectId']} - {p['title']}")
+        """
+        return projects_module.list_projects(self._tapis, limit=limit, offset=offset)
+
+    def get(self, project_id: str) -> Dict:
+        """Get detailed metadata for a project.
+
+        Args:
+            project_id (str): Project ID (e.g., "PRJ-1305").
+
+        Returns:
+            Dict: Project metadata including title, description, PI, team,
+                DOIs, award numbers, keywords, systemId.
+
+        Example:
+            >>> info = ds.projects.get("PRJ-6270")
+            >>> print(info["title"])
+            >>> print(info["systemId"])
+        """
+        return projects_module.get_project(self._tapis, project_id)
+
+    def files(self, project_id: str, path: str = "/", limit: int = 100) -> List:
+        """List files in a project.
+
+        Args:
+            project_id (str): Project ID (e.g., "PRJ-1305").
+            path (str, optional): Path within the project. Defaults to "/".
+            limit (int, optional): Max items to return. Defaults to 100.
+
+        Returns:
+            List: List of Tapis file objects.
+
+        Example:
+            >>> files = ds.projects.files("PRJ-1305", "/Training/")
+            >>> for f in files[:5]:
+            ...     print(f"{f.name} ({f.type})")
+        """
+        return projects_module.list_project_files(
+            self._tapis, project_id, path=path, limit=limit
+        )
 
 
 class SystemMethods:

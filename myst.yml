@@ -16,6 +16,7 @@ project:
         - file: docs/jobs.md
         - file: docs/apps.md
         - file: docs/files.md
+        - file: docs/projects.md
         - file: docs/systems.md
         - file: docs/database.md
     - title: Examples
