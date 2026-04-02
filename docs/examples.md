@@ -2,6 +2,20 @@
 
 Complete worked examples showing dapi workflows. Each links to a runnable notebook on DesignSafe JupyterHub.
 
+### File Access
+Access files across all DesignSafe storage systems (MyData, CommunityData, NHERI-Published, NEES, MyProjects).
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/files.ipynb)
+
+---
+
+### Projects
+List, inspect, and access files in DesignSafe projects.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/projects.ipynb)
+
+---
+
 ### Application Management
 Discover and manage applications on DesignSafe.
 
