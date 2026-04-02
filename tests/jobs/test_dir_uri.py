@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 from dapi.files import get_ds_path_uri
 
 
@@ -8,13 +8,7 @@ class TestGetDsPathUri(unittest.TestCase):
         # Use MagicMock without spec so dynamic attributes like .systems work
         self.t = MagicMock()
         self.t.username = "testuser"
-
-        # Mock the systems.getSystems call for project path lookups
-        # Return a single matching system for any project query
-        mock_system = Mock()
-        mock_system.id = "project-12345"
-        mock_system.description = "ProjA ProjB project"
-        self.t.systems.getSystems.return_value = [mock_system]
+        self.t.access_token.access_token = "mock-token"
 
     def test_directory_patterns(self):
         test_cases = [
@@ -39,7 +33,39 @@ class TestGetDsPathUri(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(get_ds_path_uri(self.t, path), expected)
 
-    def test_project_patterns(self):
+    def test_published_patterns(self):
+        test_cases = [
+            (
+                "/NHERI-Published/PRJ-1271/data.csv",
+                "tapis://designsafe.storage.published/PRJ-1271/data.csv",
+            ),
+            (
+                "NHERI-Published/PRJ-1271/",
+                "tapis://designsafe.storage.published/PRJ-1271/",
+            ),
+        ]
+        for path, expected in test_cases:
+            with self.subTest(path=path):
+                self.assertEqual(get_ds_path_uri(self.t, path), expected)
+
+    def test_nees_patterns(self):
+        test_cases = [
+            (
+                "/NEES/NEES-2011-1050.groups/",
+                "tapis://nees.public/NEES-2011-1050.groups/",
+            ),
+            (
+                "NEES/somefolder",
+                "tapis://nees.public/somefolder",
+            ),
+        ]
+        for path, expected in test_cases:
+            with self.subTest(path=path):
+                self.assertEqual(get_ds_path_uri(self.t, path), expected)
+
+    @patch("dapi.files._resolve_project_uuid")
+    def test_project_patterns(self, mock_resolve):
+        mock_resolve.return_value = "project-12345"
         test_cases = [
             ("jupyter/MyProjects/ProjA/subdir", "tapis://project-12345/subdir"),
             ("jupyter/projects/ProjB/anotherdir", "tapis://project-12345/anotherdir"),

@@ -40,6 +40,34 @@ class TestTapisUriToLocalPath(unittest.TestCase):
         result = tapis_uri_to_local_path(input_uri)
         self.assertEqual(result, expected)
 
+    def test_designsafe_storage_published(self):
+        """Test translation of designsafe.storage.published URI"""
+        input_uri = "tapis://designsafe.storage.published/PRJ-1271/data.csv"
+        expected = "/home/jupyter/NHERI-Published/PRJ-1271/data.csv"
+        result = tapis_uri_to_local_path(input_uri)
+        self.assertEqual(result, expected)
+
+    def test_designsafe_storage_published_root(self):
+        """Test translation of designsafe.storage.published root URI"""
+        input_uri = "tapis://designsafe.storage.published/"
+        expected = "/home/jupyter/NHERI-Published/"
+        result = tapis_uri_to_local_path(input_uri)
+        self.assertEqual(result, expected)
+
+    def test_nees_public(self):
+        """Test translation of nees.public URI"""
+        input_uri = "tapis://nees.public/NEES-2011-1050.groups/data.csv"
+        expected = "/home/jupyter/NEES/NEES-2011-1050.groups/data.csv"
+        result = tapis_uri_to_local_path(input_uri)
+        self.assertEqual(result, expected)
+
+    def test_nees_public_root(self):
+        """Test translation of nees.public root URI"""
+        input_uri = "tapis://nees.public/"
+        expected = "/home/jupyter/NEES/"
+        result = tapis_uri_to_local_path(input_uri)
+        self.assertEqual(result, expected)
+
     def test_unknown_system(self):
         """Test that unknown systems return the original URI"""
         input_uri = "tapis://unknown-system/path/file.txt"

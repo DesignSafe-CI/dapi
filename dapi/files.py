@@ -2,8 +2,7 @@
 import os
 import urllib.parse
 
-# No JWT needed if we rely on t.username
-# import jwt
+import requests
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
 from .exceptions import FileOperationError, AuthenticationError
@@ -131,6 +130,16 @@ def tapis_uri_to_local_path(tapis_uri: str) -> str:
                 else "/home/jupyter/CommunityData/"
             )
 
+        elif system_id == "designsafe.storage.published":
+            return (
+                f"/home/jupyter/NHERI-Published/{path}"
+                if path
+                else "/home/jupyter/NHERI-Published/"
+            )
+
+        elif system_id == "nees.public":
+            return f"/home/jupyter/NEES/{path}" if path else "/home/jupyter/NEES/"
+
         elif system_id.startswith("project-"):
             # For Projects: tapis://project-*/path -> /home/jupyter/MyProjects/path
             return (
@@ -146,6 +155,48 @@ def tapis_uri_to_local_path(tapis_uri: str) -> str:
     except ValueError:
         # Invalid URI format, return original
         return tapis_uri
+
+
+def _resolve_project_uuid(t: Tapis, project_id: str) -> str:
+    """Resolve a DesignSafe project ID (e.g., PRJ-1305) to its Tapis system UUID.
+
+    Queries the DesignSafe projects API to find the project UUID, then
+    returns the corresponding Tapis system ID.
+
+    Args:
+        t (Tapis): Authenticated Tapis client instance (used for the access token).
+        project_id (str): The DesignSafe project ID (e.g., "PRJ-1305").
+
+    Returns:
+        str: The Tapis system ID (e.g., "project-7997906542076432871-242ac11c-0001-012").
+
+    Raises:
+        FileOperationError: If the project cannot be found or the API request fails.
+    """
+    token = t.access_token.access_token
+    headers = {"X-Tapis-Token": token, "Authorization": f"Bearer {token}"}
+    try:
+        resp = requests.get(
+            "https://designsafe-ci.org/api/projects/v2/",
+            headers=headers,
+            params={"limit": 100},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        projects = resp.json().get("result", [])
+        for p in projects:
+            val = p.get("value", {})
+            if val.get("projectId", "") == project_id:
+                uuid = p["uuid"]
+                return f"project-{uuid}"
+    except requests.RequestException as e:
+        raise FileOperationError(
+            f"Failed to query DesignSafe projects API for '{project_id}': {e}"
+        ) from e
+
+    raise FileOperationError(
+        f"Project '{project_id}' not found. Ensure you have access to this project."
+    )
 
 
 def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
@@ -242,16 +293,44 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                 print(f"Translated '{path}' to '{input_uri}'")
                 break  # Found match, exit loop
 
-    # 3. Handle Project variations (if not already matched)
+    # 3. Handle NHERI-Published variations (if not already matched)
+    if input_uri is None:
+        published_patterns = [
+            ("jupyter/NHERI-Published", "designsafe.storage.published", False),
+            ("/NHERI-Published", "designsafe.storage.published", False),
+            ("NHERI-Published", "designsafe.storage.published", False),
+        ]
+        for pattern, storage_system_id, use_username in published_patterns:
+            if pattern in path:
+                path_remainder = path.split(pattern, 1)[1].lstrip("/")
+                input_uri = f"tapis://{storage_system_id}/{path_remainder}"
+                print(f"Translated '{path}' to '{input_uri}'")
+                break
+
+    # 4. Handle NEES variations (if not already matched)
+    if input_uri is None:
+        nees_patterns = [
+            ("jupyter/NEES", "nees.public", False),
+            ("/NEES", "nees.public", False),
+            ("NEES", "nees.public", False),
+        ]
+        for pattern, storage_system_id, use_username in nees_patterns:
+            if pattern in path:
+                path_remainder = path.split(pattern, 1)[1].lstrip("/")
+                input_uri = f"tapis://{storage_system_id}/{path_remainder}"
+                print(f"Translated '{path}' to '{input_uri}'")
+                break
+
+    # 5. Handle Project variations (if not already matched)
     if input_uri is None:
         project_patterns = [
-            ("jupyter/MyProjects", "project-"),
-            ("jupyter/projects", "project-"),
-            ("/projects", "project-"),
-            ("projects", "project-"),
-            ("/MyProjects", "project-"),
+            "jupyter/MyProjects",
+            "jupyter/projects",
+            "/projects",
+            "projects",
+            "/MyProjects",
         ]
-        for pattern, system_prefix in project_patterns:
+        for pattern in project_patterns:
             if pattern in path:
                 path_remainder_full = path.split(pattern, 1)[1].lstrip("/")
                 if not path_remainder_full:
@@ -262,73 +341,22 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                 project_id_part = parts[0]
                 path_within_project = parts[1] if len(parts) > 1 else ""
 
-                print(f"Searching Tapis systems for project ID '{project_id_part}'...")
-                found_system_id = None
-                try:
-                    search_query = (
-                        f"description.like.%{project_id_part}%&id.like.{system_prefix}*"
-                    )
-                    systems = t.systems.getSystems(
-                        search=search_query,
-                        listType="ALL",
-                        select="id,owner,description",
-                        limit=10,
-                    )
-                    matches = []
-                    if systems:
-                        for sys in systems:
-                            if (
-                                project_id_part.lower()
-                                in getattr(sys, "description", "").lower()
-                            ):
-                                matches.append(sys.id)
-                    if len(matches) == 1:
-                        found_system_id = matches[0]
-                        print(f"Found unique matching system: {found_system_id}")
-                    elif len(matches) == 0:
-                        if "-" in project_id_part and len(project_id_part) > 30:
-                            potential_sys_id = f"{system_prefix}{project_id_part}"
-                            print(
-                                f"Search failed, attempting direct lookup for system ID: {potential_sys_id}"
-                            )
-                            try:
-                                t.systems.getSystem(
-                                    systemId=potential_sys_id, select="id"
-                                )  # Select minimal field
-                                found_system_id = potential_sys_id
-                                print(f"Direct lookup successful: {found_system_id}")
-                            except BaseTapyException:
-                                print(
-                                    f"Direct lookup for {potential_sys_id} also failed."
-                                )
-                                raise FileOperationError(
-                                    f"No project system found matching ID '{project_id_part}' via Tapis v3 search or direct UUID lookup."
-                                )
-                        else:
-                            raise FileOperationError(
-                                f"No project system found matching ID '{project_id_part}' via Tapis v3 search."
-                            )
-                    else:
+                # If it looks like a UUID already, use it directly
+                if "-" in project_id_part and len(project_id_part) > 30:
+                    found_system_id = f"project-{project_id_part}"
+                    try:
+                        t.systems.getSystem(systemId=found_system_id, select="id")
+                    except BaseTapyException:
                         raise FileOperationError(
-                            f"Multiple project systems found potentially matching ID '{project_id_part}': {matches}. Cannot determine unique system."
+                            f"Project system '{found_system_id}' not found via direct lookup."
                         )
-                except BaseTapyException as e:
-                    raise FileOperationError(
-                        f"Tapis API error searching for project system '{project_id_part}': {e}"
-                    ) from e
-                except Exception as e:
-                    raise FileOperationError(
-                        f"Unexpected error searching for project system '{project_id_part}': {e}"
-                    ) from e
-
-                if not found_system_id:
-                    raise FileOperationError(
-                        f"Could not resolve project ID '{project_id_part}' to a Tapis system ID."
-                    )
+                else:
+                    # Resolve PRJ number via DesignSafe projects API
+                    found_system_id = _resolve_project_uuid(t, project_id_part)
 
                 input_uri = f"tapis://{found_system_id}/{path_within_project}"
-                print(f"Translated '{path}' to '{input_uri}' using Tapis v3 lookup")
-                break  # Found match, exit loop
+                print(f"Translated '{path}' to '{input_uri}'")
+                break
 
     # 4. Handle direct tapis:// URI input (if not already matched)
     if input_uri is None and path.startswith("tapis://"):
