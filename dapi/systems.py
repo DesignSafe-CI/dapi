@@ -122,95 +122,62 @@ def list_systems(
     return pd.DataFrame(rows)
 
 
-def list_system_queues(t: Tapis, system_id: str, verbose: bool = True) -> List[Any]:
-    """
-    Retrieves the list of batch logical queues available on a specific Tapis execution system.
+def list_system_queues(
+    t: Tapis,
+    system_id: str,
+    output: str = "df",
+) -> Union[pd.DataFrame, List[Any]]:
+    """List batch queues available on a Tapis execution system.
 
     Args:
-        t: Authenticated Tapis client instance.
-        system_id: The ID of the execution system (e.g., 'frontera', 'stampede2').
-        verbose: If True, prints the found queues.
+        t (Tapis): Authenticated Tapis client instance.
+        system_id (str): The ID of the execution system (e.g., "stampede3").
+        output (str, optional): "df" for DataFrame (default), "raw" for Tapis objects.
 
     Returns:
-        A list of queue objects (typically TapisResult instances or similar dict-like structures)
-        defined for the system. Returns an empty list if the system exists but has no queues defined.
+        Union[pd.DataFrame, List]: Queues with name, maxNodes, maxMinutes, maxCoresPerNode, etc.
 
     Raises:
         SystemInfoError: If the system is not found or an API error occurs.
+        ValueError: If system_id is empty or output is invalid.
     """
     if not system_id:
         raise ValueError("system_id cannot be empty.")
+    if output not in ("df", "raw"):
+        raise ValueError(f"output must be 'df' or 'raw', got '{output}'")
 
     try:
-        if verbose:
-            print(f"\nFetching queue information for system '{system_id}'...")
-
-        # Get system details - Fetch the full object to ensure queues are included
-        # Removed 'select' parameter for simplicity and robustness against API variations
         system_details = t.systems.getSystem(systemId=system_id)
-
-        # Use 'batchLogicalQueues' based on the direct API call result
         queues = getattr(system_details, "batchLogicalQueues", [])
 
         if not queues:
-            # Check if the system itself was found but just has no queues
-            try:
-                # Minimal check to confirm system existence if queues list was empty
-                # This might be slightly redundant if getSystem above succeeded, but safe.
-                t.systems.getSystem(systemId=system_id, select="id")
-                if verbose:
-                    # Updated message
-                    print(
-                        f"System '{system_id}' found, but it has no batch logical queues defined."
-                    )
-                return []  # Return empty list as system exists but has no queues
-            except BaseTapyException as e_check:
-                # If this minimal check fails with 404, the system wasn't found initially
-                if (
-                    hasattr(e_check, "response")
-                    and e_check.response
-                    and e_check.response.status_code == 404
-                ):
-                    raise SystemInfoError(
-                        f"Execution system '{system_id}' not found."
-                    ) from e_check
-                else:  # Other error during the existence check
-                    raise SystemInfoError(
-                        f"Error confirming existence of system '{system_id}': {e_check}"
-                    ) from e_check
+            if output == "raw":
+                return []
+            return pd.DataFrame()
 
-        if verbose:
-            # Updated message
-            print(f"Found {len(queues)} batch logical queues for system '{system_id}':")
-            for q in queues:
-                name = getattr(q, "name", "N/A")
-                hpc_queue = getattr(
-                    q, "hpcQueueName", "N/A"
-                )  # Actual scheduler queue name
-                max_jobs = getattr(q, "maxJobs", "N/A")
-                max_user_jobs = getattr(q, "maxUserJobs", "N/A")
-                max_mins = getattr(q, "maxMinutes", "N/A")
-                max_nodes = getattr(q, "maxNodeCount", "N/A")
-                # Add more attributes if desired (e.g., maxMemoryMB, maxCoresPerNode)
-                print(
-                    f"  - Name: {name} (HPC Queue: {hpc_queue}, Max Jobs: {max_jobs}, Max User Jobs: {max_user_jobs}, Max Mins: {max_mins}, Max Nodes: {max_nodes})"
-                )
+        if output == "raw":
+            return queues
 
-            print()
-
-        # The items in the list are TapisResult objects themselves
-        return queues
+        rows = []
+        for q in queues:
+            rows.append(
+                {
+                    "name": getattr(q, "name", ""),
+                    "hpcQueue": getattr(q, "hpcQueueName", ""),
+                    "maxNodes": getattr(q, "maxNodeCount", None),
+                    "maxCoresPerNode": getattr(q, "maxCoresPerNode", None),
+                    "maxMinutes": getattr(q, "maxMinutes", None),
+                    "maxMemoryMB": getattr(q, "maxMemoryMB", None),
+                    "maxJobsPerUser": getattr(q, "maxJobsPerUser", None),
+                }
+            )
+        return pd.DataFrame(rows)
 
     except BaseTapyException as e:
         if hasattr(e, "response") and e.response and e.response.status_code == 404:
             raise SystemInfoError(f"Execution system '{system_id}' not found.") from e
-        else:
-            raise SystemInfoError(
-                f"Failed to retrieve queues for system '{system_id}': {e}"
-            ) from e
-    except Exception as e:
         raise SystemInfoError(
-            f"An unexpected error occurred while fetching queues for system '{system_id}': {e}"
+            f"Failed to retrieve queues for system '{system_id}': {e}"
         ) from e
 
 

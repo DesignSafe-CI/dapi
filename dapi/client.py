@@ -483,26 +483,20 @@ class SystemMethods:
             self._tapis, category=category, output=output
         )
 
-    def queues(self, system_id: str, verbose: bool = True) -> List[Any]:
-        """List logical queues available on a Tapis execution system.
-
-        This is a convenience wrapper around systems_module.list_system_queues().
+    def queues(self, system_id: str, output: str = "df"):
+        """List batch queues available on a Tapis execution system.
 
         Args:
-            system_id (str): The ID of the execution system (e.g., 'frontera').
-            verbose (bool, optional): If True, prints detailed queue information.
-                Defaults to True.
+            system_id (str): The ID of the execution system (e.g., "stampede3").
+            output (str, optional): "df" for DataFrame (default), "raw" for Tapis objects.
 
         Returns:
-            List[Any]: List of queue objects with queue configuration details.
+            DataFrame or List: Queues with name, maxNodes, maxMinutes, etc.
 
-        Raises:
-            SystemInfoError: If the system is not found or queue retrieval fails.
-            ValueError: If system_id is empty.
+        Example:
+            >>> ds.systems.queues("stampede3")
         """
-        return systems_module.list_system_queues(
-            self._tapis, system_id, verbose=verbose
-        )
+        return systems_module.list_system_queues(self._tapis, system_id, output=output)
 
     def check_credentials(self, system_id: str, username: str = None) -> bool:
         """Check whether TMS credentials exist for a user on a system.
