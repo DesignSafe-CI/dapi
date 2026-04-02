@@ -9,12 +9,35 @@ from typing import Dict, List, Optional, Union
 
 _DS_PUBLICATIONS_API = "https://designsafe-ci.org/api/publications/v2/"
 _PUBLISHED_SYSTEM_ID = "designsafe.storage.published"
+_PAGE_SIZE = 100
 
 
 def _get_auth_headers(t: Tapis) -> Dict[str, str]:
     """Build authentication headers from a Tapis client."""
     token = t.access_token.access_token
     return {"X-Tapis-Token": token, "Authorization": f"Bearer {token}"}
+
+
+def _fetch_all_publications(headers: Dict[str, str]) -> List[Dict]:
+    """Fetch all publications using pagination."""
+    all_pubs = []
+    offset = 0
+    while True:
+        resp = requests.get(
+            _DS_PUBLICATIONS_API,
+            headers=headers,
+            params={"limit": _PAGE_SIZE, "offset": offset},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        batch = data.get("result", [])
+        total = data.get("total", 0)
+        all_pubs.extend(batch)
+        if len(batch) < _PAGE_SIZE or len(all_pubs) >= total:
+            break
+        offset += _PAGE_SIZE
+    return all_pubs
 
 
 def _pi_display(pi: Optional[Dict]) -> str:
@@ -93,11 +116,11 @@ def search_publications(
     pi: Optional[str] = None,
     keyword: Optional[str] = None,
     publication_type: Optional[str] = None,
-    limit: int = 100,
     output: str = "df",
 ) -> Union[pd.DataFrame, List[Dict]]:
-    """Search published datasets with optional filters.
+    """Search all published datasets with optional filters.
 
+    Fetches all publications (~1,500) and filters client-side.
     All filters are case-insensitive and combined with AND logic.
     At least one filter (query, pi, keyword, or publication_type) must be provided.
 
@@ -108,7 +131,6 @@ def search_publications(
         keyword (str, optional): Filter by keyword (partial match against keywords list).
         publication_type (str, optional): Filter by type: "simulation", "experimental",
             "field_recon", "other", "hybrid_simulation".
-        limit (int, optional): Max publications to fetch before filtering. Defaults to 100.
         output (str, optional): "df" for DataFrame (default), "list" for list of dicts.
 
     Returns:
@@ -128,19 +150,12 @@ def search_publications(
 
     headers = _get_auth_headers(t)
     try:
-        resp = requests.get(
-            _DS_PUBLICATIONS_API,
-            headers=headers,
-            params={"limit": limit, "offset": 0},
-            timeout=30,
-        )
-        resp.raise_for_status()
+        all_pubs = _fetch_all_publications(headers)
     except requests.RequestException as e:
         raise FileOperationError(f"Failed to search publications: {e}") from e
 
-    data = resp.json()
     matches = []
-    for p in data.get("result", []):
+    for p in all_pubs:
         # Apply filters with AND logic
         if query:
             searchable = " ".join(

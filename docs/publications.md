@@ -41,8 +41,8 @@ ds.publications.search(publication_type="simulation")
 # Combine filters (AND logic)
 ds.publications.search(keyword="storm surge", publication_type="simulation")
 
-# Increase search pool (API returns 100 by default)
-ds.publications.search(keyword="earthquake", limit=500)
+# Combine filters
+ds.publications.search(keyword="earthquake", publication_type="experimental")
 ```
 
 ## Get publication details
@@ -79,7 +79,7 @@ DataFrame columns: `name`, `type`, `size`, `lastModified`, `path`.
 
 ## How it works
 
-1. **Publication listing and search**: dapi queries the DesignSafe portal API (`/api/publications/v2/`). The API returns all publications; search filtering is done client-side.
+1. **Publication listing and search**: dapi queries the DesignSafe portal API (`/api/publications/v2/`). For search, all ~1,500 publications are fetched via pagination (~3 seconds) and filtered client-side.
 
 2. **Publication detail**: dapi queries `/api/publications/v2/PRJ-XXXX/` which returns metadata in the `tree.children[0].value` structure, including DOIs, authors, and data types.
 

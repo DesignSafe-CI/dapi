@@ -368,12 +368,12 @@ class PublicationMethods:
         pi: Optional[str] = None,
         keyword: Optional[str] = None,
         publication_type: Optional[str] = None,
-        limit: int = 100,
         output: str = "df",
     ):
-        """Search published datasets with optional filters.
+        """Search all published datasets with optional filters.
 
-        All filters are AND-combined and case-insensitive.
+        Searches across all ~1,500 published datasets. Filters are AND-combined
+        and case-insensitive.
 
         Args:
             query (str, optional): General search across title, description, keywords, PI.
@@ -381,7 +381,6 @@ class PublicationMethods:
             keyword (str, optional): Filter by keyword.
             publication_type (str, optional): Filter by type: "simulation",
                 "experimental", "field_recon", "other", "hybrid_simulation".
-            limit (int, optional): Max publications to fetch. Defaults to 100.
             output (str, optional): "df" for DataFrame (default), "list" for dicts.
 
         Returns:
@@ -400,7 +399,6 @@ class PublicationMethods:
             pi=pi,
             keyword=keyword,
             publication_type=publication_type,
-            limit=limit,
             output=output,
         )
 
