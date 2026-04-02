@@ -266,22 +266,25 @@ class ProjectMethods:
     def __init__(self, tapis_client: Tapis):
         self._tapis = tapis_client
 
-    def list(self, limit: int = 100, offset: int = 0) -> List[Dict]:
+    def list(self, limit: int = 100, offset: int = 0, output: str = "df"):
         """List DesignSafe projects you have access to.
 
         Args:
             limit (int, optional): Maximum projects to return. Defaults to 100.
             offset (int, optional): Number of projects to skip. Defaults to 0.
+            output (str, optional): "df" for DataFrame (default), "list" for
+                list of dicts.
 
         Returns:
-            List[Dict]: List of project dicts with uuid, projectId, title, pi, etc.
+            DataFrame or List[Dict]: Projects with projectId, title, pi, type, etc.
 
         Example:
-            >>> projects = ds.projects.list()
-            >>> for p in projects[:3]:
-            ...     print(f"{p['projectId']} - {p['title']}")
+            >>> ds.projects.list()  # returns a DataFrame
+            >>> ds.projects.list(output="list")  # returns list of dicts
         """
-        return projects_module.list_projects(self._tapis, limit=limit, offset=offset)
+        return projects_module.list_projects(
+            self._tapis, limit=limit, offset=offset, output=output
+        )
 
     def get(self, project_id: str) -> Dict:
         """Get detailed metadata for a project.
@@ -300,24 +303,27 @@ class ProjectMethods:
         """
         return projects_module.get_project(self._tapis, project_id)
 
-    def files(self, project_id: str, path: str = "/", limit: int = 100) -> List:
+    def files(
+        self, project_id: str, path: str = "/", limit: int = 100, output: str = "df"
+    ):
         """List files in a project.
 
         Args:
             project_id (str): Project ID (e.g., "PRJ-1305").
             path (str, optional): Path within the project. Defaults to "/".
             limit (int, optional): Max items to return. Defaults to 100.
+            output (str, optional): "df" for DataFrame (default), "raw" for
+                Tapis file objects.
 
         Returns:
-            List: List of Tapis file objects.
+            DataFrame or List: Files with name, type, size, lastModified, path.
 
         Example:
-            >>> files = ds.projects.files("PRJ-1305", "/Training/")
-            >>> for f in files[:5]:
-            ...     print(f"{f.name} ({f.type})")
+            >>> ds.projects.files("PRJ-1305", "/Training/")
+            >>> ds.projects.files("PRJ-1305", output="raw")
         """
         return projects_module.list_project_files(
-            self._tapis, project_id, path=path, limit=limit
+            self._tapis, project_id, path=path, limit=limit, output=output
         )
 
 

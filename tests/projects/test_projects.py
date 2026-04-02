@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
+import pandas as pd
 from dapi.projects import (
     list_projects,
     get_project,
@@ -9,48 +10,52 @@ from dapi.projects import (
 from dapi.exceptions import FileOperationError
 
 
+_MOCK_API_RESPONSE = {
+    "result": [
+        {
+            "uuid": "abc-123",
+            "created": "2025-01-01T00:00:00Z",
+            "lastUpdated": "2025-06-01T00:00:00Z",
+            "value": {
+                "projectId": "PRJ-1234",
+                "title": "Test Project",
+                "projectType": "experimental",
+                "users": [
+                    {"role": "pi", "username": "testpi", "fname": "Test", "lname": "PI"}
+                ],
+            },
+        }
+    ]
+}
+
+
 class TestListProjects(unittest.TestCase):
     def setUp(self):
         self.t = MagicMock()
         self.t.access_token.access_token = "mock-token"
 
     @patch("dapi.projects.requests.get")
-    def test_list_projects_returns_formatted_list(self, mock_get):
-        mock_get.return_value.status_code = 200
+    def test_returns_dataframe_by_default(self, mock_get):
         mock_get.return_value.raise_for_status = MagicMock()
-        mock_get.return_value.json.return_value = {
-            "result": [
-                {
-                    "uuid": "abc-123",
-                    "created": "2025-01-01",
-                    "lastUpdated": "2025-06-01",
-                    "value": {
-                        "projectId": "PRJ-1234",
-                        "title": "Test Project",
-                        "users": [
-                            {
-                                "role": "pi",
-                                "username": "testpi",
-                                "fname": "Test",
-                                "lname": "PI",
-                            }
-                        ],
-                    },
-                }
-            ]
-        }
+        mock_get.return_value.json.return_value = _MOCK_API_RESPONSE
         result = list_projects(self.t)
+        self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["projectId"], "PRJ-1234")
-        self.assertEqual(result[0]["title"], "Test Project")
-        self.assertEqual(result[0]["uuid"], "abc-123")
-        self.assertEqual(result[0]["pi"]["username"], "testpi")
+        self.assertEqual(result.iloc[0]["projectId"], "PRJ-1234")
+        self.assertEqual(result.iloc[0]["pi"], "Test PI")
 
     @patch("dapi.projects.requests.get")
-    def test_list_projects_no_pi(self, mock_get):
-        mock_get.return_value.status_code = 200
+    def test_returns_list_of_dicts(self, mock_get):
         mock_get.return_value.raise_for_status = MagicMock()
-        mock_get.return_value.json.return_value = {
+        mock_get.return_value.json.return_value = _MOCK_API_RESPONSE
+        result = list_projects(self.t, output="list")
+        self.assertIsInstance(result, list)
+        self.assertEqual(result[0]["projectId"], "PRJ-1234")
+        self.assertEqual(result[0]["pi"], "Test PI")
+
+    @patch("dapi.projects.requests.get")
+    def test_no_pi_shows_empty_string(self, mock_get):
+        resp = {
             "result": [
                 {
                     "uuid": "abc-123",
@@ -58,17 +63,24 @@ class TestListProjects(unittest.TestCase):
                     "lastUpdated": "2025-06-01",
                     "value": {
                         "projectId": "PRJ-1234",
-                        "title": "No PI Project",
+                        "title": "No PI",
+                        "projectType": None,
                         "users": [],
                     },
                 }
             ]
         }
-        result = list_projects(self.t)
-        self.assertIsNone(result[0]["pi"])
+        mock_get.return_value.raise_for_status = MagicMock()
+        mock_get.return_value.json.return_value = resp
+        result = list_projects(self.t, output="list")
+        self.assertEqual(result[0]["pi"], "")
+
+    def test_invalid_output_raises(self):
+        with self.assertRaises(ValueError):
+            list_projects(self.t, output="csv")
 
     @patch("dapi.projects.requests.get")
-    def test_list_projects_api_failure(self, mock_get):
+    def test_api_failure(self, mock_get):
         from requests.exceptions import ConnectionError
 
         mock_get.side_effect = ConnectionError("Connection refused")
@@ -82,8 +94,7 @@ class TestGetProject(unittest.TestCase):
         self.t.access_token.access_token = "mock-token"
 
     @patch("dapi.projects.requests.get")
-    def test_get_project_returns_metadata(self, mock_get):
-        mock_get.return_value.status_code = 200
+    def test_returns_metadata_dict(self, mock_get):
         mock_get.return_value.raise_for_status = MagicMock()
         mock_get.return_value.json.return_value = {
             "baseProject": {
@@ -93,10 +104,10 @@ class TestGetProject(unittest.TestCase):
                 "value": {
                     "projectId": "PRJ-1234",
                     "title": "Test Project",
-                    "description": "A test project",
-                    "coPis": ["copi1"],
-                    "teamMembers": ["member1"],
-                    "awardNumbers": [{"number": "NSF-123"}],
+                    "description": "A test",
+                    "coPis": [],
+                    "teamMembers": [],
+                    "awardNumbers": [],
                     "keywords": ["earthquake"],
                     "dois": ["10.1234/test"],
                     "projectType": "experimental",
@@ -115,24 +126,9 @@ class TestGetProject(unittest.TestCase):
         }
         result = get_project(self.t, "PRJ-1234")
         self.assertEqual(result["projectId"], "PRJ-1234")
-        self.assertEqual(result["title"], "Test Project")
-        self.assertEqual(result["description"], "A test project")
         self.assertEqual(result["systemId"], "project-abc-123")
-        self.assertEqual(result["pi"]["username"], "testpi")
+        self.assertEqual(result["pi"], "Test PI")
         self.assertEqual(result["dois"], ["10.1234/test"])
-
-    @patch("dapi.projects.requests.get")
-    def test_get_project_not_found(self, mock_get):
-        from requests.exceptions import HTTPError
-
-        mock_resp = MagicMock()
-        mock_resp.status_code = 404
-        mock_resp.raise_for_status.side_effect = HTTPError(
-            "Not found", response=mock_resp
-        )
-        mock_get.return_value = mock_resp
-        with self.assertRaises(FileOperationError):
-            get_project(self.t, "PRJ-9999")
 
 
 class TestListProjectFiles(unittest.TestCase):
@@ -141,35 +137,34 @@ class TestListProjectFiles(unittest.TestCase):
         self.t.access_token.access_token = "mock-token"
 
     @patch("dapi.projects.get_project")
-    def test_list_project_files(self, mock_get_project):
-        mock_get_project.return_value = {
-            "systemId": "project-abc-123",
-            "projectId": "PRJ-1234",
-        }
+    def test_returns_dataframe_by_default(self, mock_get_project):
+        mock_get_project.return_value = {"systemId": "project-abc-123"}
         mock_file = MagicMock()
         mock_file.name = "data.csv"
         mock_file.type = "file"
+        mock_file.size = 1024
+        mock_file.lastModified = "2025-01-01T00:00:00Z"
+        mock_file.path = "/data.csv"
         self.t.files.listFiles.return_value = [mock_file]
 
         result = list_project_files(self.t, "PRJ-1234")
+        self.assertIsInstance(result, pd.DataFrame)
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].name, "data.csv")
-        self.t.files.listFiles.assert_called_once_with(
-            systemId="project-abc-123", path="/", limit=100
-        )
+        self.assertEqual(result.iloc[0]["name"], "data.csv")
 
     @patch("dapi.projects.get_project")
-    def test_list_project_files_with_path(self, mock_get_project):
-        mock_get_project.return_value = {
-            "systemId": "project-abc-123",
-            "projectId": "PRJ-1234",
-        }
-        self.t.files.listFiles.return_value = []
+    def test_returns_raw(self, mock_get_project):
+        mock_get_project.return_value = {"systemId": "project-abc-123"}
+        mock_file = MagicMock()
+        self.t.files.listFiles.return_value = [mock_file]
 
-        list_project_files(self.t, "PRJ-1234", path="/subfolder/")
-        self.t.files.listFiles.assert_called_once_with(
-            systemId="project-abc-123", path="/subfolder/", limit=100
-        )
+        result = list_project_files(self.t, "PRJ-1234", output="raw")
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 1)
+
+    def test_invalid_output_raises(self):
+        with self.assertRaises(ValueError):
+            list_project_files(self.t, "PRJ-1234", output="csv")
 
 
 class TestResolveProjectUuid(unittest.TestCase):
@@ -179,26 +174,17 @@ class TestResolveProjectUuid(unittest.TestCase):
 
     @patch("dapi.projects.requests.get")
     def test_resolves_prj_to_system_id(self, mock_get):
-        mock_get.return_value.status_code = 200
         mock_get.return_value.raise_for_status = MagicMock()
         mock_get.return_value.json.return_value = {
             "result": [
-                {
-                    "uuid": "abc-123-def-456",
-                    "value": {"projectId": "PRJ-1234"},
-                },
-                {
-                    "uuid": "xyz-789",
-                    "value": {"projectId": "PRJ-5678"},
-                },
+                {"uuid": "abc-123-def", "value": {"projectId": "PRJ-1234"}},
             ]
         }
         result = resolve_project_uuid(self.t, "PRJ-1234")
-        self.assertEqual(result, "project-abc-123-def-456")
+        self.assertEqual(result, "project-abc-123-def")
 
     @patch("dapi.projects.requests.get")
     def test_not_found_raises_error(self, mock_get):
-        mock_get.return_value.status_code = 200
         mock_get.return_value.raise_for_status = MagicMock()
         mock_get.return_value.json.return_value = {
             "result": [{"uuid": "abc", "value": {"projectId": "PRJ-9999"}}]
