@@ -9,6 +9,7 @@ authors = [
     { name = "Krishna Kumar", email = "krishnak@utexas.edu" },
     { name = "Pedro Arduino", email = "parduino@uw.edu" },
     { name = "Scott Brandenberg", email = "sjbrandenberg@ucla.edu" },
+    { name = "Silvia Mazzoni", email = "silviamazzoni@yahoo.com" },
 ]
 dependencies = [
     "numpy>=1.21.0,<2.0; python_version < '3.10'",

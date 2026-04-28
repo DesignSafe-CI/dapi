@@ -1,7 +1,7 @@
 """Sphinx configuration for dapi API reference docs."""
 
 project = "dapi"
-copyright = "2024, Krishna Kumar, Pedro Arduino, Scott Brandenberg"
+copyright = "2024, Krishna Kumar, Pedro Arduino, Scott Brandenberg, Silvia Mazzoni"
 author = "Krishna Kumar"
 
 extensions = [
