@@ -16,10 +16,10 @@ ds = DSClient()
 input_uri = ds.files.to_uri("/MyData/analysis/input/")
 
 job_request = ds.jobs.generate(
- app_id="matlab-r2023a",
- input_dir_uri=input_uri,
- script_filename="run_analysis.m",
- allocation="your_allocation",
+    app_id="matlab-r2023a",
+    input_dir_uri=input_uri,
+    script_filename="run_analysis.m",
+    allocation="your_allocation",
 )
 job = ds.jobs.submit(job_request)
 job.monitor()

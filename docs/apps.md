@@ -6,6 +6,7 @@ Search by name. Use an empty string to list everything.
 
 ```python
 from dapi import DSClient
+
 ds = DSClient()
 
 ds.apps.find("matlab")
@@ -52,9 +53,9 @@ Access job configuration:
 
 ```python
 attrs = app.jobAttributes
-print(attrs.execSystemId)          # frontera
-print(attrs.maxMinutes)            # 2880
-print(attrs.coresPerNode)          # 56
+print(attrs.execSystemId)  # frontera
+print(attrs.maxMinutes)  # 2880
+print(attrs.coresPerNode)  # 56
 print(attrs.execSystemLogicalQueue)  # normal
 ```
 

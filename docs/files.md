@@ -6,6 +6,7 @@ DesignSafe uses Tapis URIs internally (`tapis://system-id/path`). Most users wor
 
 ```python
 from dapi import DSClient
+
 ds = DSClient()
 
 # MyData → includes your username automatically

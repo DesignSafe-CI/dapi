@@ -32,11 +32,11 @@ ds = DSClient()
 
 ```python
 # Job configuration parameters
-ds_path: str = "/CommunityData/dapi/mpm/uniaxial_stress/" # Path to MPM input files
-input_filename: str = "mpm.json" # Main MPM configuration file
-max_job_minutes: int = 10 # Maximum runtime in minutes
-tacc_allocation: str = "ASC25049" # TACC allocation to charge
-app_id_to_use = "mpm-s3" # MPM application ID
+ds_path: str = "/CommunityData/dapi/mpm/uniaxial_stress/"  # Path to MPM input files
+input_filename: str = "mpm.json"  # Main MPM configuration file
+max_job_minutes: int = 10  # Maximum runtime in minutes
+tacc_allocation: str = "ASC25049"  # TACC allocation to charge
+app_id_to_use = "mpm-s3"  # MPM application ID
 ```
 
 The MPM input file is a JSON configuration that defines the mesh, particle locations, material constitutive models (e.g., LinearElastic2D, MohrCoulomb, NeoHookean), and analysis parameters (type, number of steps, time step size).
@@ -54,16 +54,16 @@ print(f"Input Directory Tapis URI: {input_uri}")
 ```python
 # Generate job request dictionary using app defaults
 job_dict = ds.jobs.generate(
- app_id=app_id_to_use,
- input_dir_uri=input_uri,
- script_filename=input_filename,
- max_minutes=max_job_minutes,
- allocation=tacc_allocation,
- archive_system="designsafe",
- # MPM-specific job metadata
- job_name=f"mpm_uniaxial_stress_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
- description="MPM simulation of uniaxial stress test",
- tags=["research", "mpm", "geomechanics", "uniaxial-stress"]
+    app_id=app_id_to_use,
+    input_dir_uri=input_uri,
+    script_filename=input_filename,
+    max_minutes=max_job_minutes,
+    allocation=tacc_allocation,
+    archive_system="designsafe",
+    # MPM-specific job metadata
+    job_name=f"mpm_uniaxial_stress_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+    description="MPM simulation of uniaxial stress test",
+    tags=["research", "mpm", "geomechanics", "uniaxial-stress"],
 )
 print(json.dumps(job_dict, indent=2, default=str))
 ```
@@ -72,8 +72,8 @@ print(json.dumps(job_dict, indent=2, default=str))
 
 ```python
 # Customize job settings (optional)
-job_dict["nodeCount"] = 1 # Use single node
-job_dict["coresPerNode"] = 1 # Use single core for small problems
+job_dict["nodeCount"] = 1  # Use single node
+job_dict["coresPerNode"] = 1  # Use single core for small problems
 print(json.dumps(job_dict, indent=2, default=str))
 ```
 
@@ -89,7 +89,7 @@ print(f"Job UUID: {submitted_job.uuid}")
 
 ```python
 # Monitor job execution until completion
-final_status = submitted_job.monitor(interval=15) # Check every 15 seconds
+final_status = submitted_job.monitor(interval=15)  # Check every 15 seconds
 print(f"Job {submitted_job.uuid} finished with status: {final_status}")
 ```
 
@@ -116,8 +116,8 @@ print(f"Last message: {submitted_job.last_message}")
 # Display job output from stdout
 stdout_content = submitted_job.get_output_content("tapisjob.out", max_lines=50)
 if stdout_content:
- print("Job output:")
- print(stdout_content)
+    print("Job output:")
+    print(stdout_content)
 ```
 
 ### Step 11: Access Results
@@ -128,7 +128,7 @@ archive_uri = submitted_job.archive_uri
 print(f"Archive URI: {archive_uri}")
 outputs = ds.files.list(archive_uri)
 for item in outputs:
- print(f"- {item.name} ({item.type})")
+    print(f"- {item.name} ({item.type})")
 ```
 
 ## Post-processing Results
@@ -148,15 +148,15 @@ import os
 # Navigate to results directory
 results_path = os.path.join(archive_path, "inputDirectory", "results")
 if os.path.exists(results_path):
- print(f"Results directory: {results_path}")
+    print(f"Results directory: {results_path}")
 
- # List VTK output files
- vtk_files = [f for f in os.listdir(results_path) if f.endswith('.vtu')]
- print(f"Found {len(vtk_files)} VTK files for visualization")
+    # List VTK output files
+    vtk_files = [f for f in os.listdir(results_path) if f.endswith(".vtu")]
+    print(f"Found {len(vtk_files)} VTK files for visualization")
 
- # Example: Load and analyze particle data (requires appropriate library)
- # Note: Actual VTK analysis would require packages like vtk or pyvista
- print("Use ParaView or Python VTK libraries to visualize results")
+    # Example: Load and analyze particle data (requires appropriate library)
+    # Note: Actual VTK analysis would require packages like vtk or pyvista
+    print("Use ParaView or Python VTK libraries to visualize results")
 else:
- print("No results directory found - check job completion status")
+    print("No results directory found - check job completion status")
 ```

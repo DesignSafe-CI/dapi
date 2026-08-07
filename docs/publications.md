@@ -10,6 +10,7 @@ Returns a DataFrame by default. Use `output="list"` for a list of dicts.
 
 ```python
 from dapi import DSClient
+
 ds = DSClient()
 
 # Recent publications
@@ -52,14 +53,14 @@ Returns a dictionary with full metadata.
 ```python
 info = ds.publications.get("PRJ-6270")
 
-info['title']
-info['description']
-info['pi']
-info['dois']          # DOIs for citation
-info['keywords']
-info['dataTypes']
-info['projectType']   # simulation, experimental, field_recon, other
-info['awardNumbers']
+info["title"]
+info["description"]
+info["pi"]
+info["dois"]  # DOIs for citation
+info["keywords"]
+info["dataTypes"]
+info["projectType"]  # simulation, experimental, field_recon, other
+info["awardNumbers"]
 ```
 
 ## List files in a publication

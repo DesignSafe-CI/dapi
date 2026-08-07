@@ -14,14 +14,16 @@ all_apps = ds.apps.find("", verbose=False)
 
 app_data = []
 for app in all_apps:
- app_data.append({
- 'id': app.id,
- 'version': app.version,
- 'owner': app.owner,
- 'execution_system': getattr(app.jobAttributes, 'execSystemId', 'N/A'),
- 'max_minutes': getattr(app.jobAttributes, 'maxMinutes', 'N/A'),
- 'cores_per_node': getattr(app.jobAttributes, 'coresPerNode', 'N/A'),
- })
+    app_data.append(
+        {
+            "id": app.id,
+            "version": app.version,
+            "owner": app.owner,
+            "execution_system": getattr(app.jobAttributes, "execSystemId", "N/A"),
+            "max_minutes": getattr(app.jobAttributes, "maxMinutes", "N/A"),
+            "cores_per_node": getattr(app.jobAttributes, "coresPerNode", "N/A"),
+        }
+    )
 
 apps_df = pd.DataFrame(app_data)
 print(apps_df.head())

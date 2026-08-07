@@ -18,6 +18,7 @@ pip install dapi
 
 ```python
 import dapi
+
 print(dapi.__version__)
 ```
 

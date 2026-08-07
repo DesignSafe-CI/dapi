@@ -20,8 +20,7 @@ print(df)
 
 # Parameterized query
 site_data = ds.db.ngl.read_sql(
- "SELECT * FROM SITE WHERE SITE_NAME = %s",
- params=["Amagasaki"]
+    "SELECT * FROM SITE WHERE SITE_NAME = %s", params=["Amagasaki"]
 )
 ```
 
@@ -64,20 +63,18 @@ site_info = ds.db.ngl.read_sql("""
 ```python
 # Single parameter
 site_data = ds.db.ngl.read_sql(
- "SELECT * FROM SITE WHERE SITE_NAME = %s",
- params=[site_name]
+    "SELECT * FROM SITE WHERE SITE_NAME = %s", params=[site_name]
 )
 
 # Multiple parameters
 california_sites = ds.db.ngl.read_sql(
- "SELECT * FROM SITE WHERE SITE_LAT BETWEEN %s AND %s",
- params=[32.0, 38.0]
+    "SELECT * FROM SITE WHERE SITE_LAT BETWEEN %s AND %s", params=[32.0, 38.0]
 )
 
 # Named parameters
 region_sites = ds.db.ngl.read_sql(
- "SELECT * FROM SITE WHERE SITE_LAT > %(min_lat)s AND SITE_LON < %(max_lon)s",
- params={"min_lat": 35.0, "max_lon": -115.0}
+    "SELECT * FROM SITE WHERE SITE_LAT > %(min_lat)s AND SITE_LON < %(max_lon)s",
+    params={"min_lat": 35.0, "max_lon": -115.0},
 )
 ```
 
@@ -149,7 +146,7 @@ df.to_json("ngl_data.json", orient="records")
 import geopandas as gpd
 from shapely.geometry import Point
 
-geometry = [Point(xy) for xy in zip(df['SITE_LON'], df['SITE_LAT'])]
+geometry = [Point(xy) for xy in zip(df["SITE_LON"], df["SITE_LAT"])]
 gdf = gpd.GeoDataFrame(df, geometry=geometry)
 gdf.to_file("ngl_sites.geojson", driver="GeoJSON")
 ```
@@ -161,10 +158,10 @@ ngl_db = ds.db.ngl
 
 # Check connection
 try:
- test_query = ngl_db.read_sql("SELECT 1 as test")
- print("Connection active")
+    test_query = ngl_db.read_sql("SELECT 1 as test")
+    print("Connection active")
 except Exception as e:
- print(f"Connection failed: {e}")
+    print(f"Connection failed: {e}")
 
 # Close (optional -- handled automatically)
 ngl_db.close()

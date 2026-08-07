@@ -10,6 +10,7 @@ Returns a DataFrame by default. Use `output="list"` for a list of dicts.
 
 ```python
 from dapi import DSClient
+
 ds = DSClient()
 
 # DataFrame (renders as a table in Jupyter)
@@ -34,14 +35,14 @@ Returns a dictionary with full project metadata.
 ```python
 info = ds.projects.get("PRJ-6270")
 
-info['title']
-info['description']
-info['pi']           # PI display name (e.g., "Cheng-Hsi Hsiao")
-info['dois']         # Associated DOIs
-info['keywords']
-info['awardNumbers']
-info['projectType']  # experimental, simulation, field_recon, other, etc.
-info['systemId']     # Tapis system ID for file access
+info["title"]
+info["description"]
+info["pi"]  # PI display name (e.g., "Cheng-Hsi Hsiao")
+info["dois"]  # Associated DOIs
+info["keywords"]
+info["awardNumbers"]
+info["projectType"]  # experimental, simulation, field_recon, other, etc.
+info["systemId"]  # Tapis system ID for file access
 ```
 
 Full field reference:

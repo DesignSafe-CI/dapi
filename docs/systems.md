@@ -4,6 +4,7 @@
 
 ```python
 from dapi import DSClient
+
 ds = DSClient()
 
 # HPC + storage systems (default)

@@ -32,16 +32,16 @@ ds = DSClient()
 
 ```python
 # Job configuration parameters
-ds_path: str = "/MyData/template-notebooks/tapis3/OpenFOAM/DH1_run" # Path to OpenFOAM case directory
-max_job_minutes: int = 10 # Maximum runtime in minutes
-tacc_allocation: str = "ASC25049" # TACC allocation to charge
-app_id_to_use = "openfoam-stampede3" # OpenFOAM application ID
+ds_path: str = "/MyData/template-notebooks/tapis3/OpenFOAM/DH1_run"  # Path to OpenFOAM case directory
+max_job_minutes: int = 10  # Maximum runtime in minutes
+tacc_allocation: str = "ASC25049"  # TACC allocation to charge
+app_id_to_use = "openfoam-stampede3"  # OpenFOAM application ID
 
 # OpenFOAM-specific environment variables
 openfoam_env_vars = [
- {"key": "mesh", "value": "On"}, # Enable mesh generation with blockMesh
- {"key": "solver", "value": "pisoFoam"}, # CFD solver to use
- {"key": "decomp", "value": "On"} # Enable domain decomposition for parallel runs
+    {"key": "mesh", "value": "On"},  # Enable mesh generation with blockMesh
+    {"key": "solver", "value": "pisoFoam"},  # CFD solver to use
+    {"key": "decomp", "value": "On"},  # Enable domain decomposition for parallel runs
 ]
 ```
 
@@ -60,13 +60,13 @@ print(f"Input Directory Tapis URI: {input_uri}")
 ```python
 # Generate job request dictionary using app defaults
 job_dict = ds.jobs.generate(
- app_id=app_id_to_use,
- input_dir_uri=input_uri,
- max_minutes=max_job_minutes,
- allocation=tacc_allocation,
- archive_system="designsafe",
- extra_env_vars=openfoam_env_vars,
- input_dir_param_name="Case Directory" # OpenFOAM apps use "Case Directory" instead of "Input Directory"
+    app_id=app_id_to_use,
+    input_dir_uri=input_uri,
+    max_minutes=max_job_minutes,
+    allocation=tacc_allocation,
+    archive_system="designsafe",
+    extra_env_vars=openfoam_env_vars,
+    input_dir_param_name="Case Directory",  # OpenFOAM apps use "Case Directory" instead of "Input Directory"
 )
 print(json.dumps(job_dict, indent=2, default=str))
 ```
@@ -77,8 +77,8 @@ Note: OpenFOAM apps on DesignSafe expect `input_dir_param_name="Case Directory"`
 
 ```python
 # Customize job settings (optional)
-job_dict["nodeCount"] = 1 # Use single node
-job_dict["coresPerNode"] = 2 # Use 2 cores for parallel simulation
+job_dict["nodeCount"] = 1  # Use single node
+job_dict["coresPerNode"] = 2  # Use 2 cores for parallel simulation
 print(json.dumps(job_dict, indent=2, default=str))
 ```
 
@@ -94,7 +94,7 @@ print(f"Job UUID: {submitted_job.uuid}")
 
 ```python
 # Monitor job execution until completion
-final_status = submitted_job.monitor(interval=15) # Check every 15 seconds
+final_status = submitted_job.monitor(interval=15)  # Check every 15 seconds
 print(f"Job {submitted_job.uuid} finished with status: {final_status}")
 ```
 
@@ -121,8 +121,8 @@ print(f"Last message: {submitted_job.last_message}")
 # Display job output from stdout
 stdout_content = submitted_job.get_output_content("tapisjob.out", max_lines=50)
 if stdout_content:
- print("Job output:")
- print(stdout_content)
+    print("Job output:")
+    print(stdout_content)
 ```
 
 ### Step 11: Access Results
@@ -133,7 +133,7 @@ archive_uri = submitted_job.archive_uri
 print(f"Archive URI: {archive_uri}")
 outputs = ds.files.list(archive_uri)
 for item in outputs:
- print(f"- {item.name} ({item.type})")
+    print(f"- {item.name} ({item.type})")
 ```
 
 ## Post-processing Results
@@ -153,10 +153,12 @@ import os
 # Load force coefficient data using pandas
 import pandas as pd
 
-force_data_path = archive_path + "/inputDirectory/postProcessing/forceCoeffs1/0/forceCoeffs.dat"
+force_data_path = (
+    archive_path + "/inputDirectory/postProcessing/forceCoeffs1/0/forceCoeffs.dat"
+)
 
 # Read the file, skipping header lines and using tab separator
-data = pd.read_csv(force_data_path, sep='\t', skiprows=9, header=None)
+data = pd.read_csv(force_data_path, sep="\t", skiprows=9, header=None)
 print(f"Loaded force coefficients data with shape: {data.shape}")
 ```
 
@@ -167,17 +169,17 @@ Force coefficient columns: 0=Time, 1=Cm (moment), 2=Cd (drag), 3=Cl (lift), 4=Cl
 ```python
 # Plot drag coefficient (Cd) vs time
 plt.plot(data.iloc[100:, 0], data.iloc[100:, 2])
-plt.xlabel('Time')
-plt.ylabel('$C_d$')
-plt.title('Drag Coefficient vs Time')
+plt.xlabel("Time")
+plt.ylabel("$C_d$")
+plt.title("Drag Coefficient vs Time")
 plt.grid(True)
 plt.show()
 
 # Plot lift coefficient (Cl) vs time
 plt.plot(data.iloc[100:, 0], data.iloc[100:, 3])
-plt.xlabel('Time')
-plt.ylabel('$C_l$')
-plt.title('Lift Coefficient vs Time')
+plt.xlabel("Time")
+plt.ylabel("$C_l$")
+plt.title("Lift Coefficient vs Time")
 plt.grid(True)
 plt.show()
 ```
@@ -187,17 +189,17 @@ plt.show()
 plt.figure(figsize=(12, 5))
 
 plt.subplot(1, 2, 1)
-plt.plot(data.iloc[100:, 0], data.iloc[100:, 2], 'b-', linewidth=2)
-plt.xlabel('Time (s)')
-plt.ylabel('$C_d$ (Drag Coefficient)')
-plt.title('Drag Coefficient vs Time')
+plt.plot(data.iloc[100:, 0], data.iloc[100:, 2], "b-", linewidth=2)
+plt.xlabel("Time (s)")
+plt.ylabel("$C_d$ (Drag Coefficient)")
+plt.title("Drag Coefficient vs Time")
 plt.grid(True, alpha=0.3)
 
 plt.subplot(1, 2, 2)
-plt.plot(data.iloc[100:, 0], data.iloc[100:, 3], 'r-', linewidth=2)
-plt.xlabel('Time (s)')
-plt.ylabel('$C_l$ (Lift Coefficient)')
-plt.title('Lift Coefficient vs Time')
+plt.plot(data.iloc[100:, 0], data.iloc[100:, 3], "r-", linewidth=2)
+plt.xlabel("Time (s)")
+plt.ylabel("$C_l$ (Lift Coefficient)")
+plt.title("Lift Coefficient vs Time")
 plt.grid(True, alpha=0.3)
 
 plt.tight_layout()

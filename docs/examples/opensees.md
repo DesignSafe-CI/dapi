@@ -36,15 +36,15 @@ ds = DSClient()
 
 ```python
 # Job configuration parameters
-ds_path = os.getcwd() + "/input" # Path to OpenSees input files
-input_filename: str = "Main_multiMotion.tcl" # Main OpenSees script
-tacc_allocation: str = "your-allocation" # TACC allocation to charge
-app_id: str = "opensees-mp-s3" # OpenSees-MP application ID
-max_job_minutes: int = 60 # Maximum runtime in minutes
+ds_path = os.getcwd() + "/input"  # Path to OpenSees input files
+input_filename: str = "Main_multiMotion.tcl"  # Main OpenSees script
+tacc_allocation: str = "your-allocation"  # TACC allocation to charge
+app_id: str = "opensees-mp-s3"  # OpenSees-MP application ID
+max_job_minutes: int = 60  # Maximum runtime in minutes
 
 # Resource configuration
-control_nodeCount: int = 1 # Number of compute nodes
-control_corespernode: int = 16 # Cores per node for parallel analysis
+control_nodeCount: int = 1  # Number of compute nodes
+control_corespernode: int = 16  # Cores per node for parallel analysis
 ```
 
 ### Step 4: Convert Path to URI
@@ -60,18 +60,18 @@ print(f"Input Directory Tapis URI: {input_uri}")
 ```python
 # Generate job request dictionary using app defaults
 job_dict = ds.jobs.generate(
- app_id=app_id,
- input_dir_uri=input_uri,
- script_filename=input_filename,
- max_minutes=max_job_minutes,
- allocation=tacc_allocation,
- # Archive configuration for organized result storage
- archive_system="designsafe",
- archive_path="opensees-results", # Results go to MyData/opensees-results/
- # OpenSees-specific job metadata
- job_name="opensees_multi_motion_analysis",
- description="Multi-free field analysis using OpenSees-MP",
- tags=["research", "opensees", "earthquake", "site-response"]
+    app_id=app_id,
+    input_dir_uri=input_uri,
+    script_filename=input_filename,
+    max_minutes=max_job_minutes,
+    allocation=tacc_allocation,
+    # Archive configuration for organized result storage
+    archive_system="designsafe",
+    archive_path="opensees-results",  # Results go to MyData/opensees-results/
+    # OpenSees-specific job metadata
+    job_name="opensees_multi_motion_analysis",
+    description="Multi-free field analysis using OpenSees-MP",
+    tags=["research", "opensees", "earthquake", "site-response"],
 )
 print(json.dumps(job_dict, indent=2, default=str))
 ```
@@ -97,14 +97,16 @@ Visit [OpenSees userguide on DesignSafe](https://www.designsafe-ci.org/user-guid
 # Submit job using dapi
 submitted_job = ds.jobs.submit(job_dict)
 print(f"Job launched with UUID: {submitted_job.uuid}")
-print("Can also check in DesignSafe portal under - Workspace > Tools & Application > Job Status")
+print(
+    "Can also check in DesignSafe portal under - Workspace > Tools & Application > Job Status"
+)
 ```
 
 ### Step 8: Monitor Job
 
 ```python
 # Monitor job status using dapi
-final_status = submitted_job.monitor(interval=15) # Check every 15 seconds
+final_status = submitted_job.monitor(interval=15)  # Check every 15 seconds
 print(f"Job finished with status: {final_status}")
 ```
 
@@ -140,7 +142,7 @@ print(f"Local archive path: {local_archive_path}")
 archive_files = ds.files.list(archive_uri)
 print("\nArchive contents:")
 for item in archive_files:
- print(f"- {item.name} ({item.type})")
+    print(f"- {item.name} ({item.type})")
 ```
 
 ### Step 11: Access Results from Input Directory

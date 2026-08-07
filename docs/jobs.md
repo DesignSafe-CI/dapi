@@ -58,11 +58,11 @@ input_uri = ds.files.to_uri(input_path, verify_exists=True)
 
 # 2. Generate job request
 job_request = ds.jobs.generate(
- app_id="matlab-r2023a",
- input_dir_uri=input_uri,
- script_filename="run_analysis.m",
- max_minutes=60,
- allocation="your_tacc_allocation"
+    app_id="matlab-r2023a",
+    input_dir_uri=input_uri,
+    script_filename="run_analysis.m",
+    max_minutes=60,
+    allocation="your_tacc_allocation",
 )
 
 # 3. Submit job
@@ -97,43 +97,38 @@ print(f"Job submitted: {job.uuid}")
 
 ```python
 job_request = ds.jobs.generate(
- app_id="mpm-s3",
- input_dir_uri=input_uri,
- script_filename="mpm.json",
-
- # Resource requirements
- max_minutes=120,
- node_count=2,
- cores_per_node=48,
- memory_mb=96000,
- queue="normal",
- allocation="your_allocation",
-
- # Job metadata
- job_name="mpm_parametric_study_001",
- description="Parametric study of soil behavior under seismic loading",
- tags=["research", "mpm", "seismic"],
-
- # Additional file inputs
- extra_file_inputs=[
- {
- "name": "Material Library",
- "sourceUrl": "tapis://designsafe.storage.default/shared/materials/",
- "targetPath": "materials"
- }
- ],
-
- # Environment variables
- extra_env_vars=[
- {"key": "OMP_NUM_THREADS", "value": "48"},
- {"key": "ANALYSIS_TYPE", "value": "SEISMIC"}
- ],
-
- # Scheduler options
- extra_scheduler_options=[
- {"name": "Email Notification", "arg": "-m be"},
- {"name": "Job Array", "arg": "-t 1-10"}
- ]
+    app_id="mpm-s3",
+    input_dir_uri=input_uri,
+    script_filename="mpm.json",
+    # Resource requirements
+    max_minutes=120,
+    node_count=2,
+    cores_per_node=48,
+    memory_mb=96000,
+    queue="normal",
+    allocation="your_allocation",
+    # Job metadata
+    job_name="mpm_parametric_study_001",
+    description="Parametric study of soil behavior under seismic loading",
+    tags=["research", "mpm", "seismic"],
+    # Additional file inputs
+    extra_file_inputs=[
+        {
+            "name": "Material Library",
+            "sourceUrl": "tapis://designsafe.storage.default/shared/materials/",
+            "targetPath": "materials",
+        }
+    ],
+    # Environment variables
+    extra_env_vars=[
+        {"key": "OMP_NUM_THREADS", "value": "48"},
+        {"key": "ANALYSIS_TYPE", "value": "SEISMIC"},
+    ],
+    # Scheduler options
+    extra_scheduler_options=[
+        {"name": "Email Notification", "arg": "-m be"},
+        {"name": "Job Array", "arg": "-t 1-10"},
+    ],
 )
 ```
 
@@ -150,14 +145,13 @@ job_request["maxMinutes"] = 180
 
 # Add custom parameters
 if "parameterSet" not in job_request:
- job_request["parameterSet"] = {}
+    job_request["parameterSet"] = {}
 if "envVariables" not in job_request["parameterSet"]:
- job_request["parameterSet"]["envVariables"] = []
+    job_request["parameterSet"]["envVariables"] = []
 
-job_request["parameterSet"]["envVariables"].append({
- "key": "CUSTOM_PARAM",
- "value": "custom_value"
-})
+job_request["parameterSet"]["envVariables"].append(
+    {"key": "CUSTOM_PARAM", "value": "custom_value"}
+)
 
 job = ds.jobs.submit(job_request)
 ```
@@ -170,8 +164,8 @@ job = ds.jobs.submit(job_request)
 job = ds.jobs.submit(job_request)
 
 final_status = job.monitor(
- interval=15, # Check every 15 seconds
- timeout_minutes=240 # Timeout after 4 hours
+    interval=15,  # Check every 15 seconds
+    timeout_minutes=240,  # Timeout after 4 hours
 )
 
 ds.jobs.interpret_status(final_status, job.uuid)
@@ -195,9 +189,9 @@ current_status = job.get_status()
 print(f"Current status: {current_status}")
 
 if current_status in job.TERMINAL_STATES:
- print("Job has finished")
+    print("Job has finished")
 else:
- print("Job is still running")
+    print("Job is still running")
 
 details = job.details
 print(f"Submitted: {details.created}")
@@ -248,7 +242,7 @@ TOTAL time: 01:29:15
 ```python
 last_message = job.last_message
 if last_message:
- print(f"Last message: {last_message}")
+    print(f"Last message: {last_message}")
 ```
 
 ## Output Management
@@ -258,7 +252,7 @@ if last_message:
 ```python
 outputs = job.list_outputs()
 for output in outputs:
- print(f"- {output.name} ({output.type}, {output.size} bytes)")
+    print(f"- {output.name} ({output.type}, {output.size} bytes)")
 
 # Subdirectory
 results = job.list_outputs(path="results/")
@@ -269,7 +263,7 @@ results = job.list_outputs(path="results/")
 ```python
 stdout = job.get_output_content("tapisjob.out")
 if stdout:
- print(stdout)
+    print(stdout)
 
 # Last 50 lines
 recent_output = job.get_output_content("tapisjob.out", max_lines=50)
@@ -277,7 +271,7 @@ recent_output = job.get_output_content("tapisjob.out", max_lines=50)
 # Error log
 stderr = job.get_output_content("tapisjob.err", missing_ok=True)
 if stderr:
- print(stderr)
+    print(stderr)
 ```
 
 ### Downloading Files
@@ -285,10 +279,7 @@ if stderr:
 ```python
 job.download_output("results.mat", "/local/path/results.mat")
 
-ds.files.download(
- f"{archive_uri}/results.mat",
- "/local/path/results.mat"
-)
+ds.files.download(f"{archive_uri}/results.mat", "/local/path/results.mat")
 ```
 
 ## Job Cancellation
@@ -337,30 +328,30 @@ If each run needs its own full allocation (e.g., MPI jobs that can't share nodes
 
 ```python
 parameters = [
- {"friction": 0.1, "density": 2000},
- {"friction": 0.2, "density": 2200},
- {"friction": 0.3, "density": 2400},
+    {"friction": 0.1, "density": 2000},
+    {"friction": 0.2, "density": 2200},
+    {"friction": 0.3, "density": 2400},
 ]
 
 submitted_jobs = []
 for i, params in enumerate(parameters):
- job_req = ds.jobs.generate(
- app_id="mpm-s3",
- input_dir_uri=input_uri,
- script_filename="template.json",
- max_minutes=60,
- allocation="your_allocation",
- extra_env_vars=[
- {"key": "FRICTION", "value": str(params["friction"])},
- {"key": "DENSITY", "value": str(params["density"])},
- ],
- )
- job_req["name"] = f"parametric_study_{i:03d}"
- job = ds.jobs.submit(job_req)
- submitted_jobs.append(job)
+    job_req = ds.jobs.generate(
+        app_id="mpm-s3",
+        input_dir_uri=input_uri,
+        script_filename="template.json",
+        max_minutes=60,
+        allocation="your_allocation",
+        extra_env_vars=[
+            {"key": "FRICTION", "value": str(params["friction"])},
+            {"key": "DENSITY", "value": str(params["density"])},
+        ],
+    )
+    job_req["name"] = f"parametric_study_{i:03d}"
+    job = ds.jobs.submit(job_req)
+    submitted_jobs.append(job)
 
 for job in submitted_jobs:
- job.monitor()
+    job.monitor()
 ```
 
 For independent serial tasks, [PyLauncher](#pylauncher) is more efficient — it runs all tasks in a single allocation.

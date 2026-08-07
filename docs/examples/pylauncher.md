@@ -21,7 +21,7 @@ ds = DSClient()
 
 sweep = {
     "ALPHA": [0.3, 0.5, 3.7],
-    "BETA":  [1.1, 2.0, 3.0],
+    "BETA": [1.1, 2.0, 3.0],
 }
 ```
 
@@ -29,7 +29,7 @@ sweep = {
 
 ```python
 ds.jobs.parametric_sweep.generate(
-    'python3 simulate.py --alpha ALPHA --beta BETA',
+    "python3 simulate.py --alpha ALPHA --beta BETA",
     sweep,
     preview=True,
 )
@@ -46,7 +46,7 @@ ds.jobs.parametric_sweep.generate(
 
 ```python
 ds.jobs.parametric_sweep.generate(
-    'python3 simulate.py --alpha ALPHA --beta BETA '
+    "python3 simulate.py --alpha ALPHA --beta BETA "
     '--output "$WORK/sweep_$SLURM_JOB_ID/run_ALPHA_BETA"',
     sweep,
     "/home/jupyter/MyData/pylauncher_demo/",
@@ -96,8 +96,7 @@ sweep = {
 }
 
 ds.jobs.parametric_sweep.generate(
-    "python3 cantilever.py --mass NODAL_MASS --lcol LCOL "
-    "--outDir out_NODAL_MASS_LCOL",
+    "python3 cantilever.py --mass NODAL_MASS --lcol LCOL --outDir out_NODAL_MASS_LCOL",
     sweep,
     "/home/jupyter/MyData/opensees_sweep/",
 )

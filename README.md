@@ -103,7 +103,7 @@ job_request = client.jobs.generate(
     input_dir_uri="/MyData/analysis/input/",
     script_filename="run_analysis.m",
     max_minutes=30,
-    allocation="your_allocation"
+    allocation="your_allocation",
 )
 job = client.jobs.submit(job_request)
 final_status = job.monitor()

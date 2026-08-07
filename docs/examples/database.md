@@ -104,8 +104,8 @@ print("\n Database Overview and Statistics")
 print("=" * 45)
 
 try:
- # Site statistics
- site_stats = ds.db.ngl.read_sql("""
+    # Site statistics
+    site_stats = ds.db.ngl.read_sql("""
  SELECT 
  COUNT(*) as total_sites,
  COUNT(DISTINCT SITE_GEOL) as unique_geologies,
@@ -116,16 +116,20 @@ try:
  FROM SITE 
  WHERE SITE_STAT = 1
  """)
- 
- print("Site Statistics:")
- stats = site_stats.iloc[0]
- print(f"Total active sites: {stats['total_sites']}")
- print(f"Unique geologies: {stats['unique_geologies']}")
- print(f"Latitude range: {stats['min_latitude']:.2f}° to {stats['max_latitude']:.2f}°")
- print(f"Longitude range: {stats['min_longitude']:.2f}° to {stats['max_longitude']:.2f}°")
- 
- # Record statistics
- record_stats = ds.db.ngl.read_sql("""
+
+    print("Site Statistics:")
+    stats = site_stats.iloc[0]
+    print(f"Total active sites: {stats['total_sites']}")
+    print(f"Unique geologies: {stats['unique_geologies']}")
+    print(
+        f"Latitude range: {stats['min_latitude']:.2f}° to {stats['max_latitude']:.2f}°"
+    )
+    print(
+        f"Longitude range: {stats['min_longitude']:.2f}° to {stats['max_longitude']:.2f}°"
+    )
+
+    # Record statistics
+    record_stats = ds.db.ngl.read_sql("""
  SELECT 
  COUNT(*) as total_records,
  COUNT(DISTINCT EVENT_ID) as unique_events,
@@ -133,15 +137,15 @@ try:
  FROM RECORD 
  WHERE RECORD_STAT = 1
  """)
- 
- print(f"\n Record Statistics:")
- rec_stats = record_stats.iloc[0]
- print(f"Total active records: {rec_stats['total_records']}")
- print(f"Unique events: {rec_stats['unique_events']}")
- print(f"Sites with records: {rec_stats['sites_with_records']}")
- 
- # Event statistics
- event_stats = ds.db.ngl.read_sql("""
+
+    print(f"\n Record Statistics:")
+    rec_stats = record_stats.iloc[0]
+    print(f"Total active records: {rec_stats['total_records']}")
+    print(f"Unique events: {rec_stats['unique_events']}")
+    print(f"Sites with records: {rec_stats['sites_with_records']}")
+
+    # Event statistics
+    event_stats = ds.db.ngl.read_sql("""
  SELECT 
  COUNT(*) as total_events,
  MIN(EVENT_MAG) as min_magnitude,
@@ -152,16 +156,18 @@ try:
  FROM EVENT 
  WHERE EVENT_STAT = 1 AND EVENT_MAG IS NOT NULL
  """)
- 
- print(f"\n Earthquake Event Statistics:")
- evt_stats = event_stats.iloc[0]
- print(f"Total events: {evt_stats['total_events']}")
- print(f"Magnitude range: {evt_stats['min_magnitude']:.1f} to {evt_stats['max_magnitude']:.1f}")
- print(f"Average magnitude: {evt_stats['avg_magnitude']:.2f}")
- print(f"Date range: {evt_stats['earliest_event']} to {evt_stats['latest_event']}")
- 
+
+    print(f"\n Earthquake Event Statistics:")
+    evt_stats = event_stats.iloc[0]
+    print(f"Total events: {evt_stats['total_events']}")
+    print(
+        f"Magnitude range: {evt_stats['min_magnitude']:.1f} to {evt_stats['max_magnitude']:.1f}"
+    )
+    print(f"Average magnitude: {evt_stats['avg_magnitude']:.2f}")
+    print(f"Date range: {evt_stats['earliest_event']} to {evt_stats['latest_event']}")
+
 except Exception as e:
- print(f"Basic statistics query failed: {e}")
+    print(f"Basic statistics query failed: {e}")
 ```
 
 ### Step 4: Geographic Analysis
@@ -774,51 +780,52 @@ print("\n Query Performance and Best Practices")
 print("=" * 45)
 
 try:
- # Example of efficient querying with indexing
- print("Best Practice Examples:")
- 
- # 1. Use LIMIT for large datasets
- print("\n1. Using LIMIT for large datasets:")
- large_query_start = datetime.now()
- limited_results = ds.db.ngl.read_sql("""
+    # Example of efficient querying with indexing
+    print("Best Practice Examples:")
+
+    # 1. Use LIMIT for large datasets
+    print("\n1. Using LIMIT for large datasets:")
+    large_query_start = datetime.now()
+    limited_results = ds.db.ngl.read_sql("""
  SELECT s.SITE_NAME, s.SITE_LAT, s.SITE_LON 
  FROM SITE s 
  WHERE s.SITE_STAT = 1 
  LIMIT 100
  """)
- large_query_time = (datetime.now() - large_query_start).total_seconds()
- print(f"Retrieved {len(limited_results)} sites in {large_query_time:.3f} seconds")
- 
- # 2. Use WHERE clauses to filter early
- print("\n2. Filtering with WHERE clauses:")
- filtered_query_start = datetime.now()
- filtered_results = ds.db.ngl.read_sql("""
+    large_query_time = (datetime.now() - large_query_start).total_seconds()
+    print(f"Retrieved {len(limited_results)} sites in {large_query_time:.3f} seconds")
+
+    # 2. Use WHERE clauses to filter early
+    print("\n2. Filtering with WHERE clauses:")
+    filtered_query_start = datetime.now()
+    filtered_results = ds.db.ngl.read_sql("""
  SELECT COUNT(*) as count
  FROM SITE s 
  WHERE s.SITE_STAT = 1 
  AND s.SITE_LAT BETWEEN 32 AND 42 
  AND s.SITE_LON BETWEEN -125 AND -115
  """)
- filtered_query_time = (datetime.now() - filtered_query_start).total_seconds()
- print(f"Filtered query completed in {filtered_query_time:.3f} seconds")
- print(f"Found {filtered_results['count'].iloc[0]} sites in specified region")
- 
- # 3. Use parameterized queries for safety
- print("\n3. Parameterized queries (secure):")
- site_name = "Amagasaki"
- param_query_start = datetime.now()
- param_results = ds.db.ngl.read_sql(
- "SELECT * FROM SITE WHERE SITE_NAME = %s AND SITE_STAT = 1",
- params=[site_name]
- )
- param_query_time = (datetime.now() - param_query_start).total_seconds()
- print(f"Parameterized query for '{site_name}' completed in {param_query_time:.3f} seconds")
- print(f"Found {len(param_results)} matching sites")
- 
- # 4. Efficient aggregation
- print("\n4. Efficient aggregation:")
- agg_query_start = datetime.now()
- agg_results = ds.db.ngl.read_sql("""
+    filtered_query_time = (datetime.now() - filtered_query_start).total_seconds()
+    print(f"Filtered query completed in {filtered_query_time:.3f} seconds")
+    print(f"Found {filtered_results['count'].iloc[0]} sites in specified region")
+
+    # 3. Use parameterized queries for safety
+    print("\n3. Parameterized queries (secure):")
+    site_name = "Amagasaki"
+    param_query_start = datetime.now()
+    param_results = ds.db.ngl.read_sql(
+        "SELECT * FROM SITE WHERE SITE_NAME = %s AND SITE_STAT = 1", params=[site_name]
+    )
+    param_query_time = (datetime.now() - param_query_start).total_seconds()
+    print(
+        f"Parameterized query for '{site_name}' completed in {param_query_time:.3f} seconds"
+    )
+    print(f"Found {len(param_results)} matching sites")
+
+    # 4. Efficient aggregation
+    print("\n4. Efficient aggregation:")
+    agg_query_start = datetime.now()
+    agg_results = ds.db.ngl.read_sql("""
  SELECT 
  s.SITE_GEOL,
  COUNT(*) as site_count,
@@ -830,20 +837,20 @@ try:
  ORDER BY site_count DESC
  LIMIT 10
  """)
- agg_query_time = (datetime.now() - agg_query_start).total_seconds()
- print(f"Aggregation query completed in {agg_query_time:.3f} seconds")
- print(f"Top geology types: {', '.join(agg_results['SITE_GEOL'].head(3).tolist())}")
- 
- print(f"\n All queries completed successfully!")
- print(f"Tips for optimal performance:")
- print(f" - Always use LIMIT for exploratory queries")
- print(f" - Filter early with WHERE clauses")
- print(f" - Use parameterized queries for user inputs")
- print(f" - Consider creating indexes for frequently queried columns")
- print(f" - Use appropriate JOIN types (INNER vs LEFT)")
- 
+    agg_query_time = (datetime.now() - agg_query_start).total_seconds()
+    print(f"Aggregation query completed in {agg_query_time:.3f} seconds")
+    print(f"Top geology types: {', '.join(agg_results['SITE_GEOL'].head(3).tolist())}")
+
+    print(f"\n All queries completed successfully!")
+    print(f"Tips for optimal performance:")
+    print(f" - Always use LIMIT for exploratory queries")
+    print(f" - Filter early with WHERE clauses")
+    print(f" - Use parameterized queries for user inputs")
+    print(f" - Consider creating indexes for frequently queried columns")
+    print(f" - Use appropriate JOIN types (INNER vs LEFT)")
+
 except Exception as e:
- print(f"Performance demonstration failed: {e}")
+    print(f"Performance demonstration failed: {e}")
 ```
 
 ### Step 12: Summary and Cleanup

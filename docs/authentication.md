@@ -61,10 +61,7 @@ ds = DSClient()
 ## Explicit Parameters
 
 ```python
-ds = DSClient(
- username="your_username",
- password="your_password"
-)
+ds = DSClient(username="your_username", password="your_password")
 ```
 
 ## TMS Credentials
