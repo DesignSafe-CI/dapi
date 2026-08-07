@@ -53,9 +53,15 @@ class AppProfile:
             **options: Profile-specific options.
 
         Returns:
-            Dict[str, Any]: Summary of what was prepared.
+            Dict[str, Any]: Summary of what was prepared. Always includes
+                ``staged_dir`` — the directory callers should stage.
         """
-        return {"app_id": app_id, "input_dir": input_dir, "prepared": False}
+        return {
+            "app_id": app_id,
+            "input_dir": input_dir,
+            "prepared": False,
+            "staged_dir": input_dir,
+        }
 
     @classmethod
     def finalize_job_request(cls, job_request: Dict[str, Any]) -> Dict[str, Any]:

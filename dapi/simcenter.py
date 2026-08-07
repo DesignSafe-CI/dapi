@@ -26,6 +26,7 @@ API: ``ds.jobs.prepare_inputs`` patches the workflow JSON,
 import io
 import json
 import os
+import shutil
 import zipfile
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
@@ -39,6 +40,10 @@ from .jobs import SubmittedJob
 
 # The env variable name the wrapper script expects for the staged input dir.
 INPUT_DIR_ENV_KEY = "inputDirectory"
+
+# Archive name the SimCenter wrapper script unpacks natively on the exec
+# system ("unzip tmpSimCenter.zip" is its first action in the input dir).
+BUNDLE_NAME = "tmpSimCenter.zip"
 
 # SimCenter backend installations per app id. These paths change when
 # SimCenter redeploys the backend; update alongside a dapi release.
@@ -54,17 +59,27 @@ def prepare_inputs(
     input_filename: str = "scInput.json",
     backend_dir: Optional[str] = None,
     app_id: str = "simcenter-uq-stampede3",
+    bundle: bool = True,
+    staged_dir: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Point a SimCenter workflow JSON at the backend on the execution system.
+    """Point a SimCenter workflow JSON at the backend and bundle the inputs.
 
     The SimCenter desktop applications write local paths into the workflow
     JSON (``remoteAppDir``/``remoteAppWorkingDir``). Before submission these
     must be rewritten to the backend installation on the execution system,
     which the app wrapper reads back with ``jq`` to locate the UQ engine.
 
+    By default the prepared ``tmp.SimCenter/`` tree is then zipped into a
+    single ``tmpSimCenter.zip`` inside a staging directory. The SimCenter
+    wrapper unpacks this archive natively on the execution system, and
+    staging one file instead of many avoids the Tapis transfers service's
+    per-file overhead (which can add ~40s per file under tenant load).
+    Stage the returned ``staged_dir``, not ``input_dir``, when bundling.
+
     Args:
         input_dir (str): Local path to the job input directory (the folder
-            containing ``tmp.SimCenter/templatedir/``).
+            containing ``tmp.SimCenter/templatedir/``). Never modified
+            beyond the workflow JSON patch.
         input_filename (str, optional): Workflow JSON filename inside
             ``tmp.SimCenter/templatedir/``. Defaults to "scInput.json".
         backend_dir (str, optional): SimCenter backend installation path on
@@ -72,11 +87,19 @@ def prepare_inputs(
             ``DEFAULT_BACKEND_DIRS`` by app_id.
         app_id (str, optional): Tapis app id used for the backend lookup.
             Defaults to "simcenter-uq-stampede3".
+        bundle (bool, optional): Zip ``tmp.SimCenter/`` into
+            ``tmpSimCenter.zip`` in a staging directory. Defaults to True.
+            Pass False to stage the loose directory tree as before.
+        staged_dir (str, optional): Where to place the bundle. Defaults to
+            ``<input_dir>_staged`` next to the input directory.
 
     Returns:
         Dict[str, Any]: Summary of the prepared workflow with keys
             ``workflow_json`` (path), ``backend_dir``, ``uq_engine``,
-            ``uq_type``, ``random_variables``, and ``edps``.
+            ``uq_type``, ``random_variables``, ``edps``, and ``staged_dir``
+            (the directory to stage: the bundle directory when bundling,
+            otherwise input_dir). When bundling, also ``bundle`` (zip path)
+            and ``bundled_files`` (count).
 
     Raises:
         ValueError: If no backend directory is known for app_id and none given.
@@ -84,8 +107,7 @@ def prepare_inputs(
 
     Example:
         >>> info = ds.jobs.prepare_inputs("simcenter-uq-stampede3", "./DS_input")
-        >>> info["random_variables"]
-        ['Dr', 'G0', 'hpo']
+        >>> input_uri = ds.files.to_uri(info["staged_dir"])
     """
     if backend_dir is None:
         backend_dir = DEFAULT_BACKEND_DIRS.get(app_id)
@@ -123,12 +145,52 @@ def prepare_inputs(
         "uq_type": uq.get("uqType"),
         "random_variables": [rv["name"] for rv in workflow.get("randomVariables", [])],
         "edps": [edp["name"] for edp in workflow.get("EDP", [])],
+        "staged_dir": input_dir,
     }
     print(f"Updated remoteAppDir in {workflow_path}")
     print(f"UQ engine: {summary['uq_engine']} ({summary['uq_type']})")
     print(f"Random variables: {summary['random_variables']}")
     print(f"EDPs: {summary['edps']}")
+
+    if bundle:
+        summary.update(_bundle_inputs(input_dir, staged_dir))
     return summary
+
+
+def _bundle_inputs(input_dir: str, staged_dir: Optional[str]) -> Dict[str, Any]:
+    """Zip ``tmp.SimCenter/`` into ``tmpSimCenter.zip`` in a staging dir.
+
+    The archive preserves the ``tmp.SimCenter/...`` layout the wrapper
+    expects when it runs ``unzip tmpSimCenter.zip``. Any other top-level
+    entries of input_dir are copied into the staging dir unchanged.
+    """
+    staged = staged_dir or input_dir.rstrip("/") + "_staged"
+    os.makedirs(staged, exist_ok=True)
+
+    bundle_src = os.path.join(input_dir, "tmp.SimCenter")
+    zip_path = os.path.join(staged, BUNDLE_NAME)
+    bundled_files = 0
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for root, _dirs, files in os.walk(bundle_src):
+            for name in files:
+                full_path = os.path.join(root, name)
+                zf.write(full_path, os.path.relpath(full_path, input_dir))
+                bundled_files += 1
+
+    # Preserve any sibling entries of tmp.SimCenter/ the app may expect.
+    for entry in os.listdir(input_dir):
+        if entry == "tmp.SimCenter":
+            continue
+        src = os.path.join(input_dir, entry)
+        dst = os.path.join(staged, entry)
+        if os.path.isfile(src):
+            shutil.copy2(src, dst)
+        elif os.path.isdir(src) and os.path.abspath(src) != os.path.abspath(staged):
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+
+    print(f"Bundled {bundled_files} files into {zip_path}")
+    print(f"Stage this directory: {staged}")
+    return {"staged_dir": staged, "bundle": zip_path, "bundled_files": bundled_files}
 
 
 def finalize_job_request(job_request: Dict[str, Any]) -> Dict[str, Any]:

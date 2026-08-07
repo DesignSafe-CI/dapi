@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.4
+
+### New features
+
+- **Input bundling for SimCenter apps** (`ds.jobs.prepare_inputs`): the Tapis transfers service pays a fixed per-file scheduling cost (measured ~40s/file under tenant load), so staging many small input files dominates job wall time. For `simcenter-*` apps, `prepare_inputs` now zips the prepared `tmp.SimCenter/` tree into a single `tmpSimCenter.zip` — which the app wrapper unpacks natively on the execution system — inside a staging directory (`<input_dir>_staged`). Staging transfers ~2 objects instead of one per file.
+  - Default **on** for SimCenter apps (matching what quoFEM desktop submits); pass `bundle=False` to stage the loose tree as before. Apps without a profile are unaffected.
+  - Every `prepare_inputs` summary now includes `staged_dir` — the directory to pass to `ds.files.to_uri()`; the original input directory is never modified beyond the workflow-JSON patch.
+
 ## v0.5.3
 
 ### New features

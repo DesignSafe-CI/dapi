@@ -713,19 +713,24 @@ class JobMethods:
         Dispatches to the app's profile when one is registered; a no-op
         beyond existence checking for apps that need no preparation. For
         SimCenter apps (``simcenter-*``) this rewrites the workflow JSON's
-        backend paths and reports the UQ engine, random variables, and EDPs.
+        backend paths, reports the UQ engine, random variables, and EDPs,
+        and by default bundles the inputs into a single ``tmpSimCenter.zip``
+        (unpacked natively by the app wrapper) so staging transfers one
+        file instead of many. Stage the returned ``staged_dir``.
 
         Args:
             app_id (str): The Tapis app id the inputs are being prepared for.
             input_dir (str): Local path to the job input directory.
             **options: Profile-specific options (e.g. ``backend_dir``,
-                ``input_filename`` for SimCenter apps).
+                ``input_filename``, ``bundle=False`` for SimCenter apps).
 
         Returns:
-            Dict[str, Any]: Summary of the preparation performed.
+            Dict[str, Any]: Summary of the preparation performed. Always
+                includes ``staged_dir`` — the directory to stage.
 
         Example:
-            >>> ds.jobs.prepare_inputs("simcenter-uq-stampede3", "./DS_input")
+            >>> info = ds.jobs.prepare_inputs("simcenter-uq-stampede3", "./DS_input")
+            >>> input_uri = ds.files.to_uri(info["staged_dir"])
         """
         return jobs_module.prepare_job_inputs(app_id, input_dir, **options)
 

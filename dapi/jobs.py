@@ -535,16 +535,19 @@ def prepare_job_inputs(app_id: str, input_dir: str, **options: Any) -> Dict[str,
 
     For SimCenter apps (``simcenter-*``) this rewrites the workflow JSON's
     ``remoteAppDir``/``remoteAppWorkingDir`` to the backend installation on
-    the execution system and returns a summary of the UQ workflow.
+    the execution system, and by default bundles the inputs into a single
+    ``tmpSimCenter.zip`` (unpacked natively by the app wrapper) so staging
+    transfers one file instead of many. Stage the returned ``staged_dir``.
 
     Args:
         app_id (str): The Tapis app id the inputs are being prepared for.
         input_dir (str): Local path to the job input directory.
         **options: Profile-specific options (e.g. ``backend_dir``,
-            ``input_filename`` for SimCenter apps).
+            ``input_filename``, ``bundle=False`` for SimCenter apps).
 
     Returns:
-        Dict[str, Any]: Summary of the preparation performed.
+        Dict[str, Any]: Summary of the preparation performed. Always
+            includes ``staged_dir`` — the directory callers should stage.
 
     Raises:
         ValueError: If input_dir does not exist, or a profile rejects the
@@ -559,7 +562,12 @@ def prepare_job_inputs(app_id: str, input_dir: str, **options: Any) -> Dict[str,
     profile = profiles.find(app_id)
     if profile is None:
         print(f"App '{app_id}' requires no input preparation.")
-        return {"app_id": app_id, "input_dir": input_dir, "prepared": False}
+        return {
+            "app_id": app_id,
+            "input_dir": input_dir,
+            "prepared": False,
+            "staged_dir": input_dir,
+        }
     print(f"Preparing inputs with '{profile.name}' app profile.")
     return profile.prepare_inputs(input_dir, app_id=app_id, **options)
 
