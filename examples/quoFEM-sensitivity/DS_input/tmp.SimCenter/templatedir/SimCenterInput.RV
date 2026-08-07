@@ -1,0 +1,9 @@
+pset Dr "RV.Dr"
+pset G0 "RV.G0"
+pset hpo "RV.hpo"
+pset sigma_lik "RV.sigma_lik"
+
+ set listQoI "likelihood"
+
+
+ source AnalysisScript.tcl

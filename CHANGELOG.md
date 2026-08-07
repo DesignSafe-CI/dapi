@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.5.3
+
+### New features
+
+- **App profiles** (`dapi.profiles`): some Tapis apps (notably the SimCenter apps — quoFEM, EE-UQ, WE-UQ backends such as `simcenter-uq-stampede3`) declare no fileInputs or envVariables in their app definitions; their contract lives in the app wrapper script. Profiles encode such contracts and are dispatched automatically by app id, so the public API stays app-agnostic:
+  - `ds.jobs.generate()` now finalizes requests through the matching profile. For `simcenter-*` apps this adds the `inputFile`/`driverFile` env variables and exposes the input directory as the `inputDirectory` env variable (`envKey`) with contents unpacked into the job working directory (`targetPath "*"`) — without this the wrapper exits immediately with code 1
+  - `ds.jobs.prepare_inputs(app_id, input_dir)`: new lifecycle step for local input preparation before staging; a no-op for apps that need none. For SimCenter apps it points the workflow JSON (`scInput.json`) at the backend installation on the execution system (`remoteAppDir`/`remoteAppWorkingDir`) and reports the UQ engine, random variables, and EDPs
+  - `job.get_results()` on `SubmittedJob`: fetches and parses results via the job's app profile. For SimCenter jobs, reads `results.zip` from the archive in memory and returns a `SimCenterResults` with the `dakotaTab.out` sample table as a DataFrame and parsed Sobol sensitivity indices
+  - Known SimCenter backend installations registered in `dapi.simcenter.DEFAULT_BACKEND_DIRS` (overridable via `backend_dir=`)
+
+### Bug fixes
+
+- `ds.files.download()` no longer crashes on binary files: tapipy returns raw bytes for non-JSON responses, which broke the streaming code path (`'bytes' object has no attribute 'iter_content'`)
+
 ## v0.5.2
 
 ### New features

@@ -8,6 +8,7 @@ from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
 from tqdm.auto import tqdm
 import pandas as pd
+from . import profiles
 from .apps import get_app_details
 from .exceptions import (
     JobSubmissionError,
@@ -505,6 +506,14 @@ def generate_job_request(
             del job_req["parameterSet"]
 
         final_job_req = {k: v for k, v in job_req.items() if v is not None}
+
+        # Apply app-profile adjustments for apps whose contract is not
+        # declared in the app definition (e.g. SimCenter apps).
+        profile = profiles.find(app_details.id)
+        if profile is not None:
+            print(f"Applying '{profile.name}' app profile adjustments.")
+            final_job_req = profile.finalize_job_request(final_job_req)
+
         print("Job request dictionary generated successfully.")
         return final_job_req
 
@@ -517,6 +526,44 @@ def generate_job_request(
 
 
 # --- submit_job_request function ---
+def prepare_job_inputs(app_id: str, input_dir: str, **options: Any) -> Dict[str, Any]:
+    """Prepare a local input directory for an app before staging.
+
+    Dispatches to the app's profile (see :mod:`dapi.profiles`) when one is
+    registered. For apps without a profile this is a no-op beyond checking
+    that the directory exists — most apps need no input preparation.
+
+    For SimCenter apps (``simcenter-*``) this rewrites the workflow JSON's
+    ``remoteAppDir``/``remoteAppWorkingDir`` to the backend installation on
+    the execution system and returns a summary of the UQ workflow.
+
+    Args:
+        app_id (str): The Tapis app id the inputs are being prepared for.
+        input_dir (str): Local path to the job input directory.
+        **options: Profile-specific options (e.g. ``backend_dir``,
+            ``input_filename`` for SimCenter apps).
+
+    Returns:
+        Dict[str, Any]: Summary of the preparation performed.
+
+    Raises:
+        ValueError: If input_dir does not exist, or a profile rejects the
+            options.
+
+    Example:
+        >>> ds.jobs.prepare_inputs("simcenter-uq-stampede3", "./DS_input")
+        >>> ds.jobs.prepare_inputs("opensees-mp-s3", "./input")  # no-op
+    """
+    if not os.path.isdir(input_dir):
+        raise ValueError(f"Input directory '{input_dir}' does not exist.")
+    profile = profiles.find(app_id)
+    if profile is None:
+        print(f"App '{app_id}' requires no input preparation.")
+        return {"app_id": app_id, "input_dir": input_dir, "prepared": False}
+    print(f"Preparing inputs with '{profile.name}' app profile.")
+    return profile.prepare_inputs(input_dir, app_id=app_id, **options)
+
+
 def submit_job_request(
     tapis_client: Tapis, job_request: Dict[str, Any]
 ) -> "SubmittedJob":
@@ -1206,6 +1253,45 @@ class SubmittedJob:
             raise FileOperationError(
                 f"Unexpected error fetching content of '{output_filename}' for job {self.uuid} (Path: {details.archiveSystemId}/{full_archive_path}): {e}"
             ) from e
+
+    def get_results(self, **options: Any) -> Any:
+        """Fetch and parse this job's results using its app profile.
+
+        Dispatches to the profile registered for this job's app (see
+        :mod:`dapi.profiles`). For SimCenter jobs this downloads
+        ``results.zip`` from the archive in memory and returns a
+        :class:`dapi.simcenter.SimCenterResults` with the ``dakotaTab.out``
+        sample table as a DataFrame and parsed Sobol sensitivity indices.
+
+        Args:
+            **options: Profile-specific options (e.g. ``results_filename``
+                for SimCenter jobs).
+
+        Returns:
+            Parsed results object; type depends on the app profile.
+
+        Raises:
+            FileOperationError: If no results parser is registered for this
+                job's app, or retrieval/parsing fails.
+
+        Example:
+            >>> results = job.get_results()
+            >>> results.samples.head()
+            >>> results.sobol_indices
+        """
+        details = self._get_details()
+        app_id = getattr(details, "appId", None)
+        profile = profiles.find(app_id)
+        if profile is None:
+            raise FileOperationError(
+                f"No results parser registered for app '{app_id}'. Use "
+                "list_outputs(), download_output(), or get_output_content() "
+                "to access the job archive directly."
+            )
+        try:
+            return profile.parse_results(self._tapis, self, **options)
+        except NotImplementedError as e:
+            raise FileOperationError(str(e)) from e
 
     def cancel(self):
         """Attempt to cancel the job execution.

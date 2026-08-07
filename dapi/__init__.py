@@ -37,6 +37,9 @@ from .exceptions import (
     JobMonitorError,
 )
 
+# Import key classes/functions from simcenter module
+from .simcenter import SimCenterResults
+
 # Import key classes/functions from jobs module
 from .jobs import (
     SubmittedJob,
@@ -49,11 +52,12 @@ from .jobs import (
     TAPIS_TERMINAL_STATES,
 )
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
 __all__ = [
     "DSClient",
     "SubmittedJob",
+    "SimCenterResults",
     "interpret_job_status",
     # Export status constants
     "STATUS_TIMEOUT",

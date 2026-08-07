@@ -451,14 +451,22 @@ def download_file(t: Tapis, remote_uri: str, local_path: str):
         # Set stream=True for potentially large files
         # URL-encode the source path for API call
         encoded_source_path = _safe_quote(source_path)
-        response = t.files.getContents(
+        content = t.files.getContents(
             systemId=system_id, path=encoded_source_path, stream=True
         )
 
-        # Write the streamed content to the local file
+        # tapipy returns the full payload as bytes for non-JSON responses;
+        # older/streaming code paths return a response object instead.
         with open(local_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):  # Process in chunks
-                f.write(chunk)
+            if isinstance(content, (bytes, bytearray)):
+                f.write(content)
+            elif hasattr(content, "iter_content"):
+                for chunk in content.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            else:
+                raise FileOperationError(
+                    f"Unexpected content type {type(content)} downloading '{remote_uri}'."
+                )
 
         print("Download complete.")
 

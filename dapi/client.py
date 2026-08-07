@@ -705,6 +705,30 @@ class JobMethods:
         self._tapis = tapis_client
         self.parametric_sweep = ParametricSweepMethods(tapis_client)
 
+    def prepare_inputs(
+        self, app_id: str, input_dir: str, **options: Any
+    ) -> Dict[str, Any]:
+        """Prepare a local input directory for an app before staging.
+
+        Dispatches to the app's profile when one is registered; a no-op
+        beyond existence checking for apps that need no preparation. For
+        SimCenter apps (``simcenter-*``) this rewrites the workflow JSON's
+        backend paths and reports the UQ engine, random variables, and EDPs.
+
+        Args:
+            app_id (str): The Tapis app id the inputs are being prepared for.
+            input_dir (str): Local path to the job input directory.
+            **options: Profile-specific options (e.g. ``backend_dir``,
+                ``input_filename`` for SimCenter apps).
+
+        Returns:
+            Dict[str, Any]: Summary of the preparation performed.
+
+        Example:
+            >>> ds.jobs.prepare_inputs("simcenter-uq-stampede3", "./DS_input")
+        """
+        return jobs_module.prepare_job_inputs(app_id, input_dir, **options)
+
     # Method to generate the request dictionary
     def generate(
         self,
