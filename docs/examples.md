@@ -46,6 +46,15 @@ Access DesignSafe research databases (NGL, Earthquake Recovery, Vp).
 
 ---
 
+### Generic Python on HPC
+Run any Python script (or executable) on Stampede3 with the general-purpose `python-s3` app — Monte Carlo pi across all 48 cores of a node.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/python/python-s3-pi.ipynb)
+
+[Full documentation](examples/python.md) · [App documentation](https://designsafe-ci.github.io/ds-workflows/apps/python)
+
+---
+
 ### Material Point Method (MPM)
 Submit and monitor MPM simulations.
 

@@ -158,6 +158,49 @@ def get_project(t: Tapis, project_id: str) -> Dict:
     }
 
 
+def get_project_users(t: Tapis, project_id: str) -> List[Dict]:
+    """List the users of a DesignSafe project (PI, co-PIs, team members).
+
+    Args:
+        t (Tapis): Authenticated Tapis client instance.
+        project_id (str): Project ID (e.g., "PRJ-1305") or project UUID.
+
+    Returns:
+        List[Dict]: One dict per user with keys ``username``, ``fname``,
+            ``lname``, ``email``, and ``role`` (e.g., "pi", "co_pi").
+
+    Raises:
+        FileOperationError: If the project is not found or the request fails.
+
+    Example:
+        >>> users = get_project_users(t, "PRJ-1305")
+        >>> [u["username"] for u in users]
+        ['parduino', 'kks32']
+    """
+    headers = _get_auth_headers(t)
+    try:
+        resp = requests.get(
+            f"{_DS_PROJECTS_API}{project_id}/",
+            headers=headers,
+            timeout=30,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        raise FileOperationError(f"Failed to get project '{project_id}': {e}") from e
+
+    users = resp.json().get("baseProject", {}).get("value", {}).get("users", [])
+    return [
+        {
+            "username": u.get("username"),
+            "fname": u.get("fname"),
+            "lname": u.get("lname"),
+            "email": u.get("email"),
+            "role": u.get("role"),
+        }
+        for u in users
+    ]
+
+
 def list_project_files(
     t: Tapis,
     project_id: str,

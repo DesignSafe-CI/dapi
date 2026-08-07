@@ -4,7 +4,7 @@ This example demonstrates how to submit and monitor an OpenSees simulation using
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/opensees-mp/OpenSeesMP-dapi.ipynb)
 
-For general job submission concepts, see [Jobs](../jobs.md). For resource sizing, see [DesignSafe Workflows](https://kks32.github.io/ds-workflows/guide/job-resources.html).
+For general job submission concepts, see [Jobs](../jobs.md). For resource sizing, see [DesignSafe Workflows](https://designsafe-ci.github.io/ds-workflows/guide/job-resources).
 
 ## Complete Example
 

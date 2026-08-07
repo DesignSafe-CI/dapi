@@ -23,6 +23,7 @@ project:
     - title: Examples
       children:
         - file: docs/examples.md
+        - file: docs/examples/python.md
         - file: docs/examples/opensees.md
         - file: docs/examples/quofem.md
         - file: docs/examples/openfoam.md

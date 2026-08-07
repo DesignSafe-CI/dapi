@@ -22,7 +22,7 @@ ds.systems.list("all")
 
 ## TACC Systems
 
-DesignSafe jobs run on TACC execution systems. For hardware specs, node types, queues, and allocations, see the [DesignSafe Workflows: Compute Environments](https://kks32.github.io/ds-workflows/guide/compute-environments.html).
+DesignSafe jobs run on TACC execution systems. For hardware specs, node types, queues, and allocations, see the [DesignSafe Workflows: Compute Environments](https://designsafe-ci.github.io/ds-workflows/guide/compute-environments).
 
 | System ID | System | Notes |
 |---|---|---|

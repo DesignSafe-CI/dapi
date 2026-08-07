@@ -11,6 +11,7 @@ import pandas as pd
 from . import profiles
 from .apps import get_app_details
 from .exceptions import (
+    DapiException,
     JobSubmissionError,
     JobMonitorError,
     FileOperationError,
@@ -29,6 +30,80 @@ TAPIS_TERMINAL_STATES = [
     "STOPPED",
     "ARCHIVING_FAILED",
 ]
+
+# Shareable job resources (Tapis grants READ only). JOB_INPUT is included by
+# default so grantees can inspect and reproduce the run.
+JOB_SHARE_RESOURCES = [
+    "JOB_HISTORY",
+    "JOB_RESUBMIT_REQUEST",
+    "JOB_OUTPUT",
+    "JOB_INPUT",
+]
+
+
+def _resolve_share_grantees(
+    tapis_client: Tapis,
+    user_id: Optional[Any] = None,
+    project_id: Optional[str] = None,
+) -> List[str]:
+    """Validate and resolve share grantees from users and/or a project.
+
+    Both sources are validated before any grant is issued: every username
+    must exist in the tenant (authenticator profile lookup) and the project
+    must resolve via the DesignSafe projects API. The job owner is dropped
+    from the resolved list.
+
+    Args:
+        tapis_client (Tapis): Authenticated Tapis client instance.
+        user_id (str or List[str], optional): Username(s) to validate.
+        project_id (str, optional): DesignSafe project (e.g., "PRJ-1234");
+            resolves to all project users (PI, co-PIs, team members).
+
+    Returns:
+        List[str]: Validated, de-duplicated usernames.
+
+    Raises:
+        ValueError: If neither user_id nor project_id is given, a username
+            does not exist, or no grantees remain after removing the owner.
+        FileOperationError: If the project cannot be resolved.
+    """
+    if user_id is None and project_id is None:
+        raise ValueError("Provide user_id and/or project_id.")
+
+    grantees: List[str] = []
+    users = [user_id] if isinstance(user_id, str) else list(user_id or [])
+    for user in users:
+        try:
+            tapis_client.authenticator.get_profile(username=user)
+        except BaseTapyException as e:
+            raise ValueError(
+                f"User '{user}' not found in tenant 'designsafe': {e}"
+            ) from e
+        grantees.append(user)
+
+    if project_id is not None:
+        from . import projects as projects_module
+
+        members = projects_module.get_project_users(tapis_client, project_id)
+        member_names = [m["username"] for m in members if m.get("username")]
+        if not member_names:
+            raise ValueError(f"Project '{project_id}' has no users to share with.")
+        grantees.extend(member_names)
+
+    owner = getattr(tapis_client, "username", None)
+    seen: set = set()
+    resolved = []
+    for grantee in grantees:
+        if grantee == owner:
+            continue
+        if grantee not in seen:
+            seen.add(grantee)
+            resolved.append(grantee)
+    if not resolved:
+        raise ValueError(
+            "No grantees to share with (the job owner is excluded automatically)."
+        )
+    return resolved
 
 
 def generate_job_request(
@@ -1301,6 +1376,103 @@ class SubmittedJob:
         except NotImplementedError as e:
             raise FileOperationError(str(e)) from e
 
+    def share(
+        self,
+        user_id: Optional[Any] = None,
+        project_id: Optional[str] = None,
+        resources: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Share this job (READ) with users and/or all members of a project.
+
+        All grantees are validated before any grant is issued: usernames
+        must exist in the tenant, and the project must resolve via the
+        DesignSafe projects API. The job owner is excluded automatically.
+
+        Grantees can view the job record and, depending on the granted
+        resources, its history, inputs, outputs, and resubmit request.
+        They can find shared jobs with ``ds.jobs.list(list_type="SHARED_JOBS")``.
+
+        Args:
+            user_id (str or List[str], optional): Username(s) to share with.
+            project_id (str, optional): DesignSafe project id (e.g.,
+                "PRJ-1234"); shares with every project user (PI, co-PIs,
+                team members).
+            resources (List[str], optional): Job resources to grant.
+                Defaults to all of ``JOB_SHARE_RESOURCES``.
+
+        Returns:
+            Dict[str, Any]: Summary with ``job_uuid``, ``grantees``,
+                ``resources``, and ``permission``.
+
+        Raises:
+            ValueError: If validation fails (unknown user, empty project,
+                invalid resource, or no grantees).
+            DapiException: If a Tapis share request fails.
+
+        Example:
+            >>> job.share(user_id="parduino")
+            >>> job.share(project_id="PRJ-1234")
+            >>> job.share(user_id=["parduino", "bonusj"], resources=["JOB_OUTPUT"])
+        """
+        share_resources = list(resources) if resources else list(JOB_SHARE_RESOURCES)
+        invalid = sorted(set(share_resources) - set(JOB_SHARE_RESOURCES))
+        if invalid:
+            raise ValueError(
+                f"Invalid share resources {invalid}. Valid: {JOB_SHARE_RESOURCES}"
+            )
+
+        grantees = _resolve_share_grantees(self._tapis, user_id, project_id)
+        for grantee in grantees:
+            try:
+                self._tapis.jobs.shareJob(
+                    jobUuid=self.uuid,
+                    grantee=grantee,
+                    jobResource=share_resources,
+                    jobPermission="READ",
+                )
+            except BaseTapyException as e:
+                raise DapiException(
+                    f"Failed to share job {self.uuid} with '{grantee}': {e}"
+                ) from e
+            print(f"Shared job {self.uuid} with '{grantee}' (READ).")
+        return {
+            "job_uuid": self.uuid,
+            "grantees": grantees,
+            "resources": share_resources,
+            "permission": "READ",
+        }
+
+    @property
+    def shares(self) -> pd.DataFrame:
+        """Current share grants on this job.
+
+        Returns:
+            pd.DataFrame: One row per (grantee, resource) grant with columns
+                grantee, resource, permission, created, createdBy.
+
+        Example:
+            >>> job.shares
+        """
+        try:
+            rows = self._tapis.jobs.getJobShare(jobUuid=self.uuid)
+        except BaseTapyException as e:
+            raise DapiException(
+                f"Failed to list shares for job {self.uuid}: {e}"
+            ) from e
+        data = [
+            {
+                "grantee": getattr(r, "grantee", None),
+                "resource": getattr(r, "jobResource", None),
+                "permission": getattr(r, "jobPermission", None),
+                "created": getattr(r, "created", None),
+                "createdBy": getattr(r, "createdby", None),
+            }
+            for r in rows or []
+        ]
+        return pd.DataFrame(
+            data, columns=["grantee", "resource", "permission", "created", "createdBy"]
+        )
+
     def cancel(self):
         """Attempt to cancel the job execution.
 
@@ -1451,6 +1623,7 @@ def list_jobs(
     limit: int = 100,
     output: str = "df",
     verbose: bool = False,
+    list_type: str = "MY_JOBS",
 ):
     """Fetch Tapis jobs with optional filtering.
 
@@ -1468,6 +1641,8 @@ def list_jobs(
             "list" returns a list of dicts, "raw" returns the raw
             TapisResult objects.
         verbose: If True, prints the number of jobs found.
+        list_type: Which jobs to list. "MY_JOBS" (default) lists jobs you
+            own, "SHARED_JOBS" lists jobs shared with you, "ALL_JOBS" both.
 
     Returns:
         Depends on ``output``:
@@ -1486,11 +1661,17 @@ def list_jobs(
     """
     if output not in ("df", "list", "raw"):
         raise ValueError(f"output must be 'df', 'list', or 'raw', got '{output}'")
+    list_type = list_type.upper()
+    if list_type not in ("MY_JOBS", "SHARED_JOBS", "ALL_JOBS"):
+        raise ValueError(
+            f"list_type must be 'MY_JOBS', 'SHARED_JOBS', or 'ALL_JOBS', got '{list_type}'"
+        )
 
     try:
         jobs_list = tapis_client.jobs.getJobList(
             limit=limit,
             orderBy="created(desc)",
+            listType=list_type,
         )
     except BaseTapyException as e:
         raise JobMonitorError(f"Failed to list jobs: {e}") from e
