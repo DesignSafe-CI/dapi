@@ -16,7 +16,7 @@
 - New quoFEM example page (`docs/examples/quofem.md`): SimCenter app profile behavior, complete workflow (prepare → generate → submit → `get_results()` → Sobol plots), project archiving, and the input-bundling rationale with measured staging times; added to the docs sidebar and examples index
 - New "Sharing Jobs" section in `docs/jobs.md`: user and project shares, grantee-side discovery, sharing vs. project archiving
 - New `examples/job-sharing.ipynb`: share an existing job with a user or project team, inspect and revoke grants; grantee-side walkthrough — discover via `SHARED_JOBS`, open the shared job, and access its outputs through the share-aware Tapis job-output endpoints
-- quoFEM example notebook installs the latest dapi (`--upgrade`, unpinned) instead of pinning a version
+- quoFEM example notebook installs the latest dapi (`--user --upgrade`, unpinned) instead of pinning a version; `--user` is required on DesignSafe Jupyter where the system site-packages is not writable
 
 ### Infrastructure
 
