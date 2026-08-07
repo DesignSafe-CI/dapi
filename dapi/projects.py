@@ -175,7 +175,7 @@ def get_project_users(t: Tapis, project_id: str) -> List[Dict]:
     Example:
         >>> users = get_project_users(t, "PRJ-1305")
         >>> [u["username"] for u in users]
-        ['parduino', 'kks32']
+        ['jdoe', 'asmith']
     """
     headers = _get_auth_headers(t)
     try:

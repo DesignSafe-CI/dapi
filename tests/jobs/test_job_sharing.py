@@ -33,16 +33,16 @@ class TestShare(unittest.TestCase):
         t = _mock_tapis()
         job = _make_job(t)
 
-        summary = job.share(user_id="parduino")
+        summary = job.share(user_id="jdoe")
 
-        t.authenticator.get_profile.assert_called_once_with(username="parduino")
+        t.authenticator.get_profile.assert_called_once_with(username="jdoe")
         t.jobs.shareJob.assert_called_once_with(
             jobUuid=job.uuid,
-            grantee="parduino",
+            grantee="jdoe",
             jobResource=JOB_SHARE_RESOURCES,
             jobPermission="READ",
         )
-        self.assertEqual(summary["grantees"], ["parduino"])
+        self.assertEqual(summary["grantees"], ["jdoe"])
         self.assertEqual(summary["permission"], "READ")
 
     def test_share_unknown_user_grants_nothing(self):
@@ -64,15 +64,15 @@ class TestShare(unittest.TestCase):
         job = _make_job(t)
 
         with self.assertRaises(ValueError):
-            job.share(user_id=["parduino", "typo-user"])
+            job.share(user_id=["jdoe", "typo-user"])
         t.jobs.shareJob.assert_not_called()
 
     @patch("dapi.projects.get_project_users")
     def test_share_project_resolves_members_and_skips_owner(self, mock_users):
         mock_users.return_value = [
-            {"username": "parduino", "role": "pi"},
+            {"username": "jdoe", "role": "pi"},
             {"username": "testowner", "role": "co_pi"},  # the job owner
-            {"username": "bonusj", "role": "team_member"},
+            {"username": "asmith", "role": "team_member"},
         ]
         t = _mock_tapis(username="testowner")
         job = _make_job(t)
@@ -80,18 +80,18 @@ class TestShare(unittest.TestCase):
         summary = job.share(project_id="PRJ-1234")
 
         mock_users.assert_called_once_with(t, "PRJ-1234")
-        self.assertEqual(summary["grantees"], ["parduino", "bonusj"])
+        self.assertEqual(summary["grantees"], ["jdoe", "asmith"])
         self.assertEqual(t.jobs.shareJob.call_count, 2)
 
     @patch("dapi.projects.get_project_users")
     def test_share_user_and_project_deduplicates(self, mock_users):
-        mock_users.return_value = [{"username": "parduino", "role": "pi"}]
+        mock_users.return_value = [{"username": "jdoe", "role": "pi"}]
         t = _mock_tapis()
         job = _make_job(t)
 
-        summary = job.share(user_id="parduino", project_id="PRJ-1234")
+        summary = job.share(user_id="jdoe", project_id="PRJ-1234")
 
-        self.assertEqual(summary["grantees"], ["parduino"])
+        self.assertEqual(summary["grantees"], ["jdoe"])
         self.assertEqual(t.jobs.shareJob.call_count, 1)
 
     def test_share_requires_user_or_project(self):
@@ -103,7 +103,7 @@ class TestShare(unittest.TestCase):
         t = _mock_tapis()
         job = _make_job(t)
         with self.assertRaises(ValueError):
-            job.share(user_id="parduino", resources=["JOB_OUTPUT", "NOT_A_RESOURCE"])
+            job.share(user_id="jdoe", resources=["JOB_OUTPUT", "NOT_A_RESOURCE"])
         t.jobs.shareJob.assert_not_called()
 
     def test_share_only_owner_raises(self):
@@ -119,7 +119,7 @@ class TestShares(unittest.TestCase):
         t = _mock_tapis()
         t.jobs.getJobShare.return_value = [
             SimpleNamespace(
-                grantee="parduino",
+                grantee="jdoe",
                 jobResource="JOB_OUTPUT",
                 jobPermission="READ",
                 created="2026-08-07T12:00:00Z",
@@ -130,7 +130,7 @@ class TestShares(unittest.TestCase):
 
         df = job.shares
 
-        self.assertEqual(list(df["grantee"]), ["parduino"])
+        self.assertEqual(list(df["grantee"]), ["jdoe"])
         self.assertEqual(list(df["resource"]), ["JOB_OUTPUT"])
 
     def test_shares_empty(self):

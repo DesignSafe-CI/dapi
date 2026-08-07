@@ -288,10 +288,10 @@ Share a job (read-only) with collaborators so they can see its record, history, 
 
 ```python
 # Share with a specific user (exact TACC username)
-job.share(user_id="parduino")
+job.share(user_id="jdoe")
 
 # Share with several users
-job.share(user_id=["parduino", "bonusj"])
+job.share(user_id=["jdoe", "asmith"])
 
 # Share with every member of a DesignSafe project (PI, co-PIs, team)
 job.share(project_id="PRJ-1234")
@@ -300,7 +300,7 @@ job.share(project_id="PRJ-1234")
 ds.projects.members("PRJ-1234")
 
 # Restrict what is shared (default: history, resubmit request, output, input)
-job.share(user_id="parduino", resources=["JOB_OUTPUT", "JOB_HISTORY"])
+job.share(user_id="jdoe", resources=["JOB_OUTPUT", "JOB_HISTORY"])
 
 # Inspect grants
 print(job.shares)  # DataFrame: grantee, resource, permission, created

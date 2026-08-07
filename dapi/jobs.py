@@ -1410,9 +1410,9 @@ class SubmittedJob:
             DapiException: If a Tapis share request fails.
 
         Example:
-            >>> job.share(user_id="parduino")
+            >>> job.share(user_id="jdoe")
             >>> job.share(project_id="PRJ-1234")
-            >>> job.share(user_id=["parduino", "bonusj"], resources=["JOB_OUTPUT"])
+            >>> job.share(user_id=["jdoe", "asmith"], resources=["JOB_OUTPUT"])
         """
         share_resources = list(resources) if resources else list(JOB_SHARE_RESOURCES)
         invalid = sorted(set(share_resources) - set(JOB_SHARE_RESOURCES))

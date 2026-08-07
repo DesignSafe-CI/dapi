@@ -5,7 +5,7 @@
 ### New features
 
 - **Job sharing** (`job.share()` / `job.shares`): share a job (READ) with explicit users and/or every member of a DesignSafe project. All grantees are validated **before** any grant is issued — usernames against the tenant's user profiles, projects against the DesignSafe projects API — and the job owner is excluded automatically.
-  - `job.share(user_id="parduino")`, `job.share(user_id=[...])`, `job.share(project_id="PRJ-1234")`
+  - `job.share(user_id="jdoe")`, `job.share(user_id=[...])`, `job.share(project_id="PRJ-1234")`
   - Grants cover `JOB_HISTORY`, `JOB_RESUBMIT_REQUEST`, `JOB_OUTPUT`, and `JOB_INPUT` by default (Tapis job shares are READ-only); restrict with `resources=[...]`
   - `job.shares` returns the current grants as a DataFrame
 - **`ds.jobs.list(list_type=...)`**: `"MY_JOBS"` (default), `"SHARED_JOBS"` (jobs shared with you), or `"ALL_JOBS"`
