@@ -114,17 +114,7 @@ class TestShare(unittest.TestCase):
         t.jobs.shareJob.assert_not_called()
 
 
-class TestUnshareAndShares(unittest.TestCase):
-    def test_unshare_revokes_each_user(self):
-        t = _mock_tapis()
-        job = _make_job(t)
-
-        summary = job.unshare(user_id=["parduino", "bonusj"])
-
-        self.assertEqual(summary["revoked"], ["parduino", "bonusj"])
-        self.assertEqual(t.jobs.deleteJobShare.call_count, 2)
-        t.jobs.deleteJobShare.assert_any_call(jobUuid=job.uuid, user="parduino")
-
+class TestShares(unittest.TestCase):
     def test_shares_returns_dataframe(self):
         t = _mock_tapis()
         t.jobs.getJobShare.return_value = [

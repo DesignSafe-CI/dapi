@@ -1442,39 +1442,6 @@ class SubmittedJob:
             "permission": "READ",
         }
 
-    def unshare(
-        self,
-        user_id: Optional[Any] = None,
-        project_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Remove this job's share grants for users and/or project members.
-
-        Args:
-            user_id (str or List[str], optional): Username(s) to revoke.
-            project_id (str, optional): DesignSafe project id; revokes every
-                project user.
-
-        Returns:
-            Dict[str, Any]: Summary with ``job_uuid`` and ``revoked``.
-
-        Raises:
-            ValueError: If validation fails.
-            DapiException: If a Tapis unshare request fails.
-
-        Example:
-            >>> job.unshare(user_id="bonusj")
-        """
-        grantees = _resolve_share_grantees(self._tapis, user_id, project_id)
-        for grantee in grantees:
-            try:
-                self._tapis.jobs.deleteJobShare(jobUuid=self.uuid, user=grantee)
-            except BaseTapyException as e:
-                raise DapiException(
-                    f"Failed to unshare job {self.uuid} for '{grantee}': {e}"
-                ) from e
-            print(f"Removed job share for '{grantee}' on {self.uuid}.")
-        return {"job_uuid": self.uuid, "revoked": grantees}
-
     @property
     def shares(self) -> pd.DataFrame:
         """Current share grants on this job.

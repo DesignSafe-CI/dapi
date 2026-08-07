@@ -302,9 +302,8 @@ ds.projects.members("PRJ-1234")
 # Restrict what is shared (default: history, resubmit request, output, input)
 job.share(user_id="parduino", resources=["JOB_OUTPUT", "JOB_HISTORY"])
 
-# Inspect and revoke grants
+# Inspect grants
 print(job.shares)  # DataFrame: grantee, resource, permission, created
-job.unshare(user_id="bonusj")
 ```
 
 Grantees discover jobs shared with them via:
