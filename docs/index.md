@@ -25,7 +25,7 @@ job = ds.jobs.submit(job_request)
 job.monitor()
 ```
 
-For background on DesignSafe compute environments, storage, and workflow design, see the [DesignSafe Workflows guide](https://kks32.github.io/ds-workflows/).
+For background on DesignSafe compute environments, storage, and workflow design, see the [DesignSafe Workflows guide](https://designsafe-ci.github.io/ds-workflows/).
 
 ## Getting Started
 

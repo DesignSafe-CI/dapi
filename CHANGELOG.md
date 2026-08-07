@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.5.5
+
+### New features
+
+- **Job sharing** (`job.share()` / `job.unshare()` / `job.shares`): share a job (READ) with explicit users and/or every member of a DesignSafe project. All grantees are validated **before** any grant is issued — usernames against the tenant's user profiles, projects against the DesignSafe projects API — and the job owner is excluded automatically.
+  - `job.share(user_id="parduino")`, `job.share(user_id=[...])`, `job.share(project_id="PRJ-1234")`
+  - Grants cover `JOB_HISTORY`, `JOB_RESUBMIT_REQUEST`, `JOB_OUTPUT`, and `JOB_INPUT` by default (Tapis job shares are READ-only); restrict with `resources=[...]`
+  - `job.shares` returns the current grants as a DataFrame; `job.unshare(...)` revokes
+- **`ds.jobs.list(list_type=...)`**: `"MY_JOBS"` (default), `"SHARED_JOBS"` (jobs shared with you), or `"ALL_JOBS"`
+- **`ds.projects.members("PRJ-1234")`**: list a project's users (username, name, email, role) — useful to preview who `job.share(project_id=...)` would reach
+
+### Notes
+
+- Job shares grant access through the Tapis **jobs** service. dapi's output methods (`list_outputs`, `get_output_content`, `get_results`) currently read via the **files** service, which does not see job shares — so grantees should access outputs of jobs archived to MyData via the DesignSafe portal for now, or the owner should archive to a shared project. Routing dapi's output methods through the share-aware jobs-output endpoints is planned.
+
 ## v0.5.4
 
 ### New features

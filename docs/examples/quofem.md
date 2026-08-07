@@ -4,7 +4,7 @@ This example runs a quoFEM global sensitivity analysis with the SimCenter UQ eng
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/quoFEM-sensitivity/quoFEM-sensitivity-dapi.ipynb)
 
-For general job submission concepts, see [Jobs](../jobs.md). For resource sizing, see [DesignSafe Workflows](https://kks32.github.io/ds-workflows/guide/job-resources.html).
+For general job submission concepts, see [Jobs](../jobs.md). For resource sizing, see [DesignSafe Workflows](https://designsafe-ci.github.io/ds-workflows/guide/job-resources).
 
 ## How dapi handles SimCenter apps
 

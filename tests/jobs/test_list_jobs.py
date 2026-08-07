@@ -124,7 +124,7 @@ class TestListJobs(unittest.TestCase):
     def test_passes_limit_to_api(self):
         list_jobs(self.t, limit=50)
         self.t.jobs.getJobList.assert_called_once_with(
-            limit=50, orderBy="created(desc)"
+            limit=50, orderBy="created(desc)", listType="MY_JOBS"
         )
 
     def test_raises_job_monitor_error_on_api_failure(self):

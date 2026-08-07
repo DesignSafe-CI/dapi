@@ -306,6 +306,32 @@ class ProjectMethods:
         """
         return projects_module.get_project(self._tapis, project_id)
 
+    def members(self, project_id: str, output: str = "df"):
+        """List the users of a project (PI, co-PIs, team members).
+
+        Useful for checking who a job would be shared with before calling
+        ``job.share(project_id=...)``.
+
+        Args:
+            project_id (str): Project ID (e.g., "PRJ-1305").
+            output (str, optional): "df" for DataFrame (default), "list" for
+                list of dicts.
+
+        Returns:
+            DataFrame or List: Users with username, fname, lname, email, role.
+
+        Example:
+            >>> ds.projects.members("PRJ-1305")
+        """
+        users = projects_module.get_project_users(self._tapis, project_id)
+        if output == "list":
+            return users
+        import pandas as pd
+
+        return pd.DataFrame(
+            users, columns=["username", "fname", "lname", "email", "role"]
+        )
+
     def files(
         self, project_id: str, path: str = "/", limit: int = 100, output: str = "df"
     ):
@@ -937,6 +963,7 @@ class JobMethods:
         limit: int = 100,
         output: str = "df",
         verbose: bool = False,
+        list_type: str = "MY_JOBS",
     ):
         """List jobs with optional filtering.
 
@@ -952,6 +979,8 @@ class JobMethods:
                 (default), "list" for list of dicts, "raw" for TapisResult
                 objects.
             verbose (bool, optional): Print job count. Defaults to False.
+            list_type (str, optional): "MY_JOBS" (default) for jobs you own,
+                "SHARED_JOBS" for jobs shared with you, "ALL_JOBS" for both.
 
         Returns:
             Depends on output: DataFrame, list of dicts, or list of
@@ -972,4 +1001,5 @@ class JobMethods:
             limit=limit,
             output=output,
             verbose=verbose,
+            list_type=list_type,
         )

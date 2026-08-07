@@ -282,6 +282,43 @@ job.download_output("results.mat", "/local/path/results.mat")
 ds.files.download(f"{archive_uri}/results.mat", "/local/path/results.mat")
 ```
 
+## Sharing Jobs
+
+Share a job (read-only) with collaborators so they can see its record, history, inputs, and outputs. All grantees are validated before any grant is issued: usernames must exist in the tenant, and projects must resolve via the DesignSafe projects API.
+
+```python
+# Share with a specific user (exact TACC username)
+job.share(user_id="parduino")
+
+# Share with several users
+job.share(user_id=["parduino", "bonusj"])
+
+# Share with every member of a DesignSafe project (PI, co-PIs, team)
+job.share(project_id="PRJ-1234")
+
+# Preview who a project share would reach
+ds.projects.members("PRJ-1234")
+
+# Restrict what is shared (default: history, resubmit request, output, input)
+job.share(user_id="parduino", resources=["JOB_OUTPUT", "JOB_HISTORY"])
+
+# Inspect and revoke grants
+print(job.shares)  # DataFrame: grantee, resource, permission, created
+job.unshare(user_id="bonusj")
+```
+
+Grantees discover jobs shared with them via:
+
+```python
+shared = ds.jobs.list(list_type="SHARED_JOBS")  # or "ALL_JOBS"
+job = ds.jobs.job(shared.iloc[0]["uuid"])
+print(job.status)
+```
+
+Tapis job shares are READ-only, and grants are per-user (there are no group grants). The job owner is excluded automatically.
+
+**Sharing vs. project archiving.** Job shares grant access through the Tapis jobs service; they work regardless of where the job archived. Archiving into a shared project (`archive_system="project-<uuid>"`) additionally makes the outputs browsable by all project members in the Data Depot and eligible for curation. For team workflows the two compose well: archive to the project and share the job.
+
 ## Job Cancellation
 
 ```python
@@ -433,4 +470,4 @@ if final_status == "FAILED":
  print(f"Full history: job.print_runtime_summary(verbose=True)")
 ```
 
-For system queues, see [Systems](systems.md). For resource sizing guidance, see [DesignSafe Workflows: Running HPC Jobs](https://kks32.github.io/ds-workflows/guide/job-resources.html).
+For system queues, see [Systems](systems.md). For resource sizing guidance, see [DesignSafe Workflows: Running HPC Jobs](https://designsafe-ci.github.io/ds-workflows/guide/job-resources).
