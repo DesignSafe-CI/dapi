@@ -73,6 +73,15 @@ Earthquake engineering simulations with OpenSees.
 
 ---
 
+### quoFEM Sensitivity Analysis
+Global sensitivity analysis with the SimCenter UQ engine (quoFEM) on Stampede3, with automatic input bundling and Sobol-index post-processing.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/quoFEM-sensitivity/quoFEM-sensitivity-dapi.ipynb)
+
+[Full documentation](examples/quofem.md)
+
+---
+
 ### PyLauncher Parameter Sweeps
 Run many independent tasks within a single SLURM allocation.
 

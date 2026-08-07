@@ -24,6 +24,7 @@ project:
       children:
         - file: docs/examples.md
         - file: docs/examples/opensees.md
+        - file: docs/examples/quofem.md
         - file: docs/examples/openfoam.md
         - file: docs/examples/mpm.md
         - file: docs/examples/pylauncher.md
