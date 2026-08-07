@@ -20,7 +20,7 @@ The SimCenter Tapis apps (quoFEM, EE-UQ, WE-UQ backends such as `simcenter-uq-st
 
 ```python
 # Install dapi package
-%pip install "dapi>=0.5.4" --quiet
+%pip install --upgrade dapi --quiet
 
 # Import required modules
 from dapi import DSClient
