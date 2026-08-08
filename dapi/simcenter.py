@@ -234,11 +234,10 @@ def _default_staged_dir(input_dir: str) -> str:
     staged = os.path.join(tempfile.mkdtemp(prefix="dapi-staging-"), base)
     print(f"'{parent}' is not writable (e.g. CommunityData); staging to {staged}")
     print(
-        "This is a local temporary directory: upload the bundle before "
-        "submitting, e.g.\n"
-        '  dest = ds.files.to_uri("/MyData/my-run")\n'
-        f'  ds.files.upload(info["bundle"], f"{{dest}}/{BUNDLE_NAME}")\n'
-        "then use dest as the job's input_dir_uri."
+        "This is a local temporary directory. ds.jobs.prepare_inputs uploads "
+        "it to /MyData/dapi-staging/ automatically; if calling "
+        "dapi.simcenter.prepare_inputs directly, upload the bundle yourself "
+        "with ds.files.upload before submitting."
     )
     return staged
 

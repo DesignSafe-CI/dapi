@@ -193,6 +193,119 @@ class TestReadOnlySources(unittest.TestCase):
                 prepare_inputs(shipped, bundle=False)
 
 
+class _StubFiles:
+    def __init__(self):
+        self.mkdirs = []
+
+    def mkdir(self, systemId, path):
+        self.mkdirs.append((systemId, path))
+
+
+class _StubTapis:
+    username = "testuser"
+
+    def __init__(self):
+        self.files = _StubFiles()
+        self.uploads = []
+
+    def upload(self, system_id, source_file_path, dest_file_path):
+        self.uploads.append((system_id, source_file_path, dest_file_path))
+
+
+class TestClientAutoUpload(unittest.TestCase):
+    """ds.jobs.prepare_inputs pushes local-only staging to /MyData."""
+
+    def test_readonly_source_auto_uploads_and_rewrites_staged_dir(self):
+        from dapi.client import JobMethods
+
+        with tempfile.TemporaryDirectory() as root:
+            input_dir, workflow_path = _make_input_dir(root)
+            templatedir = os.path.dirname(workflow_path)
+            locked = (workflow_path, templatedir, input_dir, root)
+            for p in locked:
+                os.chmod(p, 0o555)
+            try:
+                stub = _StubTapis()
+                summary = JobMethods(stub).prepare_inputs(
+                    "simcenter-uq-stampede3", input_dir
+                )
+
+                # staged_dir rewritten to a translatable DesignSafe path
+                self.assertEqual(
+                    summary["staged_dir"], "/MyData/dapi-staging/DS_input_staged"
+                )
+                self.assertTrue(os.path.isdir(summary["local_staged_dir"]))
+                # the bundle was uploaded via the files API
+                self.assertEqual(len(stub.uploads), 1)
+                system_id, src, dest = stub.uploads[0]
+                self.assertEqual(system_id, "designsafe.storage.default")
+                self.assertTrue(src.endswith(BUNDLE_NAME))
+                self.assertIn("testuser/dapi-staging/DS_input_staged", dest)
+            finally:
+                for p in locked:
+                    if os.path.exists(p):
+                        os.chmod(p, 0o755)
+
+    def test_translatable_staged_dir_is_not_uploaded(self):
+        """JupyterHub case: staging lands under MyData, which to_uri handles."""
+        from dapi.client import JobMethods
+
+        with tempfile.TemporaryDirectory() as root:
+            mydata = os.path.join(root, "MyData")
+            os.makedirs(mydata)
+            input_dir, _ = _make_input_dir(mydata)
+            stub = _StubTapis()
+
+            summary = JobMethods(stub).prepare_inputs(
+                "simcenter-uq-stampede3", input_dir
+            )
+
+            self.assertEqual(
+                summary["staged_dir"], os.path.join(mydata, "DS_input_staged")
+            )
+            self.assertEqual(stub.uploads, [])
+            self.assertNotIn("local_staged_dir", summary)
+
+    def test_local_writable_staged_dir_is_auto_uploaded(self):
+        """Local-machine case: sibling _staged exists but Tapis can't see it."""
+        from dapi.client import JobMethods
+
+        with tempfile.TemporaryDirectory() as root:
+            input_dir, _ = _make_input_dir(root)
+            stub = _StubTapis()
+
+            summary = JobMethods(stub).prepare_inputs(
+                "simcenter-uq-stampede3", input_dir
+            )
+
+            self.assertEqual(
+                summary["staged_dir"], "/MyData/dapi-staging/DS_input_staged"
+            )
+            self.assertEqual(
+                summary["local_staged_dir"], os.path.join(root, "DS_input_staged")
+            )
+            self.assertEqual(len(stub.uploads), 1)
+
+    def test_custom_staging_destination(self):
+        from dapi.client import JobMethods
+
+        with tempfile.TemporaryDirectory() as root:
+            input_dir, _ = _make_input_dir(root)
+            stub = _StubTapis()
+
+            summary = JobMethods(stub).prepare_inputs(
+                "simcenter-uq-stampede3",
+                input_dir,
+                staging_destination="/MyData/quofem-runs",
+            )
+
+            self.assertEqual(
+                summary["staged_dir"], "/MyData/quofem-runs/DS_input_staged"
+            )
+            self.assertEqual(len(stub.uploads), 1)
+            self.assertIn("testuser/quofem-runs/DS_input_staged", stub.uploads[0][2])
+
+
 class TestPrepareJobInputsDispatch(unittest.TestCase):
     """ds.jobs.prepare_inputs dispatches through the app-profile registry."""
 

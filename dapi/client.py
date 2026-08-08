@@ -736,7 +736,11 @@ class JobMethods:
         self.parametric_sweep = ParametricSweepMethods(tapis_client)
 
     def prepare_inputs(
-        self, app_id: str, input_dir: str, **options: Any
+        self,
+        app_id: str,
+        input_dir: str,
+        staging_destination: str = "/MyData/dapi-staging",
+        **options: Any,
     ) -> Dict[str, Any]:
         """Prepare a local input directory for an app before staging.
 
@@ -747,6 +751,21 @@ class JobMethods:
         and by default bundles the inputs into a single ``tmpSimCenter.zip``
         (unpacked natively by the app wrapper) so staging transfers one
         file instead of many. Stage the returned ``staged_dir``.
+
+        The returned ``staged_dir`` is always stageable. Local staging uses
+        fast local disk (a temporary directory for read-only sources like
+        CommunityData); Tapis jobs can only pull inputs from Tapis storage,
+        so when the staged directory is not visible to Tapis the files are
+        uploaded once, over the Tapis files API, to *staging_destination*
+        (default ``/MyData/dapi-staging`` — dapi's notation for
+        ``tapis://designsafe.storage.default/<username>/dapi-staging``, the
+        storage every DesignSafe account has; this is a remote upload, not
+        a local path — no MyData mount or Jupyter environment is assumed).
+        ``staged_dir`` is returned as that DesignSafe path so
+        ``ds.files.to_uri(info["staged_dir"])`` works unchanged, and the
+        local copy is reported as ``local_staged_dir``. Pass any
+        translatable DesignSafe path (e.g. a project path) as
+        *staging_destination* to upload elsewhere.
 
         Args:
             app_id (str): The Tapis app id the inputs are being prepared for.
@@ -762,7 +781,61 @@ class JobMethods:
             >>> info = ds.jobs.prepare_inputs("simcenter-uq-stampede3", "./DS_input")
             >>> input_uri = ds.files.to_uri(info["staged_dir"])
         """
-        return jobs_module.prepare_job_inputs(app_id, input_dir, **options)
+        summary = jobs_module.prepare_job_inputs(app_id, input_dir, **options)
+        staged = summary.get("staged_dir")
+        if staged:
+            try:
+                files_module.get_ds_path_uri(self._tapis, staged)
+            except ValueError:
+                summary = self._upload_local_staging(summary, staging_destination)
+        return summary
+
+    def _upload_local_staging(
+        self, summary: Dict[str, Any], staging_destination: str
+    ) -> Dict[str, Any]:
+        """Push a local-only staged dir to /MyData/dapi-staging/ via the files API.
+
+        Used when the staging fallback landed in a temporary directory
+        (read-only source): Tapis cannot stage from local disk, so the
+        staged files are uploaded once and ``staged_dir`` is rewritten to
+        the DesignSafe-style path that ``to_uri`` can translate.
+        """
+        import os as _os
+
+        local = summary["staged_dir"]
+        base = _os.path.basename(local.rstrip("/"))
+        remote_ds_path = f"{staging_destination.rstrip('/')}/{base}"
+        dest_uri = files_module.get_ds_path_uri(self._tapis, remote_ds_path)
+        system_id, dest_root = dest_uri.replace("tapis://", "").split("/", 1)
+        print(
+            f"Uploading staged files to your DesignSafe storage "
+            f"({dest_uri}) via the Tapis files API — works from any "
+            f"machine, no MyData mount required..."
+        )
+        made_dirs = set()
+        uploaded = 0
+        for walk_root, _dirs, walk_files in _os.walk(local):
+            rel_root = _os.path.relpath(walk_root, local)
+            for name in walk_files:
+                rel = name if rel_root == "." else f"{rel_root}/{name}"
+                dest_path = f"{dest_root}/{rel}"
+                parent = _os.path.dirname(dest_path)
+                if parent not in made_dirs:
+                    try:
+                        self._tapis.files.mkdir(systemId=system_id, path=parent)
+                    except Exception:
+                        pass  # already exists
+                    made_dirs.add(parent)
+                files_module.upload_file(
+                    self._tapis,
+                    _os.path.join(walk_root, name),
+                    f"tapis://{system_id}/{dest_path}",
+                )
+                uploaded += 1
+        summary["local_staged_dir"] = local
+        summary["staged_dir"] = remote_ds_path
+        print(f"Uploaded {uploaded} file(s); staged_dir is now {remote_ds_path}")
+        return summary
 
     # Method to generate the request dictionary
     def generate(

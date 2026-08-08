@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### New features
+
+- **`ds.jobs.prepare_inputs` always returns a stageable `staged_dir`**: when local staging lands somewhere Tapis cannot see (the temp-dir fallback for read-only sources, or any local-machine path), the staged files are uploaded automatically over the Tapis files API — a remote upload to `tapis://designsafe.storage.default/<username>/...`; no MyData mount or Jupyter environment is assumed — and `staged_dir` is returned as the DesignSafe path, so `ds.files.to_uri(info["staged_dir"])` works unchanged everywhere. The local copy is reported as `local_staged_dir`.
+- New `staging_destination` parameter on `ds.jobs.prepare_inputs` (default `/MyData/dapi-staging`): any translatable DesignSafe path, e.g. a project path, receives the auto-upload instead.
+
+### Documentation and examples
+
+- quoFEM notebook and docs pass `bundle=True` explicitly (the default is unchanged; bundling only ever applies to SimCenter-profile apps whose wrapper unpacks natively — it is a no-op for MPM, OpenSees, and all other app ids).
+- All four migrated example notebooks executed cell-by-cell (`python-s3-pi` end-to-end including a live Stampede3 job; `pylauncher_sweep` and `pylauncher_opensees` fully; `opensees_ml` client-side cells — submission requires the JupyterHub MyData mount).
+
 ## v0.5.6
 
 ### Fixed
