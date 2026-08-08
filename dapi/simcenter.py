@@ -39,6 +39,10 @@ from . import profiles
 from .exceptions import FileOperationError
 from .jobs import SubmittedJob
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # The env variable name the wrapper script expects for the staged input dir.
 INPUT_DIR_ENV_KEY = "inputDirectory"
 
@@ -149,7 +153,7 @@ def prepare_inputs(
         with zipfile.ZipFile(prebundled) as zf:
             workflow = json.loads(zf.read(workflow_relpath))
         source = "zip"
-        print(f"Reusing pre-bundled {BUNDLE_NAME} from {input_dir}")
+        logger.debug(f"Reusing pre-bundled {BUNDLE_NAME} from {input_dir}")
     else:
         raise FileNotFoundError(
             f"SimCenter workflow JSON not found at '{workflow_path}' and no "
@@ -163,14 +167,27 @@ def prepare_inputs(
 
     # Patch the source in place only when it is writable; CommunityData and
     # published datasets are read-only, so the patch travels with the staged
-    # copy instead.
-    source_writable = source == "tree" and os.access(workflow_path, os.W_OK)
-    if source_writable:
-        with open(workflow_path, "w") as f:
-            f.write(workflow_text)
-        print(f"Updated remoteAppDir in {workflow_path}")
-    else:
-        print("Source is read-only; remoteAppDir patch applied to the staged copy")
+    # copy instead. Attempt the write rather than trusting os.access: on
+    # FUSE/NFS-style mounts the mode bits can claim writable while every
+    # actual write fails with EROFS.
+    source_writable = False
+    if source == "tree":
+        tmp_path = workflow_path + ".dapi-tmp"
+        try:
+            with open(tmp_path, "w") as f:
+                f.write(workflow_text)
+            os.replace(tmp_path, workflow_path)
+            source_writable = True
+            logger.debug(f"Updated remoteAppDir in {workflow_path}")
+        except OSError:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+    if not source_writable:
+        logger.debug(
+            "Source is read-only; remoteAppDir patch applied to the staged copy"
+        )
 
     uq = workflow.get("UQ", {})
     summary = {
@@ -182,9 +199,9 @@ def prepare_inputs(
         "edps": [edp["name"] for edp in workflow.get("EDP", [])],
         "staged_dir": input_dir,
     }
-    print(f"UQ engine: {summary['uq_engine']} ({summary['uq_type']})")
-    print(f"Random variables: {summary['random_variables']}")
-    print(f"EDPs: {summary['edps']}")
+    logger.debug(f"UQ engine: {summary['uq_engine']} ({summary['uq_type']})")
+    logger.debug(f"Random variables: {summary['random_variables']}")
+    logger.debug(f"EDPs: {summary['edps']}")
 
     if bundle:
         staged = staged_dir or _default_staged_dir(input_dir)
@@ -214,7 +231,7 @@ def prepare_inputs(
             f.write(workflow_text)
         summary["staged_dir"] = staged
         summary["workflow_json"] = staged_workflow
-        print(f"Read-only input; patched copy staged at {staged}")
+        logger.debug(f"Read-only input; patched copy staged at {staged}")
     return summary
 
 
@@ -228,12 +245,22 @@ def _default_staged_dir(input_dir: str) -> str:
     """
     input_dir = os.path.abspath(input_dir.rstrip("/"))
     parent = os.path.dirname(input_dir)
-    if os.access(parent, os.W_OK):
-        return input_dir + "_staged"
+    sibling = input_dir + "_staged"
+    # Probe with a real write rather than os.access: FUSE/NFS-style mounts
+    # can report writable mode bits while every write fails with EROFS.
+    try:
+        os.makedirs(sibling, exist_ok=True)
+        probe = os.path.join(sibling, ".dapi-write-probe")
+        with open(probe, "w") as f:
+            f.write("")
+        os.remove(probe)
+        return sibling
+    except OSError:
+        pass
     base = os.path.basename(input_dir) + "_staged"
     staged = os.path.join(tempfile.mkdtemp(prefix="dapi-staging-"), base)
-    print(f"'{parent}' is not writable (e.g. CommunityData); staging to {staged}")
-    print(
+    logger.info(f"'{parent}' is not writable (e.g. CommunityData); staging to {staged}")
+    logger.debug(
         "This is a local temporary directory. ds.jobs.prepare_inputs uploads "
         "it to /MyData/dapi-staging/ automatically; if calling "
         "dapi.simcenter.prepare_inputs directly, upload the bundle yourself "
@@ -287,8 +314,8 @@ def _bundle_inputs(
         elif os.path.isdir(src) and os.path.abspath(src) != os.path.abspath(staged):
             shutil.copytree(src, dst, dirs_exist_ok=True)
 
-    print(f"Bundled {bundled_files} files into {zip_path}")
-    print(f"Stage this directory: {staged}")
+    logger.info(f"Bundled {bundled_files} files into {zip_path}")
+    logger.debug(f"Stage this directory: {staged}")
     return {"staged_dir": staged, "bundle": zip_path, "bundled_files": bundled_files}
 
 
@@ -330,8 +357,8 @@ def _rewrite_bundle(
         ):
             shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
 
-    print(f"Rewrote workflow entry in reused bundle: {zip_path}")
-    print(f"Stage this directory: {staged_dir}")
+    logger.info(f"Rewrote workflow entry in reused bundle: {zip_path}")
+    logger.debug(f"Stage this directory: {staged_dir}")
     return {
         "staged_dir": staged_dir,
         "bundle": zip_path,
@@ -486,7 +513,7 @@ def get_results(
     archive_path = os.path.normpath(
         os.path.join(details.archiveSystemDir, results_filename)
     ).lstrip("/")
-    print(
+    logger.debug(
         f"Fetching '{results_filename}' from system "
         f"'{details.archiveSystemId}' path '{archive_path}'..."
     )
@@ -524,9 +551,9 @@ def get_results(
     dakota_out = dakota_bytes.decode(errors="replace") if dakota_bytes else ""
     sobol_indices = parse_sensitivity_indices(dakota_out) if dakota_out else None
 
-    print(f"Parsed {len(samples)} samples from dakotaTab.out.")
+    logger.debug(f"Parsed {len(samples)} samples from dakotaTab.out.")
     if sobol_indices is not None:
-        print(f"Parsed Sobol indices for {len(sobol_indices)} outputs.")
+        logger.debug(f"Parsed Sobol indices for {len(sobol_indices)} outputs.")
     return SimCenterResults(
         samples=samples,
         dakota_out=dakota_out,

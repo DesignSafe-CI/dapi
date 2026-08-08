@@ -16,6 +16,10 @@ from typing import Dict, Optional
 from .config import db_config
 from .db import DSDatabase
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class DatabaseAccessor:
     """Provides lazy access to different DesignSafe database connections via properties.
@@ -59,7 +63,7 @@ class DatabaseAccessor:
         self._connections: Dict[str, Optional[DSDatabase]] = {
             key: None for key in db_config.keys()
         }
-        print(
+        logger.debug(
             "DatabaseAccessor initialized. Connections will be created on first access."
         )
 
@@ -86,12 +90,12 @@ class DatabaseAccessor:
             )
 
         if self._connections[dbname] is None:
-            print(f"First access to '{dbname}', initializing DSDatabase...")
+            logger.debug(f"First access to '{dbname}', initializing DSDatabase...")
             try:
                 self._connections[dbname] = DSDatabase(dbname=dbname)
             except Exception as e:
                 self._connections[dbname] = None
-                print(f"Error initializing database '{dbname}': {e}")
+                logger.error(f"Error initializing database '{dbname}': {e}")
                 raise
         # Type hint assertion
         return self._connections[dbname]  # type: ignore
@@ -174,7 +178,7 @@ class DatabaseAccessor:
             Closing connection pool for database 'sjbrande_vpdb'.
             Closed 2 database engine(s).
         """
-        print("Closing all active database engines/pools...")
+        logger.debug("Closing all active database engines/pools...")
         closed_count = 0
         for dbname, db_instance in self._connections.items():
             if db_instance is not None:
@@ -186,8 +190,8 @@ class DatabaseAccessor:
                     )
                     closed_count += 1
                 except Exception as e:
-                    print(f"Error closing engine for '{dbname}': {e}")
+                    logger.error(f"Error closing engine for '{dbname}': {e}")
         if closed_count == 0:
-            print("No active database engines to close.")
+            logger.debug("No active database engines to close.")
         else:
-            print(f"Closed {closed_count} database engine(s).")
+            logger.debug(f"Closed {closed_count} database engine(s).")

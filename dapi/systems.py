@@ -5,6 +5,10 @@ from tapipy.errors import BaseTapyException, UnauthorizedError, NotFoundError
 from typing import Dict, List, Any, Optional, Union
 from .exceptions import SystemInfoError, CredentialError
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 # Known DesignSafe system categories
 _KNOWN_HPC = {"stampede3", "frontera", "ls6", "vista"}
@@ -288,7 +292,7 @@ def establish_credentials(
     if not force:
         if check_credentials(t, system_id, effective_username):
             if verbose:
-                print(
+                logger.debug(
                     f"Credentials already exist for user '{effective_username}' "
                     f"on system '{system_id}'. No action taken."
                 )
@@ -302,7 +306,7 @@ def establish_credentials(
             createTmsKeys=True,
         )
         if verbose:
-            print(
+            logger.debug(
                 f"TMS credentials established for user '{effective_username}' "
                 f"on system '{system_id}'."
             )
@@ -346,13 +350,13 @@ def revoke_credentials(
     try:
         t.systems.removeUserCredential(systemId=system_id, userName=effective_username)
         if verbose:
-            print(
+            logger.debug(
                 f"Credentials revoked for user '{effective_username}' "
                 f"on system '{system_id}'."
             )
     except (UnauthorizedError, NotFoundError):
         if verbose:
-            print(
+            logger.debug(
                 f"No credentials found for user '{effective_username}' "
                 f"on system '{system_id}'. No action taken."
             )
@@ -395,7 +399,7 @@ def setup_tms_credentials(
 
     username = getattr(t, "username", None)
     if not username:
-        print("Warning: Could not determine username. Skipping TMS setup.")
+        logger.warning("Warning: Could not determine username. Skipping TMS setup.")
         return {s: "skipped" for s in systems}
 
     results = {}
@@ -435,8 +439,8 @@ def setup_tms_credentials(
         msg = f"TMS credentials ready: {', '.join(ready)}"
         if created:
             msg += f" (newly created: {', '.join(created)})"
-        print(msg)
+        logger.info(msg)
     if skipped:
-        print(f"TMS credentials skipped: {', '.join(skipped)}")
+        logger.debug(f"TMS credentials skipped: {', '.join(skipped)}")
 
     return results

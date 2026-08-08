@@ -27,6 +27,10 @@ from sqlalchemy import text
 
 from .config import db_config
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class DSDatabase:
     """Manages connection and querying for a specific DesignSafe database.
@@ -88,7 +92,7 @@ class DSDatabase:
         self.db = config["dbname"]
         self.dbname_short = dbname  # Store shorthand name for reference
 
-        print(
+        logger.debug(
             f"Creating SQLAlchemy engine for database '{self.db}' ({self.dbname_short})..."
         )
         # Setup the database connection engine with pooling
@@ -99,7 +103,7 @@ class DSDatabase:
         )
         # Create a configured "Session" class
         self.Session = sessionmaker(bind=self.engine)
-        print(f"Engine for '{self.dbname_short}' created.")
+        logger.debug(f"Engine for '{self.dbname_short}' created.")
 
     def read_sql(self, sql, output_type="DataFrame"):
         """Execute a SQL query using a dedicated session and return the results.
@@ -143,7 +147,7 @@ class DSDatabase:
 
         # Obtain a new session for this query
         session = self.Session()
-        print(f"Executing query on '{self.dbname_short}'...")
+        logger.debug(f"Executing query on '{self.dbname_short}'...")
         try:
             if output_type == "DataFrame":
                 # pandas read_sql_query handles connection/session management implicitly sometimes,
@@ -162,10 +166,14 @@ class DSDatabase:
                 ]  # Use ._mapping for modern SQLAlchemy
                 return data
         except exc.SQLAlchemyError as e:
-            print(f"SQLAlchemyError executing query on '{self.dbname_short}': {e}")
+            logger.debug(
+                f"SQLAlchemyError executing query on '{self.dbname_short}': {e}"
+            )
             raise  # Re-raise the exception
         except Exception as e:
-            print(f"Unexpected error executing query on '{self.dbname_short}': {e}")
+            logger.debug(
+                f"Unexpected error executing query on '{self.dbname_short}': {e}"
+            )
             raise
         finally:
             # Ensure the session is closed, returning the connection to the pool
@@ -191,9 +199,11 @@ class DSDatabase:
             Engine for 'ngl' disposed.
         """
         if self.engine:
-            print(f"Disposing engine and closing pool for '{self.dbname_short}'...")
+            logger.debug(
+                f"Disposing engine and closing pool for '{self.dbname_short}'..."
+            )
             self.engine.dispose()
             self.engine = None  # Mark as disposed
-            print(f"Engine for '{self.dbname_short}' disposed.")
+            logger.debug(f"Engine for '{self.dbname_short}' disposed.")
         else:
-            print(f"Engine for '{self.dbname_short}' already disposed.")
+            logger.debug(f"Engine for '{self.dbname_short}' already disposed.")

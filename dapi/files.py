@@ -7,6 +7,10 @@ from tapipy.errors import BaseTapyException
 from .exceptions import FileOperationError, AuthenticationError
 from typing import List
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def _safe_quote(path: str) -> str:
     """Safely URL-encode a path, avoiding double encoding.
@@ -232,7 +236,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
             else:
                 tapis_path = path_remainder
             input_uri = f"tapis://{storage_system_id}/{tapis_path}"
-            print(f"Translated '{path}' to '{input_uri}' using t.username")
+            logger.debug(f"Translated '{path}' to '{input_uri}' using t.username")
             break  # Found match, exit loop
 
     # 2. Handle Community variations (if not already matched)
@@ -247,7 +251,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                 path_remainder = path.split(pattern, 1)[1].lstrip("/")
                 tapis_path = path_remainder
                 input_uri = f"tapis://{storage_system_id}/{tapis_path}"
-                print(f"Translated '{path}' to '{input_uri}'")
+                logger.debug(f"Translated '{path}' to '{input_uri}'")
                 break  # Found match, exit loop
 
     # 3. Handle NHERI-Published variations (if not already matched)
@@ -261,7 +265,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
             if pattern in path:
                 path_remainder = path.split(pattern, 1)[1].lstrip("/")
                 input_uri = f"tapis://{storage_system_id}/{path_remainder}"
-                print(f"Translated '{path}' to '{input_uri}'")
+                logger.debug(f"Translated '{path}' to '{input_uri}'")
                 break
 
     # 4. Handle NEES variations (if not already matched)
@@ -275,7 +279,7 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
             if pattern in path:
                 path_remainder = path.split(pattern, 1)[1].lstrip("/")
                 input_uri = f"tapis://{storage_system_id}/{path_remainder}"
-                print(f"Translated '{path}' to '{input_uri}'")
+                logger.debug(f"Translated '{path}' to '{input_uri}'")
                 break
 
     # 5. Handle Project variations (if not already matched)
@@ -316,12 +320,12 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
                     )
 
                 input_uri = f"tapis://{found_system_id}/{path_within_project}"
-                print(f"Translated '{path}' to '{input_uri}'")
+                logger.debug(f"Translated '{path}' to '{input_uri}'")
                 break
 
     # 4. Handle direct tapis:// URI input (if not already matched)
     if input_uri is None and path.startswith("tapis://"):
-        print(f"Path '{path}' is already a Tapis URI.")
+        logger.debug(f"Path '{path}' is already a Tapis URI.")
         input_uri = path
 
     # Check if any pattern matched
@@ -332,19 +336,19 @@ def get_ds_path_uri(t: Tapis, path: str, verify_exists: bool = False) -> str:
 
     # Verification Step
     if verify_exists:
-        print(f"Verifying existence of translated path: {input_uri}")
+        logger.debug(f"Verifying existence of translated path: {input_uri}")
         try:
             system_id, remote_path = _parse_tapis_uri(input_uri)
             # The Tapis API expects URL-encoded paths when they contain spaces or special characters
             encoded_remote_path = _safe_quote(remote_path)
-            print(f"Checking system '{system_id}' for path '{remote_path}'...")
+            logger.debug(f"Checking system '{system_id}' for path '{remote_path}'...")
             # Use limit=1 for efficiency, we only care if it *exists*
             # Note: listFiles might return successfully for the *parent* directory
             # if the final component doesn't exist. A more robust check might
             # involve checking the result count or specific item name, but this
             # basic check catches non-existent parent directories.
             t.files.listFiles(systemId=system_id, path=encoded_remote_path, limit=1)
-            print("Verification successful: Path exists.")
+            logger.debug("Verification successful: Path exists.")
         except BaseTapyException as e:
             # Specifically check for 404 on the listFiles call
             if hasattr(e, "response") and e.response and e.response.status_code == 404:
@@ -395,7 +399,7 @@ def upload_file(t: Tapis, local_path: str, remote_uri: str):
         raise ValueError(f"Local path '{local_path}' is not a file.")
     try:
         system_id, dest_path = _parse_tapis_uri(remote_uri)
-        print(
+        logger.debug(
             f"Uploading '{local_path}' to system '{system_id}' at path '{dest_path}'..."
         )
         # URL-encode the destination path for API call
@@ -405,7 +409,7 @@ def upload_file(t: Tapis, local_path: str, remote_uri: str):
             source_file_path=local_path,
             dest_file_path=encoded_dest_path,
         )
-        print("Upload complete.")
+        logger.debug("Upload complete.")
     except BaseTapyException as e:
         raise FileOperationError(
             f"Tapis upload failed for '{local_path}' to '{remote_uri}': {e}"
@@ -441,7 +445,7 @@ def download_file(t: Tapis, remote_uri: str, local_path: str):
         )
     try:
         system_id, source_path = _parse_tapis_uri(remote_uri)
-        print(
+        logger.debug(
             f"Downloading from system '{system_id}' path '{source_path}' to '{local_path}'..."
         )
         local_dir = os.path.dirname(local_path)
@@ -468,7 +472,7 @@ def download_file(t: Tapis, remote_uri: str, local_path: str):
                     f"Unexpected content type {type(content)} downloading '{remote_uri}'."
                 )
 
-        print("Download complete.")
+        logger.debug("Download complete.")
 
     except BaseTapyException as e:
         if hasattr(e, "response") and e.response and e.response.status_code == 404:
@@ -513,13 +517,13 @@ def list_files(
         system_id, path = _parse_tapis_uri(remote_uri)
         if not path:
             path = "/"
-        print(f"Listing files in system '{system_id}' at path '{path}'...")
+        logger.debug(f"Listing files in system '{system_id}' at path '{path}'...")
         # URL-encode the path for API call
         encoded_path = _safe_quote(path)
         results = t.files.listFiles(
             systemId=system_id, path=encoded_path, limit=limit, offset=offset
         )
-        print(f"Found {len(results)} items.")
+        logger.debug(f"Found {len(results)} items.")
         return results
     except BaseTapyException as e:
         if hasattr(e, "response") and e.response and e.response.status_code == 404:

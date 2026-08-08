@@ -1,8 +1,14 @@
 # Changelog
 
-## Unreleased
+## v0.5.7
+
+### Fixed
+
+- **Read-only detection hardened for FUSE/NFS-style mounts** (the JupyterHub CommunityData mount reports writable mode bits while writes fail with `EROFS`): writability is now determined by attempting the operation, not by `os.access`. The workflow-JSON patch writes atomically (temp file + `os.replace`) so a failing mount can never truncate the source, and the staging-directory choice probes with a real write before using the sibling `_staged` location.
 
 ### New features
+
+- **Leveled logging with a global verbosity control**: dapi's console output now goes through Python's standard `logging` (`dapi.*` loggers) instead of bare prints. The default `INFO` level reports concise milestones only (staging relocation, bundle built, upload done, job submitted, monitoring start); the step-by-step trace users saw before (path translations, per-file transfers, request construction, profile dispatch) moved to `DEBUG`. Control it with `dapi.set_log_level("DEBUG"|"INFO"|"WARNING"|"ERROR"|"QUIET")` or the `DAPI_LOG_LEVEL` environment variable. The handler writes to stdout so output renders normally in Jupyter (no red stderr boxes) and stays in order with prints and progress bars; applications can silence or reroute the `dapi` logger with standard `logging` configuration. Explicit display functions (`print_runtime_summary`, `interpret_status`, `apps.find(verbose=True)`) still print directly.
 
 - **`ds.jobs.prepare_inputs` always returns a stageable `staged_dir`**: when local staging lands somewhere Tapis cannot see (the temp-dir fallback for read-only sources, or any local-machine path), the staged files are uploaded automatically over the Tapis files API — a remote upload to `tapis://designsafe.storage.default/<username>/...`; no MyData mount or Jupyter environment is assumed — and `staged_dir` is returned as the DesignSafe path, so `ds.files.to_uri(info["staged_dir"])` works unchanged everywhere. The local copy is reported as `local_staged_dir`.
 - New `staging_destination` parameter on `ds.jobs.prepare_inputs` (default `/MyData/dapi-staging`): any translatable DesignSafe path, e.g. a project path, receives the auto-upload instead.

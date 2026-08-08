@@ -5,6 +5,10 @@ from tapipy.errors import BaseTapyException
 from dotenv import load_dotenv
 from .exceptions import AuthenticationError
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def init(
     base_url: str = "https://designsafe.tapis.io",
@@ -98,7 +102,7 @@ def init(
 
         # Attempt to get tokens to verify credentials
         t.get_tokens()
-        print("Authentication successful.")
+        logger.info("Authentication successful.")
         return t
 
     except BaseTapyException as e:

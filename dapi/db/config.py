@@ -23,6 +23,10 @@ Example:
     - NGL_DB_PORT
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # Mapping of shorthand names to actual database names and environment prefixes
 db_config = {
     "ngl": {"dbname": "sjbrande_ngl_db", "env_prefix": "NGL_"},

@@ -18,6 +18,10 @@ from .exceptions import (
     AppDiscoveryError,
 )
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # --- Module-Level Status Constants ---
 STATUS_TIMEOUT = "TIMEOUT"
 STATUS_INTERRUPTED = "INTERRUPTED"
@@ -189,7 +193,7 @@ def generate_job_request(
             parameterSet.
         JobSubmissionError: If unexpected errors occur during job request generation.
     """
-    print(f"Generating job request for app '{app_id}'...")
+    logger.debug(f"Generating job request for app '{app_id}'...")
     try:
         app_details = get_app_details(tapis_client, app_id, app_version, verbose=False)
         if not app_details:
@@ -197,7 +201,7 @@ def generate_job_request(
                 f"App '{app_id}' (Version: {app_version or 'latest'}) not found."
             )
         final_app_version = app_details.version
-        print(f"Using App Details: {app_details.id} v{final_app_version}")
+        logger.debug(f"Using App Details: {app_details.id} v{final_app_version}")
         job_attrs = app_details.jobAttributes
         param_set_def = getattr(job_attrs, "parameterSet", None)
         final_job_name = (
@@ -291,7 +295,7 @@ def generate_job_request(
                     main_input_automount = getattr(fi_def, "autoMountLocal", True)
                     actual_input_param_name = getattr(fi_def, "name", "")
                     found_input_def = True
-                    print(
+                    logger.debug(
                         f"Found exact match for input parameter: '{actual_input_param_name}'"
                     )
                     break
@@ -311,7 +315,7 @@ def generate_job_request(
                         main_input_automount = getattr(fi_def, "autoMountLocal", True)
                         actual_input_param_name = fi_name
                         found_input_def = True
-                        print(
+                        logger.debug(
                             f"Auto-detected input parameter: '{actual_input_param_name}' (provided: '{input_dir_param_name}')"
                         )
                         break
@@ -323,12 +327,12 @@ def generate_job_request(
                     main_input_automount = getattr(fi_def, "autoMountLocal", True)
                     actual_input_param_name = getattr(fi_def, "name", "")
                     found_input_def = True
-                    print(
+                    logger.debug(
                         f"Using first available fileInput: '{actual_input_param_name}' (no match found for '{input_dir_param_name}')"
                     )
 
         if not found_input_def:
-            print(
+            logger.warning(
                 f"Warning: No fileInputs found in app definition. Using provided name '{input_dir_param_name}'"
             )
 
@@ -354,7 +358,7 @@ def generate_job_request(
                 for arg_def in param_set_def.appArgs:
                     arg_name = getattr(arg_def, "name", "")
                     if arg_name in script_param_names:
-                        print(
+                        logger.debug(
                             f"Placing script '{script_filename}' in appArgs: '{arg_name}'"
                         )
                         job_req["parameterSet"]["appArgs"].append(
@@ -372,7 +376,7 @@ def generate_job_request(
                 for var_def in param_set_def.envVariables:
                     var_key = getattr(var_def, "key", "")
                     if var_key in script_param_names:
-                        print(
+                        logger.debug(
                             f"Placing script '{script_filename}' in envVariables: '{var_key}'"
                         )
                         job_req["parameterSet"]["envVariables"].append(
@@ -399,7 +403,9 @@ def generate_job_request(
                     f"App's defined envVariables keys: {defined_env_var_keys}."
                 )
         else:
-            print("script_filename is None, skipping script parameter placement.")
+            logger.debug(
+                "script_filename is None, skipping script parameter placement."
+            )
 
         # --- Auto-detect and add required parameters from app definition ---
         # Process appArgs first - add all required appArgs that aren't provided by user
@@ -432,14 +438,14 @@ def generate_job_request(
 
                     if not user_provided and not already_added:
                         if default_value:
-                            print(
+                            logger.debug(
                                 f"Auto-adding required appArg '{arg_name}' with default: '{default_value}'"
                             )
                             job_req["parameterSet"]["appArgs"].append(
                                 {"name": arg_name, "arg": default_value}
                             )
                         else:
-                            print(
+                            logger.warning(
                                 f"Warning: Required appArg '{arg_name}' has no default value."
                             )
 
@@ -483,15 +489,15 @@ def generate_job_request(
                             and isinstance(enum_values, dict)
                         ):
                             value_to_use = list(enum_values.keys())[0]
-                            print(
+                            logger.debug(
                                 f"Auto-setting required env var '{var_key}' to first available option: '{value_to_use}'"
                             )
                         elif value_to_use:
-                            print(
+                            logger.debug(
                                 f"Auto-setting required env var '{var_key}' to default: '{value_to_use}'"
                             )
                         else:
-                            print(
+                            logger.warning(
                                 f"Warning: Required env var '{var_key}' has no default value."
                             )
                             continue
@@ -534,7 +540,7 @@ def generate_job_request(
                         and getattr(sched_opt_def, "inputMode", None) == "FIXED"
                     ):
                         allocation_is_fixed_by_app = True
-                        print(
+                        logger.warning(
                             f"Warning: App definition marks '{allocation_param_name}' as FIXED with value '{getattr(sched_opt_def, 'arg', '')}'. "
                             f"User-provided allocation '{allocation}' will be ignored."
                         )
@@ -549,7 +555,7 @@ def generate_job_request(
                     if getattr(opt, "name", opt.get("name"))
                     != allocation_param_name  # Handle both Tapis objects and dicts
                 ]
-                print(f"Adding/Updating TACC allocation: {allocation}")
+                logger.debug(f"Adding/Updating TACC allocation: {allocation}")
                 job_req["parameterSet"]["schedulerOptions"].append(
                     {"name": allocation_param_name, "arg": f"-A {allocation}"}
                 )
@@ -558,13 +564,13 @@ def generate_job_request(
             for extra_opt in extra_scheduler_options:
                 opt_name = extra_opt.get("name")
                 if opt_name and opt_name in fixed_sched_opt_names:
-                    print(
+                    logger.warning(
                         f"Warning: Skipping user-provided scheduler option '{opt_name}' because it is marked as FIXED in the app definition."
                     )
                 else:
                     # Avoid duplicates if user tries to override allocation via extra_scheduler_options
                     if opt_name == allocation_param_name and allocation:
-                        print(
+                        logger.debug(
                             f"Note: Allocation '{allocation}' is already being handled. Skipping duplicate allocation from extra_scheduler_options."
                         )
                         continue
@@ -586,17 +592,17 @@ def generate_job_request(
         # declared in the app definition (e.g. SimCenter apps).
         profile = profiles.find(app_details.id)
         if profile is not None:
-            print(f"Applying '{profile.name}' app profile adjustments.")
+            logger.debug(f"Applying '{profile.name}' app profile adjustments.")
             final_job_req = profile.finalize_job_request(final_job_req)
 
-        print("Job request dictionary generated successfully.")
+        logger.debug("Job request dictionary generated successfully.")
         return final_job_req
 
     except (AppDiscoveryError, ValueError) as e:
-        print(f"ERROR: Failed to generate job request: {e}")
+        logger.error(f"ERROR: Failed to generate job request: {e}")
         raise
     except Exception as e:
-        print(f"ERROR: Unexpected error generating job request: {e}")
+        logger.error(f"ERROR: Unexpected error generating job request: {e}")
         raise JobSubmissionError(f"Unexpected error generating job request: {e}") from e
 
 
@@ -636,14 +642,14 @@ def prepare_job_inputs(app_id: str, input_dir: str, **options: Any) -> Dict[str,
         raise ValueError(f"Input directory '{input_dir}' does not exist.")
     profile = profiles.find(app_id)
     if profile is None:
-        print(f"App '{app_id}' requires no input preparation.")
+        logger.debug(f"App '{app_id}' requires no input preparation.")
         return {
             "app_id": app_id,
             "input_dir": input_dir,
             "prepared": False,
             "staged_dir": input_dir,
         }
-    print(f"Preparing inputs with '{profile.name}' app profile.")
+    logger.debug(f"Preparing inputs with '{profile.name}' app profile.")
     return profile.prepare_inputs(input_dir, app_id=app_id, **options)
 
 
@@ -684,22 +690,22 @@ def submit_job_request(
     """
     if not isinstance(job_request, dict):
         raise ValueError("Input 'job_request' must be a dictionary.")
-    print("\n--- Submitting Tapis Job Request ---")
-    print(json.dumps(job_request, indent=2, default=str))
-    print("------------------------------------")
+    logger.debug("\n--- Submitting Tapis Job Request ---")
+    logger.debug(json.dumps(job_request, indent=2, default=str))
+    logger.debug("------------------------------------")
     try:
         submitted = tapis_client.jobs.submitJob(**job_request)
-        print(f"Job submitted successfully. UUID: {submitted.uuid}")
+        logger.info(f"Job submitted successfully. UUID: {submitted.uuid}")
         return SubmittedJob(tapis_client, submitted.uuid)
     except BaseTapyException as e:
-        print(f"ERROR: Tapis job submission API call failed: {e}")
+        logger.error(f"ERROR: Tapis job submission API call failed: {e}")
         raise JobSubmissionError(
             f"Tapis job submission failed: {e}",
             request=getattr(e, "request", None),
             response=getattr(e, "response", None),
         ) from e
     except Exception as e:
-        print(f"ERROR: Unexpected error during job submission: {e}")
+        logger.error(f"ERROR: Unexpected error during job submission: {e}")
         raise JobSubmissionError(f"Unexpected error during job submission: {e}") from e
 
 
@@ -851,12 +857,12 @@ class SubmittedJob:
                 return str(message).strip() if str(message).strip() else None
             return None
         except JobMonitorError as e:
-            print(
+            logger.debug(
                 f"Could not retrieve job details to get last_message for job {self.uuid}: {e}"
             )
             return None
         except Exception as e:
-            print(
+            logger.debug(
                 f"An unexpected error occurred while fetching last_message for job {self.uuid}: {e}"
             )
             return None
@@ -900,7 +906,7 @@ class SubmittedJob:
         pbar_waiting = None
         pbar_monitoring = None
 
-        print(f"\nMonitoring Job: {self.uuid}")  # Print Job ID once at the start
+        logger.info(f"\nMonitoring Job: {self.uuid}")  # Print Job ID once at the start
 
         try:
             # Fetch initial details
@@ -912,7 +918,7 @@ class SubmittedJob:
             )
 
             if effective_timeout_minutes <= 0:
-                print(
+                logger.debug(
                     f"Job has maxMinutes <= 0 ({details.maxMinutes}). Monitoring indefinitely or until terminal state."
                 )
                 timeout_seconds = float("inf")
@@ -1019,10 +1025,10 @@ class SubmittedJob:
 
             # --- Handle Other Cases ---
             elif current_status in self.TERMINAL_STATES:
-                print(f"Job already in terminal state: {current_status}")
+                logger.debug(f"Job already in terminal state: {current_status}")
                 return current_status
             else:
-                print(
+                logger.debug(
                     f"Job in unexpected initial state '{current_status}'. Monitoring stopped."
                 )
                 return current_status
@@ -1030,13 +1036,13 @@ class SubmittedJob:
             return current_status  # Should be a terminal state if loops finished
 
         except KeyboardInterrupt:
-            print("\nMonitoring interrupted by user.")
+            logger.debug("\nMonitoring interrupted by user.")
             return STATUS_INTERRUPTED
         except JobMonitorError as e:
-            print(f"\nError during monitoring: {e}")
+            logger.debug(f"\nError during monitoring: {e}")
             return STATUS_MONITOR_ERROR
         except Exception as e:
-            print(f"\nUnexpected error during monitoring: {e}")
+            logger.debug(f"\nUnexpected error during monitoring: {e}")
             return STATUS_MONITOR_ERROR
         finally:
             # Safely close progress bars
@@ -1269,7 +1275,9 @@ class SubmittedJob:
             >>> # Require file to exist (raise error if missing)
             >>> results = job.get_output_content("results.txt", missing_ok=False)
         """
-        print(f"Attempting to fetch content of '{output_filename}' from job archive...")
+        logger.debug(
+            f"Attempting to fetch content of '{output_filename}' from job archive..."
+        )
         details = self._get_details()  # Ensure details are loaded
         if not details.archiveSystemId or not details.archiveSystemDir:
             raise FileOperationError(
@@ -1305,19 +1313,21 @@ class SubmittedJob:
                 if len(lines) > max_lines:
                     # Slice to get the last max_lines
                     content_str = "\n".join(lines[-max_lines:])
-                    print(f"Returning last {max_lines} lines of '{output_filename}'.")
+                    logger.debug(
+                        f"Returning last {max_lines} lines of '{output_filename}'."
+                    )
                 else:
-                    print(
+                    logger.debug(
                         f"File '{output_filename}' has {len(lines)} lines (less than/equal to max_lines={max_lines}). Returning full content."
                     )
             else:
-                print(f"Returning full content of '{output_filename}'.")
+                logger.debug(f"Returning full content of '{output_filename}'.")
             return content_str
 
         except BaseTapyException as e:
             if hasattr(e, "response") and e.response and e.response.status_code == 404:
                 if missing_ok:
-                    print(
+                    logger.debug(
                         f"Output file '{output_filename}' not found in archive (missing_ok=True). Path: {details.archiveSystemId}/{full_archive_path}"
                     )
                     return None
@@ -1434,7 +1444,7 @@ class SubmittedJob:
                 raise DapiException(
                     f"Failed to share job {self.uuid} with '{grantee}': {e}"
                 ) from e
-            print(f"Shared job {self.uuid} with '{grantee}' (READ).")
+            logger.info(f"Shared job {self.uuid} with '{grantee}' (READ).")
         return {
             "job_uuid": self.uuid,
             "grantees": grantees,
@@ -1491,21 +1501,21 @@ class SubmittedJob:
             Attempting to cancel job 12345678-1234-1234-1234-123456789abc...
             Cancel request sent for job 12345678-1234-1234-1234-123456789abc. Status may take time to update.
         """
-        print(f"Attempting to cancel job {self.uuid}...")
+        logger.info(f"Attempting to cancel job {self.uuid}...")
         try:
             self._tapis.jobs.cancelJob(jobUuid=self.uuid)
-            print(
+            logger.debug(
                 f"Cancel request sent for job {self.uuid}. Status may take time to update."
             )
             self._last_status = "CANCELLED"
             self._job_details = None
         except BaseTapyException as e:
             if hasattr(e, "response") and e.response and e.response.status_code == 400:
-                print(
+                logger.debug(
                     f"Could not cancel job {self.uuid}. It might already be in a terminal state. Fetching status..."
                 )
                 self.get_status(force_refresh=True)
-                print(f"Current status: {self.status}")
+                logger.debug(f"Current status: {self.status}")
             else:
                 raise JobMonitorError(
                     f"Failed to send cancel request for job {self.uuid}: {e}"
@@ -1680,7 +1690,7 @@ def list_jobs(
 
     if not jobs_list:
         if verbose:
-            print("Found 0 jobs.")
+            logger.debug("Found 0 jobs.")
         if output == "raw":
             return []
         if output == "list":
@@ -1697,7 +1707,7 @@ def list_jobs(
                 j for j in results if getattr(j, "status", "").upper() == status.upper()
             ]
         if verbose:
-            print(f"Found {len(results)} jobs.")
+            logger.debug(f"Found {len(results)} jobs.")
         return results
 
     # Convert TapisResult objects to dicts
@@ -1712,7 +1722,7 @@ def list_jobs(
         ]
 
     if verbose:
-        print(f"Found {len(jobs_dicts)} jobs.")
+        logger.debug(f"Found {len(jobs_dicts)} jobs.")
 
     if output == "list":
         return jobs_dicts

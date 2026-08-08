@@ -14,6 +14,10 @@ from .db.accessor import DatabaseAccessor
 from .jobs import SubmittedJob
 from typing import List, Optional, Dict, Any
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class DSClient:
     """Main client for interacting with DesignSafe resources via Tapis V3 using dapi.
@@ -83,7 +87,7 @@ class DSClient:
             if not isinstance(tapis_client, Tapis):
                 raise TypeError("tapis_client must be an instance of tapipy.Tapis")
             if not tapis_client.get_access_jwt():
-                print(
+                logger.warning(
                     "Warning: Provided tapis_client does not appear to be authenticated."
                 )
             self.tapis = tapis_client
@@ -807,7 +811,7 @@ class JobMethods:
         remote_ds_path = f"{staging_destination.rstrip('/')}/{base}"
         dest_uri = files_module.get_ds_path_uri(self._tapis, remote_ds_path)
         system_id, dest_root = dest_uri.replace("tapis://", "").split("/", 1)
-        print(
+        logger.info(
             f"Uploading staged files to your DesignSafe storage "
             f"({dest_uri}) via the Tapis files API — works from any "
             f"machine, no MyData mount required..."
@@ -834,7 +838,7 @@ class JobMethods:
                 uploaded += 1
         summary["local_staged_dir"] = local
         summary["staged_dir"] = remote_ds_path
-        print(f"Uploaded {uploaded} file(s); staged_dir is now {remote_ds_path}")
+        logger.info(f"Uploaded {uploaded} file(s); staged_dir is now {remote_ds_path}")
         return summary
 
     # Method to generate the request dictionary

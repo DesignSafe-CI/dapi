@@ -11,6 +11,7 @@ project:
         - file: docs/quickstart.md
         - file: docs/installation.md
         - file: docs/authentication.md
+        - file: docs/logging.md
     - title: User Guide
       children:
         - file: docs/jobs.md
