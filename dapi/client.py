@@ -765,9 +765,10 @@ class JobMethods:
         ``tapis://designsafe.storage.default/<username>/dapi-staging``, the
         storage every DesignSafe account has; this is a remote upload, not
         a local path — no MyData mount or Jupyter environment is assumed).
-        ``staged_dir`` is returned as that DesignSafe path so
-        ``ds.files.to_uri(info["staged_dir"])`` works unchanged, and the
-        local copy is reported as ``local_staged_dir``. Pass any
+        ``staged_dir`` is returned as the full ``tapis://`` URL —
+        ``ds.files.to_uri(info["staged_dir"])`` passes it through
+        unchanged — and the local copy is reported as
+        ``local_staged_dir``. Pass any
         translatable DesignSafe path (e.g. a project path) as
         *staging_destination* to upload elsewhere.
 
@@ -811,11 +812,7 @@ class JobMethods:
         remote_ds_path = f"{staging_destination.rstrip('/')}/{base}"
         dest_uri = files_module.get_ds_path_uri(self._tapis, remote_ds_path)
         system_id, dest_root = dest_uri.replace("tapis://", "").split("/", 1)
-        logger.info(
-            f"Uploading staged files to your DesignSafe storage "
-            f"({dest_uri}) via the Tapis files API — works from any "
-            f"machine, no MyData mount required..."
-        )
+        logger.info(f"Uploading staged files to {dest_uri} (Tapis files API)")
         made_dirs = set()
         uploaded = 0
         for walk_root, _dirs, walk_files in _os.walk(local):
@@ -837,8 +834,8 @@ class JobMethods:
                 )
                 uploaded += 1
         summary["local_staged_dir"] = local
-        summary["staged_dir"] = remote_ds_path
-        logger.info(f"Uploaded {uploaded} file(s); staged_dir is now {remote_ds_path}")
+        summary["staged_dir"] = dest_uri
+        logger.info(f"Uploaded {uploaded} file(s); staged_dir is {dest_uri}")
         return summary
 
     # Method to generate the request dictionary

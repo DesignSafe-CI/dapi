@@ -262,7 +262,7 @@ def _default_staged_dir(input_dir: str) -> str:
     logger.info(f"'{parent}' is not writable (e.g. CommunityData); staging to {staged}")
     logger.debug(
         "This is a local temporary directory. ds.jobs.prepare_inputs uploads "
-        "it to /MyData/dapi-staging/ automatically; if calling "
+        "it to your DesignSafe storage automatically; if calling "
         "dapi.simcenter.prepare_inputs directly, upload the bundle yourself "
         "with ds.files.upload before submitting."
     )

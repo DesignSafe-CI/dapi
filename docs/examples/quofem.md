@@ -75,7 +75,7 @@ input_uri = ds.files.to_uri(info["staged_dir"])
 
 - the workflow patch is applied inside the staged bundle (the source is never written),
 - the bundle is built in a local temporary directory (fast local disk, not the MyData mount),
-- and `ds.jobs.prepare_inputs` uploads it to `/MyData/dapi-staging/` via the files API, returning `staged_dir` as that DesignSafe path so `ds.files.to_uri(info["staged_dir"])` translates as usual.
+- and `ds.jobs.prepare_inputs` uploads it via the Tapis files API to your DesignSafe storage (`tapis://designsafe.storage.default/<username>/dapi-staging/`), returning `staged_dir` as that full `tapis://` URL — `ds.files.to_uri` passes it through unchanged.
 
 The local copy is reported as `info["local_staged_dir"]`. An input directory that already ships `tmpSimCenter.zip` is reused rather than recompressed — only its workflow JSON entry is rewritten.
 

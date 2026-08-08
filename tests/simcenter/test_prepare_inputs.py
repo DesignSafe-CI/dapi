@@ -232,7 +232,8 @@ class TestClientAutoUpload(unittest.TestCase):
 
                 # staged_dir rewritten to a translatable DesignSafe path
                 self.assertEqual(
-                    summary["staged_dir"], "/MyData/dapi-staging/DS_input_staged"
+                    summary["staged_dir"],
+                    "tapis://designsafe.storage.default/testuser/dapi-staging/DS_input_staged",
                 )
                 self.assertTrue(os.path.isdir(summary["local_staged_dir"]))
                 # the bundle was uploaded via the files API
@@ -279,7 +280,8 @@ class TestClientAutoUpload(unittest.TestCase):
             )
 
             self.assertEqual(
-                summary["staged_dir"], "/MyData/dapi-staging/DS_input_staged"
+                summary["staged_dir"],
+                "tapis://designsafe.storage.default/testuser/dapi-staging/DS_input_staged",
             )
             self.assertEqual(
                 summary["local_staged_dir"], os.path.join(root, "DS_input_staged")
@@ -300,7 +302,8 @@ class TestClientAutoUpload(unittest.TestCase):
             )
 
             self.assertEqual(
-                summary["staged_dir"], "/MyData/quofem-runs/DS_input_staged"
+                summary["staged_dir"],
+                "tapis://designsafe.storage.default/testuser/quofem-runs/DS_input_staged",
             )
             self.assertEqual(len(stub.uploads), 1)
             self.assertIn("testuser/quofem-runs/DS_input_staged", stub.uploads[0][2])

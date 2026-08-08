@@ -34,8 +34,8 @@ Example — the same read-only-source `prepare_inputs` call:
 # INFO (default)
 '/home/jupyter/CommunityData/...' is not writable (e.g. CommunityData); staging to /tmp/dapi-staging-.../DS_input_staged
 Bundled 12 files into /tmp/dapi-staging-.../DS_input_staged/tmpSimCenter.zip
-Uploading staged files to your DesignSafe storage (tapis://designsafe.storage.default/...) ...
-Uploaded 1 file(s); staged_dir is now /MyData/dapi-staging/DS_input_staged
+Uploading staged files to tapis://designsafe.storage.default/kks32/dapi-staging/DS_input_staged (Tapis files API)
+Uploaded 1 file(s); staged_dir is tapis://designsafe.storage.default/kks32/dapi-staging/DS_input_staged
 ```
 
 At `DEBUG` the run also traces each path translation and per-file transfer; at `QUIET` it prints nothing.
