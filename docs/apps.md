@@ -71,7 +71,7 @@ Returns `None` if the app doesn't exist (instead of raising).
 
 | App ID | Description |
 |---|---|
-| `designsafe-agnostic-app` | General-purpose Python, OpenSees, PyLauncher |
+| `python-s3` | General-purpose Python or any binary, PyLauncher, pre/post scripts |
 | `matlab-r2023a` | MATLAB |
 | `opensees-express` | OpenSees (serial) |
 | `opensees-mp-s3` | OpenSees (MPI parallel) |

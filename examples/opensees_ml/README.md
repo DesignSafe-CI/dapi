@@ -1,7 +1,7 @@
 # OpenSees ML Example
 
 A simple end-to-end ML workflow on DesignSafe using `dapi` and the
-`designsafe-agnostic-app`. Sweeps a 2D cantilever pushover in OpenSeesPy
+general-purpose `python-s3` app. Sweeps a 2D cantilever pushover in OpenSeesPy
 across `NodalMass × LCol × E`, then fits a linear regression that recovers
 `T = 2π·√(M·L³ / (3·E·I))` from the data.
 
@@ -17,8 +17,9 @@ synthetic OpenSees data so it needs no external dataset.
 | `cantilever.py`               | One PyLauncher task: runs an OpenSeesPy pushover, writes `metrics.json`. |
 | `aggregate_and_train.py`      | Aggregates `out_*/metrics.json` and fits the regression.            |
 | `postprocess.py`              | Renders diagnostic PDF/PNG (histograms, predicted-vs-truth, residuals, coefficients). |
-| `POST_JOB_SCRIPT.sh`          | Invokes `aggregate_and_train.py` and `postprocess.py` after PyLauncher finishes. |
-| `PIP_INSTALLS_FILE.txt`       | Extra packages (`scikit-learn`, `matplotlib`) installed inside the job. |
+| `setup.sh`                    | Pre-script (`PRE_SCRIPT`): copies the TACC-compiled `OpenSeesPy.so` into the job. |
+| `ml_post.sh`                  | Post-script (`POST_SCRIPT`): invokes `aggregate_and_train.py` and `postprocess.py` after PyLauncher finishes. |
+| `requirements.txt`            | Extra packages (`scikit-learn`, `matplotlib`) installed into the job's temp environment (`PIP_REQUIREMENTS`). |
 | `DS_OpenSees_ML_Example.ipynb`| Notebook: defines the sweep, submits via `dapi`, inspects outputs.  |
 
 ## How it runs
@@ -26,12 +27,18 @@ synthetic OpenSees data so it needs no external dataset.
 ```
 sweep grid ──► parametric_sweep.generate ──► runsList.txt + call_pylauncher.py
                                                        │
+                                             staged/inputs.zip (all 8 files,
+                                             ONE Tapis transfer instead of 8)
+                                                       │
                                                        ▼
-                                       designsafe-agnostic-app (Stampede3)
+                                       python-s3 (Stampede3)
+                                       ├─ inputs.zip expanded first (UNZIP_INPUTS)
+                                       ├─ setup.sh (PRE_SCRIPT): stages OpenSeesPy.so
+                                       ├─ requirements.txt (PIP_REQUIREMENTS): temp job venv
                                        ├─ Main: python3 call_pylauncher.py
                                        │   └─ N × cantilever.py tasks
                                        │       └─ out_*/metrics.json
-                                       └─ POST_JOB_SCRIPT.sh
+                                       └─ ml_post.sh (POST_SCRIPT, required)
                                            ├─ aggregate_and_train.py
                                            │   └─ ml_results/*.{json,csv,txt}
                                            └─ postprocess.py
@@ -59,3 +66,11 @@ open tmp_runs/ml_results/opensees_ml_diagnostics.pdf  # or .png
 ## Run on DesignSafe
 
 See `DS_OpenSees_ML_Example.ipynb`.
+
+Verified end-to-end on `python-s3` v1.0.0 (Stampede3, job
+`b1d13ae7-d2fc-4e06-9249-31b4e37384d0-007`): 75 tasks in 42 s across one SKX
+node, `coef = [0.500, 1.500, -0.500]`, `R² = 1.0` train and test.
+
+**Placeholder note:** the sweep uses `EMOD`, not `E` — with the default token
+placeholder style, a bare `E` would also match inside the `--E` flag and mangle
+the commands.

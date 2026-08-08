@@ -76,7 +76,7 @@ ds.jobs.parametric_sweep.generate(
 
 job = ds.jobs.parametric_sweep.submit(
     "/MyData/sweep_demo/",
-    app_id="designsafe-agnostic-app",
+    app_id="python-s3",
     allocation="your_allocation",
     node_count=1,
     cores_per_node=48,

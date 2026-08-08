@@ -71,6 +71,18 @@ edp_names = info["edps"]  # ['nCycles010_1', ...]
 input_uri = ds.files.to_uri(info["staged_dir"])
 ```
 
+**Running from CommunityData or a published dataset?** Read-only sources are handled automatically: the workflow patch is applied inside the staged bundle (the source is never written), and the bundle is built in a local temporary directory — fast, but not visible to Tapis, so push it to your storage once before submitting:
+
+```python
+info = ds.jobs.prepare_inputs(app_id, "/home/jupyter/CommunityData/.../DS_input")
+
+dest = ds.files.to_uri("/MyData/quofem-run1")
+ds.files.upload(info["bundle"], f"{dest}/tmpSimCenter.zip")
+input_uri = dest  # use as input_dir_uri below
+```
+
+An input directory that already ships `tmpSimCenter.zip` is reused rather than recompressed — only its workflow JSON entry is rewritten.
+
 ### Step 5: Generate Job Request
 
 The SimCenter app profile applies the wrapper contract automatically — no manual `envKey`, `targetPath`, or environment variable setup is needed.

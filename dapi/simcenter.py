@@ -27,6 +27,7 @@ import io
 import json
 import os
 import shutil
+import tempfile
 import zipfile
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
@@ -91,7 +92,17 @@ def prepare_inputs(
             ``tmpSimCenter.zip`` in a staging directory. Defaults to True.
             Pass False to stage the loose directory tree as before.
         staged_dir (str, optional): Where to place the bundle. Defaults to
-            ``<input_dir>_staged`` next to the input directory.
+            ``<input_dir>_staged`` next to the input directory; when that
+            location is not writable (e.g. CommunityData or a published
+            dataset), falls back to a local temporary directory — fast and
+            always writable, but not visible to Tapis, so upload the bundle
+            once with ``ds.files.upload(info["bundle"], ...)`` before
+            submitting. For read-only sources the workflow patch is applied
+            to the staged copy — the source is never written. An input
+            directory that already contains ``tmpSimCenter.zip`` (and no
+            ``tmp.SimCenter/`` tree) is reused rather than recompressed:
+            only its workflow JSON entry is rewritten into the staged
+            bundle.
 
     Returns:
         Dict[str, Any]: Summary of the prepared workflow with keys
@@ -118,28 +129,52 @@ def prepare_inputs(
                 f"Known apps: {sorted(DEFAULT_BACKEND_DIRS)}"
             )
 
+    workflow_relpath = f"tmp.SimCenter/templatedir/{input_filename}"
     workflow_path = os.path.join(
         input_dir, "tmp.SimCenter", "templatedir", input_filename
     )
-    if not os.path.isfile(workflow_path):
+    prebundled = os.path.join(input_dir, BUNDLE_NAME)
+
+    if os.path.isfile(workflow_path):
+        with open(workflow_path, "r") as f:
+            workflow = json.load(f)
+        source = "tree"
+    elif os.path.isfile(prebundled):
+        if not bundle:
+            raise FileNotFoundError(
+                f"'{input_dir}' contains only the pre-bundled {BUNDLE_NAME}; "
+                f"staging it unbundled (bundle=False) is not supported. "
+                f"Use bundle=True or extract the archive first."
+            )
+        with zipfile.ZipFile(prebundled) as zf:
+            workflow = json.loads(zf.read(workflow_relpath))
+        source = "zip"
+        print(f"Reusing pre-bundled {BUNDLE_NAME} from {input_dir}")
+    else:
         raise FileNotFoundError(
-            f"SimCenter workflow JSON not found at '{workflow_path}'. "
-            f"Expected '{input_filename}' inside "
+            f"SimCenter workflow JSON not found at '{workflow_path}' and no "
+            f"{BUNDLE_NAME} present. Expected '{input_filename}' inside "
             f"'{input_dir}/tmp.SimCenter/templatedir/'."
         )
 
-    with open(workflow_path, "r") as f:
-        workflow = json.load(f)
-
     workflow["remoteAppDir"] = backend_dir
     workflow["remoteAppWorkingDir"] = backend_dir
+    workflow_text = json.dumps(workflow, indent=2)
 
-    with open(workflow_path, "w") as f:
-        json.dump(workflow, f, indent=2)
+    # Patch the source in place only when it is writable; CommunityData and
+    # published datasets are read-only, so the patch travels with the staged
+    # copy instead.
+    source_writable = source == "tree" and os.access(workflow_path, os.W_OK)
+    if source_writable:
+        with open(workflow_path, "w") as f:
+            f.write(workflow_text)
+        print(f"Updated remoteAppDir in {workflow_path}")
+    else:
+        print("Source is read-only; remoteAppDir patch applied to the staged copy")
 
     uq = workflow.get("UQ", {})
     summary = {
-        "workflow_json": workflow_path,
+        "workflow_json": workflow_path if source == "tree" else prebundled,
         "backend_dir": backend_dir,
         "uq_engine": uq.get("uqEngine"),
         "uq_type": uq.get("uqType"),
@@ -147,26 +182,86 @@ def prepare_inputs(
         "edps": [edp["name"] for edp in workflow.get("EDP", [])],
         "staged_dir": input_dir,
     }
-    print(f"Updated remoteAppDir in {workflow_path}")
     print(f"UQ engine: {summary['uq_engine']} ({summary['uq_type']})")
     print(f"Random variables: {summary['random_variables']}")
     print(f"EDPs: {summary['edps']}")
 
     if bundle:
-        summary.update(_bundle_inputs(input_dir, staged_dir))
+        staged = staged_dir or _default_staged_dir(input_dir)
+        if source == "zip":
+            summary.update(
+                _rewrite_bundle(
+                    prebundled, staged, workflow_relpath, workflow_text, input_dir
+                )
+            )
+        else:
+            patched = None if source_writable else (workflow_relpath, workflow_text)
+            summary.update(_bundle_inputs(input_dir, staged, patched))
+    elif not source_writable:
+        # Loose staging from a read-only source: stage a patched copy.
+        # copytree preserves the source's read-only modes, so make the
+        # copy writable before patching it.
+        staged = staged_dir or _default_staged_dir(input_dir)
+        shutil.copytree(input_dir, staged, dirs_exist_ok=True)
+        for walk_root, _dirs, walk_files in os.walk(staged):
+            os.chmod(walk_root, 0o755)
+            for name in walk_files:
+                os.chmod(os.path.join(walk_root, name), 0o644)
+        staged_workflow = os.path.join(
+            staged, "tmp.SimCenter", "templatedir", input_filename
+        )
+        with open(staged_workflow, "w") as f:
+            f.write(workflow_text)
+        summary["staged_dir"] = staged
+        summary["workflow_json"] = staged_workflow
+        print(f"Read-only input; patched copy staged at {staged}")
     return summary
 
 
-def _bundle_inputs(input_dir: str, staged_dir: Optional[str]) -> Dict[str, Any]:
+def _default_staged_dir(input_dir: str) -> str:
+    """``<input_dir>_staged`` when writable, else a temp-dir fallback.
+
+    The fallback is a local temporary directory (fast local disk, always
+    writable) rather than the MyData mount, which can be slow or flaky.
+    A temp path is not visible to Tapis, so the bundle must be uploaded
+    once before submission — see the hint printed below.
+    """
+    input_dir = os.path.abspath(input_dir.rstrip("/"))
+    parent = os.path.dirname(input_dir)
+    if os.access(parent, os.W_OK):
+        return input_dir + "_staged"
+    base = os.path.basename(input_dir) + "_staged"
+    staged = os.path.join(tempfile.mkdtemp(prefix="dapi-staging-"), base)
+    print(f"'{parent}' is not writable (e.g. CommunityData); staging to {staged}")
+    print(
+        "This is a local temporary directory: upload the bundle before "
+        "submitting, e.g.\n"
+        '  dest = ds.files.to_uri("/MyData/my-run")\n'
+        f'  ds.files.upload(info["bundle"], f"{{dest}}/{BUNDLE_NAME}")\n'
+        "then use dest as the job's input_dir_uri."
+    )
+    return staged
+
+
+def _bundle_inputs(
+    input_dir: str,
+    staged_dir: Optional[str],
+    patched: Optional[tuple] = None,
+) -> Dict[str, Any]:
     """Zip ``tmp.SimCenter/`` into ``tmpSimCenter.zip`` in a staging dir.
 
     The archive preserves the ``tmp.SimCenter/...`` layout the wrapper
     expects when it runs ``unzip tmpSimCenter.zip``. Any other top-level
     entries of input_dir are copied into the staging dir unchanged.
+
+    When *patched* is given as ``(relpath, text)``, that archive entry is
+    written from *text* instead of the on-disk file — used when the source
+    is read-only and the workflow JSON could not be patched in place.
     """
     staged = staged_dir or input_dir.rstrip("/") + "_staged"
     os.makedirs(staged, exist_ok=True)
 
+    patched_relpath, patched_text = patched if patched else (None, None)
     bundle_src = os.path.join(input_dir, "tmp.SimCenter")
     zip_path = os.path.join(staged, BUNDLE_NAME)
     bundled_files = 0
@@ -174,12 +269,17 @@ def _bundle_inputs(input_dir: str, staged_dir: Optional[str]) -> Dict[str, Any]:
         for root, _dirs, files in os.walk(bundle_src):
             for name in files:
                 full_path = os.path.join(root, name)
-                zf.write(full_path, os.path.relpath(full_path, input_dir))
+                relpath = os.path.relpath(full_path, input_dir)
+                if patched_relpath and relpath.replace(os.sep, "/") == patched_relpath:
+                    zf.writestr(relpath, patched_text)
+                else:
+                    zf.write(full_path, relpath)
                 bundled_files += 1
 
-    # Preserve any sibling entries of tmp.SimCenter/ the app may expect.
+    # Preserve any sibling entries of tmp.SimCenter/ the app may expect
+    # (but never a stale bundle, which would clobber the one just written).
     for entry in os.listdir(input_dir):
-        if entry == "tmp.SimCenter":
+        if entry in ("tmp.SimCenter", BUNDLE_NAME):
             continue
         src = os.path.join(input_dir, entry)
         dst = os.path.join(staged, entry)
@@ -191,6 +291,54 @@ def _bundle_inputs(input_dir: str, staged_dir: Optional[str]) -> Dict[str, Any]:
     print(f"Bundled {bundled_files} files into {zip_path}")
     print(f"Stage this directory: {staged}")
     return {"staged_dir": staged, "bundle": zip_path, "bundled_files": bundled_files}
+
+
+def _rewrite_bundle(
+    src_zip: str,
+    staged_dir: str,
+    workflow_relpath: str,
+    workflow_text: str,
+    input_dir: str,
+) -> Dict[str, Any]:
+    """Reuse a pre-bundled archive, rewriting only its workflow JSON entry.
+
+    Avoids recompressing inputs that already ship as ``tmpSimCenter.zip``
+    (e.g. from CommunityData or a previous staging run).
+    """
+    os.makedirs(staged_dir, exist_ok=True)
+    zip_path = os.path.join(staged_dir, BUNDLE_NAME)
+    bundled_files = 0
+    with (
+        zipfile.ZipFile(src_zip) as src,
+        zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as dst,
+    ):
+        for item in src.infolist():
+            if item.filename.rstrip("/") == workflow_relpath:
+                dst.writestr(item.filename, workflow_text)
+            else:
+                dst.writestr(item, src.read(item.filename))
+            bundled_files += 1
+
+    for entry in os.listdir(input_dir):
+        if entry in ("tmp.SimCenter", BUNDLE_NAME):
+            continue
+        src_path = os.path.join(input_dir, entry)
+        dst_path = os.path.join(staged_dir, entry)
+        if os.path.isfile(src_path):
+            shutil.copy2(src_path, dst_path)
+        elif os.path.isdir(src_path) and os.path.abspath(src_path) != os.path.abspath(
+            staged_dir
+        ):
+            shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
+
+    print(f"Rewrote workflow entry in reused bundle: {zip_path}")
+    print(f"Stage this directory: {staged_dir}")
+    return {
+        "staged_dir": staged_dir,
+        "bundle": zip_path,
+        "bundled_files": bundled_files,
+        "reused_bundle": True,
+    }
 
 
 def finalize_job_request(job_request: Dict[str, Any]) -> Dict[str, Any]:

@@ -98,6 +98,101 @@ class TestBundling(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(custom, BUNDLE_NAME)))
 
 
+class TestReadOnlySources(unittest.TestCase):
+    """CommunityData-style inputs: no writes to the source, ever."""
+
+    @staticmethod
+    def _lock(*paths):
+        for p in paths:
+            os.chmod(p, 0o555)
+
+    @staticmethod
+    def _unlock(*paths):
+        for p in paths:
+            if os.path.exists(p):
+                os.chmod(p, 0o755)
+
+    def test_readonly_source_bundles_to_fallback(self):
+        with tempfile.TemporaryDirectory() as root:
+            input_dir, workflow_path = _make_input_dir(root)
+            templatedir = os.path.dirname(workflow_path)
+            locked = (workflow_path, templatedir, input_dir, root)
+            self._lock(*locked)
+            try:
+                summary = prepare_inputs(input_dir)
+
+                # Staged somewhere writable, not beside the read-only source
+                self.assertFalse(summary["staged_dir"].startswith(root))
+                self.assertTrue(os.path.isfile(summary["bundle"]))
+                # The patch travels inside the bundle...
+                with zipfile.ZipFile(summary["bundle"]) as zf:
+                    patched = json.loads(
+                        zf.read("tmp.SimCenter/templatedir/scInput.json")
+                    )
+                expected = DEFAULT_BACKEND_DIRS["simcenter-uq-stampede3"]
+                self.assertEqual(patched["remoteAppDir"], expected)
+                # ...while the read-only source is untouched
+                with open(workflow_path) as f:
+                    original = json.load(f)
+                self.assertNotEqual(original["remoteAppDir"], expected)
+            finally:
+                self._unlock(*locked)
+
+    def test_readonly_source_unbundled_stages_patched_copy(self):
+        with tempfile.TemporaryDirectory() as root:
+            input_dir, workflow_path = _make_input_dir(root)
+            templatedir = os.path.dirname(workflow_path)
+            locked = (workflow_path, templatedir, input_dir, root)
+            self._lock(*locked)
+            try:
+                summary = prepare_inputs(input_dir, bundle=False)
+
+                self.assertNotEqual(summary["staged_dir"], input_dir)
+                copy = os.path.join(
+                    summary["staged_dir"],
+                    "tmp.SimCenter",
+                    "templatedir",
+                    "scInput.json",
+                )
+                with open(copy) as f:
+                    patched = json.load(f)
+                expected = DEFAULT_BACKEND_DIRS["simcenter-uq-stampede3"]
+                self.assertEqual(patched["remoteAppDir"], expected)
+            finally:
+                self._unlock(*locked)
+
+    def test_prebundled_zip_is_reused_not_recompressed(self):
+        with tempfile.TemporaryDirectory() as root:
+            src_dir, _ = _make_input_dir(root)
+            # Build a "shipped" input dir containing only the bundle
+            shipped = os.path.join(root, "shipped")
+            os.makedirs(shipped)
+            zip_path = os.path.join(shipped, BUNDLE_NAME)
+            with zipfile.ZipFile(zip_path, "w") as zf:
+                base = os.path.join(src_dir, "tmp.SimCenter")
+                for r, _d, files in os.walk(base):
+                    for name in files:
+                        full = os.path.join(r, name)
+                        zf.write(full, os.path.relpath(full, src_dir))
+
+            summary = prepare_inputs(shipped, staged_dir=os.path.join(root, "st"))
+
+            self.assertTrue(summary["reused_bundle"])
+            with zipfile.ZipFile(summary["bundle"]) as zf:
+                patched = json.loads(zf.read("tmp.SimCenter/templatedir/scInput.json"))
+            expected = DEFAULT_BACKEND_DIRS["simcenter-uq-stampede3"]
+            self.assertEqual(patched["remoteAppDir"], expected)
+
+    def test_prebundled_zip_with_bundle_false_raises(self):
+        with tempfile.TemporaryDirectory() as root:
+            shipped = os.path.join(root, "shipped")
+            os.makedirs(shipped)
+            with zipfile.ZipFile(os.path.join(shipped, BUNDLE_NAME), "w") as zf:
+                zf.writestr("tmp.SimCenter/templatedir/scInput.json", "{}")
+            with self.assertRaises(FileNotFoundError):
+                prepare_inputs(shipped, bundle=False)
+
+
 class TestPrepareJobInputsDispatch(unittest.TestCase):
     """ds.jobs.prepare_inputs dispatches through the app-profile registry."""
 

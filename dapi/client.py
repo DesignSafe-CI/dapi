@@ -627,6 +627,10 @@ class ParametricSweepMethods:
 
         Args:
             command: Command template with placeholders matching sweep keys.
+                With the default ``"token"`` style, a placeholder is replaced
+                everywhere it appears as a word — so a single-letter name like
+                ``E`` also matches inside a ``--E`` flag. Use distinct names
+                (``EMOD``, not ``E``) or ``placeholder_style="braces"``.
             sweep: Mapping of placeholder name to sequence of values.
             directory: Directory to write files into (created if needed).
                 Required when *preview* is ``False``.
@@ -674,7 +678,7 @@ class ParametricSweepMethods:
             directory: Path to the input directory containing
                 ``runsList.txt`` and ``call_pylauncher.py``
                 (e.g. ``"/MyData/sweep/"``).
-            app_id: Tapis application ID (e.g. ``"designsafe-agnostic-app"``).
+            app_id: Tapis application ID (e.g. ``"python-s3"``).
             allocation: TACC allocation to charge.
             node_count: Number of compute nodes.
             cores_per_node: Cores per node.

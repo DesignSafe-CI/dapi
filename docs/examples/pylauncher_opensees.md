@@ -59,14 +59,30 @@ ds.jobs.parametric_sweep.generate(
 
 job = ds.jobs.parametric_sweep.submit(
     "/MyData/opensees_sweep/",
-    app_id="designsafe-agnostic-app",
+    app_id="python-s3",
     allocation="your_allocation",
     node_count=1,
     cores_per_node=48,
     max_minutes=30,
+    extra_env_vars=[
+        {"key": "EXTRA_MODULES", "value": "opensees,hdf5/1.14.4"},
+        {"key": "PRE_SCRIPT", "value": "setup.sh"},
+    ],
 )
-job.monitor()
+job.monitor(timeout_minutes=60)
 ```
+
+`setup.sh` stages the TACC-compiled OpenSeesPy next to the tasks (the bundled filename differs across opensees module versions):
+
+```bash
+# setup.sh
+for f in "${TACC_OPENSEES_BIN}/opensees.so" "${TACC_OPENSEES_BIN}/OpenSeesPy.so"; do
+    [ -f "$f" ] && cp "$f" ./opensees.so && exit 0
+done
+echo "ERROR: no OpenSeesPy library in ${TACC_OPENSEES_BIN}" >&2; exit 1
+```
+
+Verified on `python-s3` v1.0.0 (Stampede3, job `4362db11-bf97-4948-9b2d-251e94ac31ba-007`): 15 pushover tasks in 11 s, all `out_*` recorder outputs produced.
 
 ## Output
 

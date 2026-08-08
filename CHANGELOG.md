@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.5.6
+
+### Fixed
+
+- **`prepare_inputs` from read-only sources (CommunityData, published datasets)**: staging no longer writes into the source tree. The workflow-JSON backend patch is applied in place only when the source is writable; otherwise it travels inside the staged bundle (or a patched staged copy when `bundle=False`). The default `<input_dir>_staged` sibling falls back to a local temporary directory when the parent is not writable (fast local disk rather than the sometimes-flaky MyData mount); a printed hint shows the one `ds.files.upload` call needed to push the bundle before submitting.
+- An input directory that already ships `tmpSimCenter.zip` (no extracted `tmp.SimCenter/` tree) is now reused instead of failing: only its workflow-JSON entry is rewritten into the staged bundle (`reused_bundle: true` in the summary).
+- `parametric_sweep.generate` docstring now warns that token-style placeholders match anywhere a word appears — a single-letter key like `E` also rewrites the `--E` flag; use distinct names (`EMOD`) or `placeholder_style="braces"`.
+
+### Documentation and examples
+
+- All examples and docs migrated from the community `designsafe-agnostic-app` to the deployed general-purpose **`python-s3`** app (quickstart, apps table, PyLauncher pages and notebooks, OpenSees ML example). The ML example was verified end-to-end on Stampede3 (75-task PyLauncher sweep, temp job venv via `PIP_REQUIREMENTS`, TACC OpenSeesPy via pre-script, bundled inputs via `UNZIP_INPUTS`; recovered `T = 2π·√(M·L³/3EI)` with R² = 1.0).
+- New Generic Python example (`examples/python/python-s3-pi.ipynb`, `docs/examples/python.md`): Monte Carlo π across 48 cores with `concurrent.futures`, verified on Stampede3, including the machine-readable `job-summary.json` run record.
+- OpenSeesPy staging recipes handle the `opensees/3.8.0` module layout (`bin/opensees.so`; older modules shipped `bin/OpenSeesPy.so`).
+- `pylauncher_opensees` example now stages the TACC OpenSeesPy explicitly (`EXTRA_MODULES` + `setup.sh` pre-script) — the old app injected it implicitly, `python-s3` deliberately does not.
+- Updated ds-workflows links to `designsafe-ci.github.io/ds-workflows` and `monitor(timeout_minutes=...)` guidance (the default equals the job's `max_minutes`, which queue/staging waits can exhaust).
+
 ## v0.5.5
 
 ### New features

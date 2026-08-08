@@ -59,7 +59,7 @@ ds.jobs.parametric_sweep.generate(
 ```python
 job = ds.jobs.parametric_sweep.submit(
     "/MyData/pylauncher_demo/",
-    app_id="designsafe-agnostic-app",
+    app_id="python-s3",
     allocation="your_allocation",
     node_count=1,
     cores_per_node=48,
@@ -103,13 +103,15 @@ ds.jobs.parametric_sweep.generate(
 
 job = ds.jobs.parametric_sweep.submit(
     "/MyData/opensees_sweep/",
-    app_id="designsafe-agnostic-app",
+    app_id="python-s3",
     allocation="your_allocation",
     node_count=2,
     cores_per_node=48,
 )
 job.monitor()
 ```
+
+Verified on `python-s3` v1.0.0 (Stampede3, job `4e8f5689-d193-49c9-afd2-2f2fe55b9d35-007`): 9 tasks in 7 s, all `out_*/result.json` produced.
 
 ## Output Directory Pattern
 
@@ -126,5 +128,5 @@ $WORK/sweep_$SLURM_JOB_ID/run_ALPHA_BETA
 ## Notes
 
 - **PyLauncher is NOT a dapi dependency** -- it's pre-installed on TACC compute nodes. dapi only generates the input files.
-- **MPI is disabled** -- PyLauncher's `ClassicLauncher` runs independent serial tasks. The `designsafe-agnostic-app` already has `isMpi: false`.
+- **MPI is disabled** -- PyLauncher's `ClassicLauncher` runs independent serial tasks. The `python-s3` app already has `isMpi: false` and loads the `pylauncher` module automatically.
 - **Works with any app** -- OpenSees, Python, MATLAB, Fortran binaries. The task list is just shell commands.
