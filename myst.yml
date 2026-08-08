@@ -31,6 +31,7 @@ project:
         - file: docs/examples/mpm.md
         - file: docs/examples/pylauncher.md
         - file: docs/examples/pylauncher_opensees.md
+        - file: docs/examples/opensees_ml.md
         - file: docs/examples/database.md
         - file: docs/examples/apps.md
         - file: docs/examples/tms_credentials.md

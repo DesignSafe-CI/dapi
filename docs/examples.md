@@ -109,6 +109,15 @@ Run many independent tasks within a single SLURM allocation.
 
 ---
 
+### OpenSees ML Sweep
+Sweep an OpenSeesPy cantilever with PyLauncher, then fit a regression that recovers the physics, one job end to end.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees_ml/DS_OpenSees_ML_Example.ipynb)
+
+[Full documentation](examples/opensees_ml.md)
+
+---
+
 ### TMS Credentials
 Manage SSH credentials on TACC execution systems.
 

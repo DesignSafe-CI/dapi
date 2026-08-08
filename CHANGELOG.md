@@ -16,6 +16,7 @@
 ### Documentation and examples
 
 - quoFEM notebook and docs pass `bundle=True` explicitly (the default is unchanged; bundling only ever applies to SimCenter-profile apps whose wrapper unpacks natively — it is a no-op for MPM, OpenSees, and all other app ids).
+- New docs page for the OpenSees ML example (`docs/examples/opensees_ml.md`), added to the examples TOC and index; the notebook existed since v0.5.6 but had no documentation page.
 - All four migrated example notebooks executed cell-by-cell (`python-s3-pi` end-to-end including a live Stampede3 job; `pylauncher_sweep` and `pylauncher_opensees` fully; `opensees_ml` client-side cells — submission requires the JupyterHub MyData mount).
 
 ## v0.5.6
