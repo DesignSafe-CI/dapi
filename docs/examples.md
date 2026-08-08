@@ -30,6 +30,15 @@ List HPC and storage systems, check credentials, and view queues.
 
 ---
 
+### Logging and Verbosity
+Control how much dapi reports: INFO milestones, full DEBUG trace, or silence.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/logging.ipynb)
+
+[Full documentation](logging.md)
+
+---
+
 ### Application Management
 Discover and manage applications on DesignSafe.
 

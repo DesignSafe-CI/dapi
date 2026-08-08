@@ -103,13 +103,14 @@ print(json.dumps(job_dict, indent=2, default=str))
 ### Step 6: Submit and Monitor
 
 ```python
-submitted_job = ds.jobs.submit(job_dict)
-print(f"Job launched with UUID: {submitted_job.uuid}")
+submitted_job = ds.jobs.submit(job_dict)  # the UUID is logged on submission
 
 final_status = submitted_job.monitor(interval=30)
 ds.jobs.interpret_status(final_status, submitted_job.uuid)
 submitted_job.print_runtime_summary(verbose=False)
 ```
+
+You can also watch the job in the DesignSafe portal under **Workspace → Tools & Applications → Job Status**.
 
 ### Step 7: Retrieve and Analyze Results
 

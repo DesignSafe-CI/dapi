@@ -87,5 +87,6 @@ job.monitor()
 ## Next steps
 
 - [Jobs](jobs.md) — advanced job configuration, error handling, monitoring
+- [Logging](logging.md) — control dapi's verbosity (`dapi.set_log_level`)
 - [Database](database.md) — research data queries
 - [Examples](examples.md) — full notebook workflows
