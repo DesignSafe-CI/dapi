@@ -23,6 +23,8 @@ API: ``ds.jobs.prepare_inputs`` patches the workflow JSON,
 ``SubmittedJob.get_results()`` parses the outputs.
 """
 
+import contextlib
+import errno
 import io
 import json
 import os
@@ -206,29 +208,35 @@ def prepare_inputs(
     if bundle:
         staged = staged_dir or _default_staged_dir(input_dir)
         if source == "zip":
-            summary.update(
-                _rewrite_bundle(
-                    prebundled, staged, workflow_relpath, workflow_text, input_dir
+            _require_free_space(staged, os.path.getsize(prebundled))
+            with _enospc_hint(staged):
+                summary.update(
+                    _rewrite_bundle(
+                        prebundled, staged, workflow_relpath, workflow_text, input_dir
+                    )
                 )
-            )
         else:
             patched = None if source_writable else (workflow_relpath, workflow_text)
-            summary.update(_bundle_inputs(input_dir, staged, patched))
+            _require_free_space(staged, _tree_size(input_dir))
+            with _enospc_hint(staged):
+                summary.update(_bundle_inputs(input_dir, staged, patched))
     elif not source_writable:
         # Loose staging from a read-only source: stage a patched copy.
         # copytree preserves the source's read-only modes, so make the
         # copy writable before patching it.
         staged = staged_dir or _default_staged_dir(input_dir)
-        shutil.copytree(input_dir, staged, dirs_exist_ok=True)
-        for walk_root, _dirs, walk_files in os.walk(staged):
-            os.chmod(walk_root, 0o755)
-            for name in walk_files:
-                os.chmod(os.path.join(walk_root, name), 0o644)
-        staged_workflow = os.path.join(
-            staged, "tmp.SimCenter", "templatedir", input_filename
-        )
-        with open(staged_workflow, "w") as f:
-            f.write(workflow_text)
+        _require_free_space(staged, _tree_size(input_dir))
+        with _enospc_hint(staged):
+            shutil.copytree(input_dir, staged, dirs_exist_ok=True)
+            for walk_root, _dirs, walk_files in os.walk(staged):
+                os.chmod(walk_root, 0o755)
+                for name in walk_files:
+                    os.chmod(os.path.join(walk_root, name), 0o644)
+            staged_workflow = os.path.join(
+                staged, "tmp.SimCenter", "templatedir", input_filename
+            )
+            with open(staged_workflow, "w") as f:
+                f.write(workflow_text)
         summary["staged_dir"] = staged
         summary["workflow_json"] = staged_workflow
         logger.debug(f"Read-only input; patched copy staged at {staged}")
@@ -267,6 +275,66 @@ def _default_staged_dir(input_dir: str) -> str:
         "with ds.files.upload before submitting."
     )
     return staged
+
+
+@contextlib.contextmanager
+def _enospc_hint(staged: str):
+    """Turn a mid-write ENOSPC into a clear error and remove partial staging.
+
+    The pre-write free-space check fails fast, but space can disappear
+    while a large copy runs and some filesystems misreport free space,
+    so the write itself is the ground truth (EAFP, as with the read-only
+    detection).
+    """
+    try:
+        yield
+    except OSError as e:
+        if e.errno == errno.ENOSPC:
+            shutil.rmtree(staged, ignore_errors=True)
+            raise OSError(
+                errno.ENOSPC,
+                f"Ran out of disk space while staging into '{staged}'; "
+                f"partial files were removed. Pass "
+                f"staged_dir='/path/on/a/larger/filesystem' to stage "
+                f"elsewhere.",
+            ) from e
+        raise
+
+
+def _tree_size(path: str) -> int:
+    """Total size in bytes of all files under *path*."""
+    total = 0
+    for walk_root, _dirs, walk_files in os.walk(path):
+        for name in walk_files:
+            try:
+                total += os.path.getsize(os.path.join(walk_root, name))
+            except OSError:
+                pass
+    return total
+
+
+def _require_free_space(target: str, needed: int) -> None:
+    """Fail fast when the staging target cannot hold *needed* bytes.
+
+    Temporary staging often lands on /tmp, whose capacity varies widely
+    (containers give it a few GB; Stampede3 node-local /tmp ranges from
+    90 GB on SKX to 3.5 TB on GPU nodes). Checking before writing turns a
+    half-written bundle and a cryptic ENOSPC into a clear, early error.
+    """
+    probe = os.path.abspath(target)
+    while not os.path.exists(probe):
+        parent = os.path.dirname(probe)
+        if parent == probe:
+            break
+        probe = parent
+    free = shutil.disk_usage(probe).free
+    if needed > free:
+        raise OSError(
+            errno.ENOSPC,
+            f"Staging needs about {needed / 2**30:.2f} GB but only "
+            f"{free / 2**30:.2f} GB is free at '{probe}'. Pass "
+            f"staged_dir='/path/on/a/larger/filesystem' to stage elsewhere.",
+        )
 
 
 def _bundle_inputs(

@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- **Staging now guards against running out of disk space, twice**: a pre-write check fails fast with needed-vs-available and the `staged_dir=` override, and a mid-write `ENOSPC` (space can vanish during a long copy, and network mounts misreport free space) is caught, partial staging is removed, and the same clear guidance is raised. Temporary staging often lands on `/tmp`, whose capacity varies widely: containers allot a few GB, and Stampede3 node-local `/tmp` ranges from 90 GB (SKX) through 150 GB (SPR) and 200 GB (ICX) to 3.5 TB (GPU nodes).
 - **Read-only detection hardened for FUSE/NFS-style mounts** (the JupyterHub CommunityData mount reports writable mode bits while writes fail with `EROFS`): writability is now determined by attempting the operation, not by `os.access`. The workflow-JSON patch writes atomically (temp file + `os.replace`) so a failing mount can never truncate the source, and the staging-directory choice probes with a real write before using the sibling `_staged` location.
 
 ### New features
