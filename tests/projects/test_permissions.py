@@ -120,12 +120,20 @@ class _FixFiles:
         ]
 
     def getFacl(self, systemId, path):
-        return self.facl_by_path.get(
-            path, self.facl_by_path.get("/" + path.lstrip("/"), [])
-        )
+        key = "/" + path.lstrip("/")
+        if key.split("/")[-1] in getattr(self, "owner_fixed", set()):
+            return self.facl_by_path.get("/HEALTHY", [])
+        return self.facl_by_path.get(path, self.facl_by_path.get(key, []))
 
     def setFacl(self, **kw):
-        self.calls.append(("setFacl", kw["path"], kw["aclString"]))
+        system = kw.get("systemId", "")
+        self.calls.append(("setFacl", kw["path"], kw["aclString"], system))
+        if system == "cloud.data":
+            if getattr(self, "owner_fail", False):
+                return SimpleNamespace(exitCode=1, stdErr="Operation not permitted")
+            self.owner_fixed = getattr(self, "owner_fixed", set())
+            self.owner_fixed.add(kw["path"].split("/")[-1])
+            return SimpleNamespace(exitCode=0, stdErr="")
         code = 1 if kw["path"] in self.setfacl_fail else 0
         return SimpleNamespace(exitCode=code, stdErr="")
 
@@ -191,6 +199,7 @@ class TestFixPermissions(unittest.TestCase):
             {"/bad.txt": MASKED, "/HEALTHY": HEALTHY},
             setfacl_fail_paths={"/bad.txt"},
         )
+        files.owner_fail = True  # not the caller's file either
         report = _run_fix(files)
         self.assertTrue(report["fixed"]["/bad.txt"].startswith("copy"))
         ops = [c for c in files.calls if c[0] in ("moveCopy", "delete")]
@@ -204,58 +213,34 @@ class TestFixPermissions(unittest.TestCase):
             setfacl_fail_paths={"/locked.txt"},
             copy_fail=True,
         )
+        files.owner_fail = True
         report = _run_fix(files)
         self.assertEqual(report["fixed"], {})
         item = report["unfixable"][0]
         self.assertEqual(item["disease"], "mask")
-        self.assertIn("chmod g+rwX '/corral/proj/x/locked.txt'", item["owner_fix"])
+        self.assertIn("fix_permissions", item["owner_fix"])
 
-    def test_wiped_entries_with_local_root_copy_in_place(self):
-        import os
-        import tempfile
+    def test_user_owned_file_fixed_by_owner_tier(self):
+        files = _FixFiles(
+            {"/mine.txt": MASKED, "/HEALTHY": HEALTHY},
+            setfacl_fail_paths={"/mine.txt"},  # project-system EPERM
+        )
+        report = _run_fix(files)
+        self.assertEqual(report["fixed"]["/mine.txt"], "owner (via cloud.data)")
+        owner_calls = [c for c in files.calls if c[3] == "cloud.data"]
+        self.assertIn("corral/proj/x/mine.txt", owner_calls[0][1])
 
-        with tempfile.TemporaryDirectory() as local:
-            with open(os.path.join(local, "moved.txt"), "w") as f:
-                f.write("payload")
-            files = _FixFiles(
-                {"/moved.txt": [], "/HEALTHY": HEALTHY},
-                setfacl_fail_paths={"/moved.txt"},
-            )
-            # after the local copy-in-place, the backing store reports healthy
-            original_getFacl = files.getFacl
-
-            def getFacl(systemId, path):
-                tier1_tried = any(
-                    c[0] == "setFacl" and c[1] == "/moved.txt" for c in files.calls
-                )
-                if path == "/moved.txt" and tier1_tried:
-                    return HEALTHY
-                return original_getFacl(systemId, path)
-
-            files.getFacl = getFacl
-            report = _run_fix(files, local_root=local)
-            self.assertEqual(report["fixed"]["/moved.txt"], "local")
-            with open(os.path.join(local, "moved.txt")) as f:
-                self.assertEqual(f.read(), "payload")
-
-    def test_local_fix_without_effect_is_not_reported_fixed(self):
-        import os
-        import tempfile
-
-        with tempfile.TemporaryDirectory() as local:
-            with open(os.path.join(local, "stuck.txt"), "w") as f:
-                f.write("x")
-            # getFacl keeps returning the broken state even after the local
-            # chmod (a mount that silently drops the change), and the copy
-            # tier is also blocked: the file must land in unfixable.
-            files = _FixFiles(
-                {"/stuck.txt": MASKED, "/HEALTHY": HEALTHY},
-                setfacl_fail_paths={"/stuck.txt"},
-                copy_fail=True,
-            )
-            report = _run_fix(files, local_root=local)
-            self.assertEqual(report["fixed"], {})
-            self.assertEqual(report["unfixable"][0]["path"], "/stuck.txt")
+    def test_other_owner_unreadable_reports_their_fix_call(self):
+        files = _FixFiles(
+            {"/theirs.txt": MASKED, "/HEALTHY": HEALTHY},
+            setfacl_fail_paths={"/theirs.txt"},
+            copy_fail=True,
+        )
+        files.owner_fail = True  # cloud.data EPERM: caller is not the owner
+        report = _run_fix(files)
+        self.assertEqual(report["fixed"], {})
+        item = report["unfixable"][0]
+        self.assertIn("fix_permissions('PRJ-1', '/theirs.txt')", item["owner_fix"])
 
     def test_dry_run_changes_nothing(self):
         files = _FixFiles({"/bad.txt": MASKED, "/HEALTHY": HEALTHY})
@@ -266,30 +251,3 @@ class TestFixPermissions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-class TestLocalRootDiscovery(unittest.TestCase):
-    def test_discovers_by_project_id_with_file_validation(self):
-        import os
-        import tempfile
-
-        from dapi.projects import _discover_local_root
-
-        with tempfile.TemporaryDirectory() as base:
-            good = os.path.join(base, "PRJ-1 Test Project")
-            os.makedirs(good)
-            open(os.path.join(good, "known.txt"), "w").close()
-            decoy = os.path.join(base, "PRJ-1 stale clone")
-            os.makedirs(decoy)  # matches by name, fails file validation
-            found = _discover_local_root(
-                "PRJ-1", "Test Project", "uuid-x", ["known.txt"], bases=[base]
-            )
-            self.assertEqual(found, good)
-
-    def test_returns_none_off_hub(self):
-        from dapi.projects import _discover_local_root
-
-        found = _discover_local_root(
-            "PRJ-1", "T", "u", ["f"], bases=["/nonexistent-base"]
-        )
-        self.assertIsNone(found)

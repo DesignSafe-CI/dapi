@@ -388,7 +388,6 @@ class ProjectMethods:
         path: str = "/",
         recursive: bool = True,
         dry_run: bool = False,
-        local_root: Optional[str] = None,
     ) -> Dict:
         """Restore project-member access to a path (owner-runnable, no admin).
 
@@ -402,6 +401,11 @@ class ProjectMethods:
             recursive (bool, optional): Apply to everything under path.
             dry_run (bool, optional): Show the plan without applying.
 
+        Files the caller owns are repaired through the ``cloud.data``
+        system (which acts as the calling user), so a researcher fixes
+        their own command-line transfers from any machine. Files owned
+        by another member are reported with the call for them to run.
+
         Example:
             >>> ds.projects.fix_permissions("PRJ-6457", "/results")
         """
@@ -411,7 +415,6 @@ class ProjectMethods:
             path,
             recursive=recursive,
             dry_run=dry_run,
-            local_root=local_root,
         )
 
 

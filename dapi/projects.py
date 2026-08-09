@@ -409,58 +409,12 @@ def _acl_state(t: Tapis, system_id: str, path: str, member_names: List[str]):
     return None, named, mask
 
 
-_LOCAL_MOUNT_BASES = [
-    "~/MyProjects",
-    "/home/jupyter/MyProjects",
-    "~/projects",
-    "/home/jupyter/projects",
-]
-
-
-def _discover_local_root(
-    project_id: str,
-    title: str,
-    uuid: str,
-    remote_names: List[str],
-    bases: Optional[List[str]] = None,
-) -> Optional[str]:
-    """Find this project's directory on a local mount (JupyterHub).
-
-    Scans the known DesignSafe mount locations for a folder whose name
-    matches the project id, title, or uuid, then validates the match by
-    checking that files known to exist in the project also exist there.
-    Returns None when not on a machine with the project mounted.
-    """
-    import os as _os
-
-    keys = {project_id.lower(), title.lower(), uuid.lower()}
-    for base in bases or _LOCAL_MOUNT_BASES:
-        base = _os.path.expanduser(base)
-        if not _os.path.isdir(base):
-            continue
-        for name in sorted(_os.listdir(base)):
-            low = name.lower()
-            if low not in keys and project_id.lower() not in low:
-                continue
-            cand = _os.path.join(base, name)
-            if not _os.path.isdir(cand):
-                continue
-            if not remote_names or any(
-                _os.path.exists(_os.path.join(cand, rn.lstrip("/")))
-                for rn in remote_names[:3]
-            ):
-                logger.info(f"Using local project mount at {cand}")
-                return cand
-    return None
-
-
 def fix_project_permissions(
     t: Tapis,
     project_id: str,
     path: str = "/",
     recursive: bool = True,
     dry_run: bool = False,
-    local_root: Optional[str] = None,
 ) -> Dict:
     """Restore project-member access, using the strongest strategy each file allows.
 
@@ -470,17 +424,20 @@ def fix_project_permissions(
     the project service account, so what it can repair depends on each
     file's owner and readability. This routine tries, per broken file:
 
-    1. **direct**: ``setFacl`` (works on everything the service account
-       owns, including the new-member-added-later case).
-    2. **local**: when *local_root* points at the project on a mounted
-       filesystem (JupyterHub), fix as the calling user: ``chmod`` for
-       mask damage, copy-in-place for wiped entries.
+    1. **direct**: ``setFacl`` on the project system (works on
+       everything the service account owns, including the
+       new-member-added-later case).
+    2. **owner**: ``setFacl`` through the ``cloud.data`` system, which
+       executes as the calling user on the storage host. POSIX lets a
+       file's owner set its ACLs, so this repairs the caller's own
+       command-line transfers (scp, cp, mv) from any machine, no mount
+       or shell required.
     3. **copy**: Tapis copy-recreate (new file owned by the service
        account, inherits healthy ACLs), then swap it over the original.
        Requires the file to be readable by the service account; changes
        the file's owner to the service account.
-    4. Otherwise the file is reported **unfixable** with the exact
-       command its owner can paste into any TACC shell.
+    4. Otherwise the file belongs to another member: it is reported
+       with the exact ``fix_permissions`` call for that person to run.
 
     Healthy files are skipped. Directories get their default ACLs
     refreshed so future files inherit access for all current members.
@@ -491,19 +448,12 @@ def fix_project_permissions(
         path: File or directory inside the project. Defaults to "/".
         recursive: Descend into directories. Defaults to True.
         dry_run: Classify and plan only; change nothing.
-        local_root: Local path of the project root when it is mounted
-            (e.g. "~/MyProjects/My Project" on JupyterHub). Auto-detected
-            on JupyterHub when omitted; pass it explicitly for unusual
-            mount locations. Enables the local tier.
 
     Returns:
         Dict with ``fixed`` (path -> strategy), ``skipped_healthy``,
         ``dirs_refreshed``, and ``unfixable`` (path, disease, and the
         owner command).
     """
-    import os as _os
-    import shutil as _shutil
-
     system_id = resolve_project_uuid(t, project_id)
     members = get_project_users(t, project_id)
     names = [m["username"] for m in members]
@@ -532,24 +482,11 @@ def fix_project_permissions(
     else:
         files.append(path)
 
-    if local_root is None:
-        try:
-            proj = get_project(t, project_id)
-            local_root = _discover_local_root(
-                project_id,
-                str(proj.get("title", "")),
-                str(proj.get("uuid", "")),
-                [f.lstrip("/") for f in files[:3]],
-            )
-        except Exception as e:
-            logger.debug(f"Local mount discovery skipped: {e}")
-
     report = {
         "fixed": {},
         "skipped_healthy": [],
         "dirs_refreshed": [],
         "unfixable": [],
-        "local_root": local_root,
     }
 
     def _set(path_, acl):
@@ -562,10 +499,10 @@ def fix_project_permissions(
         )
 
     def _owner_cmd(path_, disease):
-        target = f"{root_dir.rstrip('/')}/{path_.lstrip('/')}"
-        if disease == "mask":
-            return f"chmod g+rwX '{target}'"
-        return f"cp -p '{target}' '{target}.tmp' && cp '{target}.tmp' '{target}' && rm '{target}.tmp'"
+        return (
+            f"The file's owner can repair it from anywhere with: "
+            f"ds.projects.fix_permissions('{project_id}', '{path_}')"
+        )
 
     for d in dirs:
         if dry_run:
@@ -590,32 +527,27 @@ def fix_project_permissions(
             report["fixed"][fpath] = "direct"
             continue
 
-        # tier 2: local mount as the calling user. Mounted filesystems can
-        # silently drop chmod (returning success while changing nothing on
-        # the backing store), so never trust the local call: re-check the
-        # ACL state through Tapis before claiming the fix.
-        if local_root:
-            local_path = _os.path.join(
-                _os.path.expanduser(local_root), fpath.lstrip("/")
+        # tier 2: as the file's owner, through cloud.data. That system
+        # executes file operations as the calling user on the storage
+        # host, and POSIX lets an owner set ACLs regardless of the mask,
+        # so this repairs the caller's own command-line transfers from
+        # anywhere. Verified against the project system afterwards.
+        try:
+            host_path = f"{root_dir.strip('/')}/{fpath.lstrip('/')}"
+            r2 = t.files.setFacl(
+                systemId="cloud.data",
+                path=host_path,
+                operation="ADD",
+                recursionMethod="NONE",
+                aclString=entries,
             )
-            try:
-                if disease == "mask":
-                    st = _os.stat(local_path)
-                    _os.chmod(local_path, st.st_mode | 0o060)
-                else:  # missing entries: copy-in-place inherits defaults
-                    tmp = local_path + ".dapi-tmp"
-                    _shutil.copyfile(local_path, tmp)
-                    _os.replace(tmp, local_path)
+            if getattr(r2, "exitCode", 1) == 0:
                 verified, _n, _m = _acl_state(t, system_id, fpath, names)
                 if verified is None:
-                    report["fixed"][fpath] = "local"
+                    report["fixed"][fpath] = "owner (via cloud.data)"
                     continue
-                logger.debug(
-                    f"local fix had no effect on {fpath} "
-                    f"(mount dropped the change); trying the next tier"
-                )
-            except OSError as e:
-                logger.debug(f"local fix failed for {fpath}: {e}")
+        except Exception as e:
+            logger.debug(f"owner-tier fix failed for {fpath}: {e}")
 
         # tier 3: Tapis copy-recreate (readable files only)
         tmp_remote = fpath + ".dapi-fixing"
