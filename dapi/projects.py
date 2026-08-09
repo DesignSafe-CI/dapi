@@ -409,6 +409,51 @@ def _acl_state(t: Tapis, system_id: str, path: str, member_names: List[str]):
     return None, named, mask
 
 
+_LOCAL_MOUNT_BASES = [
+    "~/MyProjects",
+    "/home/jupyter/MyProjects",
+    "~/projects",
+    "/home/jupyter/projects",
+]
+
+
+def _discover_local_root(
+    project_id: str,
+    title: str,
+    uuid: str,
+    remote_names: List[str],
+    bases: Optional[List[str]] = None,
+) -> Optional[str]:
+    """Find this project's directory on a local mount (JupyterHub).
+
+    Scans the known DesignSafe mount locations for a folder whose name
+    matches the project id, title, or uuid, then validates the match by
+    checking that files known to exist in the project also exist there.
+    Returns None when not on a machine with the project mounted.
+    """
+    import os as _os
+
+    keys = {project_id.lower(), title.lower(), uuid.lower()}
+    for base in bases or _LOCAL_MOUNT_BASES:
+        base = _os.path.expanduser(base)
+        if not _os.path.isdir(base):
+            continue
+        for name in sorted(_os.listdir(base)):
+            low = name.lower()
+            if low not in keys and project_id.lower() not in low:
+                continue
+            cand = _os.path.join(base, name)
+            if not _os.path.isdir(cand):
+                continue
+            if not remote_names or any(
+                _os.path.exists(_os.path.join(cand, rn.lstrip("/")))
+                for rn in remote_names[:3]
+            ):
+                logger.info(f"Using local project mount at {cand}")
+                return cand
+    return None
+
+
 def fix_project_permissions(
     t: Tapis,
     project_id: str,
@@ -447,8 +492,9 @@ def fix_project_permissions(
         recursive: Descend into directories. Defaults to True.
         dry_run: Classify and plan only; change nothing.
         local_root: Local path of the project root when it is mounted
-            (e.g. "~/MyProjects/My Project" on JupyterHub). Enables the
-            local tier.
+            (e.g. "~/MyProjects/My Project" on JupyterHub). Auto-detected
+            on JupyterHub when omitted; pass it explicitly for unusual
+            mount locations. Enables the local tier.
 
     Returns:
         Dict with ``fixed`` (path -> strategy), ``skipped_healthy``,
@@ -486,7 +532,25 @@ def fix_project_permissions(
     else:
         files.append(path)
 
-    report = {"fixed": {}, "skipped_healthy": [], "dirs_refreshed": [], "unfixable": []}
+    if local_root is None:
+        try:
+            proj = get_project(t, project_id)
+            local_root = _discover_local_root(
+                project_id,
+                str(proj.get("title", "")),
+                str(proj.get("uuid", "")),
+                [f.lstrip("/") for f in files[:3]],
+            )
+        except Exception as e:
+            logger.debug(f"Local mount discovery skipped: {e}")
+
+    report = {
+        "fixed": {},
+        "skipped_healthy": [],
+        "dirs_refreshed": [],
+        "unfixable": [],
+        "local_root": local_root,
+    }
 
     def _set(path_, acl):
         return t.files.setFacl(

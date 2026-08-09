@@ -235,3 +235,30 @@ class TestFixPermissions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestLocalRootDiscovery(unittest.TestCase):
+    def test_discovers_by_project_id_with_file_validation(self):
+        import os
+        import tempfile
+
+        from dapi.projects import _discover_local_root
+
+        with tempfile.TemporaryDirectory() as base:
+            good = os.path.join(base, "PRJ-1 Test Project")
+            os.makedirs(good)
+            open(os.path.join(good, "known.txt"), "w").close()
+            decoy = os.path.join(base, "PRJ-1 stale clone")
+            os.makedirs(decoy)  # matches by name, fails file validation
+            found = _discover_local_root(
+                "PRJ-1", "Test Project", "uuid-x", ["known.txt"], bases=[base]
+            )
+            self.assertEqual(found, good)
+
+    def test_returns_none_off_hub(self):
+        from dapi.projects import _discover_local_root
+
+        found = _discover_local_root(
+            "PRJ-1", "T", "u", ["f"], bases=["/nonexistent-base"]
+        )
+        self.assertIsNone(found)
