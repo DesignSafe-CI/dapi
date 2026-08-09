@@ -94,6 +94,44 @@ files = ds.files.list(uri)
 
 Both `/MyProjects/PRJ-XXXX/` and `/projects/PRJ-XXXX/` are accepted.
 
+## Check who can see a file
+
+Project sharing rides on POSIX access control lists. Every member has a named ACL entry on each file, and an ACL *mask* caps what those entries grant. `permissions()` reads all of it and computes each member's real access:
+
+```python
+ds.projects.permissions("PRJ-1234", "/results/run1.out")
+```
+
+| username | role | tapis | posix_acl | mask | other | effective |
+|---|---|---|---|---|---|---|
+| user1 | pi | MODIFY | rwx | --- | --- | none |
+| user2 | team_member | MODIFY | rwx | --- | --- | none |
+
+Column meanings. `tapis` is the Tapis-layer grant from project membership. `posix_acl` is the member's named ACL entry on the file (`missing` means it was wiped). `mask` caps every entry; `other` is the file's world bits, which act as a floor. `effective` combines them into the truth. In the table above, membership looks fine, yet nobody can read the file, its mask vetoes everything.
+
+## Fix broken file sharing
+
+Files transferred into a project from the command line break sharing in two ways: `scp` and `cp` cap the mask with the source file's mode, while `mv`, `cp -p`, and `rsync -a` wipe the member entries entirely. `fix_permissions()` repairs each broken file with the strongest strategy it allows:
+
+```python
+ds.projects.fix_permissions("PRJ-1234")  # whole project
+ds.projects.fix_permissions("PRJ-1234", "/results")  # one directory
+ds.projects.fix_permissions("PRJ-1234", dry_run=True)  # preview only
+```
+
+The report maps each repaired path to its strategy:
+
+- **direct**: the file belongs to the Tapis service account; one `setFacl` fixes it. This also covers files that predate a newly added member.
+- **owner (via cloud.data)**: the file is yours. dapi reaches the storage host through the `cloud.data` system, which acts as the calling user, and an owner may always repair their own ACLs, from any machine, no shell required.
+- **copy**: the service account can read the file, so it is recreated with healthy ACLs and swapped over the original (the owner becomes the service account).
+- **unfixable**: the file belongs to another member; the report includes the exact `fix_permissions` call for that person to run.
+
+Healthy files are skipped, directory default ACLs are refreshed so future files inherit access for all current members, and every repair is verified against the storage before being reported.
+
+Prevention beats repair. Transfer into projects through Tapis (portal, dapi, or job archiving into the project system), or finish command-line copies with `chmod -R g+rwX` on the destination. Never `mv`, `cp -p`, or `rsync -a` into a project.
+
+See the [project permissions walkthrough](examples/project-permissions.md) for a live break-and-fix demonstration.
+
 ## How it works
 
 1. **Project listing and metadata**: dapi queries the DesignSafe portal API (`https://designsafe-ci.org/api/projects/v2/`) using your Tapis authentication token. This API returns project metadata including the project UUID.

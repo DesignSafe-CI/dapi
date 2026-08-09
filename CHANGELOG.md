@@ -15,6 +15,7 @@
 
 - New docs page for the OpenSees ML example (`docs/examples/opensees_ml.md`), added to the examples TOC and index; the notebook is enriched with a "learning task" section (data, features, target, model, split, and why log space turns the period equation into learnable exponents) and notebook-side plotting cells.
 - The OpenSees ML notebook now ships fully executed, with a live Stampede3 sweep submitted from a laptop through the local-directory sweep upload above (job `f370f8ba`).
+- New documentation for project file sharing: a permissions section on the Projects page (column meanings, repair strategies, prevention rules) and a walkthrough page wired to the examples index.
 - New `examples/project-permissions.ipynb`: a break-it, see-it, fix-it walkthrough of project file sharing, creating a member-invisible file the way scp does, auditing per-member effective access, and repairing it with one `fix_permissions` call.
 
 ## v0.5.7

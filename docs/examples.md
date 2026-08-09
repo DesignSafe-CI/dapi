@@ -118,6 +118,15 @@ Sweep an OpenSeesPy cantilever with PyLauncher, then fit a regression that recov
 
 ---
 
+### Project Permissions
+Audit who can see project files and repair broken sharing with one call.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/project-permissions.ipynb)
+
+[Full documentation](examples/project-permissions.md)
+
+---
+
 ### TMS Credentials
 Manage SSH credentials on TACC execution systems.
 
