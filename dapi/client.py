@@ -359,6 +359,55 @@ class ProjectMethods:
             self._tapis, project_id, path=path, limit=limit, output=output
         )
 
+    def permissions(self, project_id: str, path: str = "/", output: str = "df"):
+        """Report who can actually see a path in a project.
+
+        Combines the Tapis grant layer with the POSIX ACLs on Corral and
+        computes each member's effective access. Files moved in from the
+        command line (scp, mv, rsync) show up here as ``effective: none``
+        or a mask-reduced value even though project membership looks fine.
+
+        Args:
+            project_id (str): Project ID (e.g., "PRJ-6457").
+            path (str, optional): Path inside the project. Defaults to "/".
+            output (str, optional): "df" for DataFrame (default), "list" for dicts.
+
+        Example:
+            >>> ds.projects.permissions("PRJ-6457", "/results/run1.out")
+        """
+        report = projects_module.get_permissions(self._tapis, project_id, path)
+        if output == "df":
+            import pandas as pd
+
+            return pd.DataFrame(report)
+        return report
+
+    def fix_permissions(
+        self,
+        project_id: str,
+        path: str = "/",
+        recursive: bool = True,
+        dry_run: bool = False,
+    ) -> Dict:
+        """Restore project-member access to a path (owner-runnable, no admin).
+
+        Repairs what command-line transfers silently break: re-adds every
+        member's POSIX ACL entry, restores the ACL mask, and re-installs
+        default ACLs so future files inherit access.
+
+        Args:
+            project_id (str): Project ID (e.g., "PRJ-6457").
+            path (str, optional): Path to repair. Defaults to "/".
+            recursive (bool, optional): Apply to everything under path.
+            dry_run (bool, optional): Show the plan without applying.
+
+        Example:
+            >>> ds.projects.fix_permissions("PRJ-6457", "/results")
+        """
+        return projects_module.fix_project_permissions(
+            self._tapis, project_id, path, recursive=recursive, dry_run=dry_run
+        )
+
 
 class PublicationMethods:
     """Interface for DesignSafe published datasets.

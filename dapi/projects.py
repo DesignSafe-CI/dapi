@@ -5,6 +5,9 @@ from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
 from .exceptions import FileOperationError
 from typing import Dict, List, Optional, Union
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 _DS_PROJECTS_API = "https://designsafe-ci.org/api/projects/v2/"
@@ -302,3 +305,129 @@ def resolve_project_uuid(t: Tapis, project_id: str) -> str:
     raise FileOperationError(
         f"Project '{project_id}' not found. Ensure you have access to this project."
     )
+
+
+def get_permissions(t: Tapis, project_id: str, path: str = "/") -> List[Dict]:
+    """Report who can actually see *path* in a project, member by member.
+
+    Combines the Tapis grant layer with the POSIX ACLs on Corral (the
+    ground truth). A member shows ``effective: none`` when a file was
+    moved in without ACL inheritance, and a reduced ``effective`` when a
+    tool like scp preserved a restrictive mode and clobbered the ACL
+    mask, the two ways command-line transfers break project sharing.
+
+    Args:
+        t: Authenticated Tapis client.
+        project_id: Project ID (e.g. "PRJ-6457").
+        path: Path inside the project. Defaults to "/".
+
+    Returns:
+        One dict per project member: username, role, tapis permission,
+        the named POSIX ACL entry, the ACL mask, and the effective access.
+    """
+    system_id = resolve_project_uuid(t, project_id)
+    members = get_project_users(t, project_id)
+
+    acl_entries = t.files.getFacl(systemId=system_id, path=path)
+    named = {}
+    mask = None
+    for e in acl_entries:
+        if getattr(e, "defaultAcl", False):
+            continue
+        if e.type == "user" and e.principal:
+            named[str(e.principal)] = e.permissions
+        elif e.type == "mask":
+            mask = e.permissions
+
+    def effective(entry: Optional[str]) -> str:
+        if entry is None:
+            return "none"
+        if mask is None:
+            return entry
+        eff = "".join(c if c != "-" and m != "-" else "-" for c, m in zip(entry, mask))
+        return eff if eff.strip("-") else "none"
+
+    report = []
+    for m in members:
+        user = m["username"]
+        try:
+            tapis_perm = t.files.getPermissions(
+                systemId=system_id, path=path, username=user
+            ).permission
+        except Exception:
+            tapis_perm = "UNKNOWN"
+        entry = named.get(user)
+        report.append(
+            {
+                "username": user,
+                "role": m.get("role"),
+                "tapis": tapis_perm,
+                "posix_acl": entry or "missing",
+                "mask": mask or "-",
+                "effective": effective(entry),
+            }
+        )
+    return report
+
+
+def fix_project_permissions(
+    t: Tapis,
+    project_id: str,
+    path: str = "/",
+    recursive: bool = True,
+    dry_run: bool = False,
+) -> Dict:
+    """Restore project-member access to *path* and everything under it.
+
+    Rebuilds what command-line transfers (scp, mv, rsync) silently break:
+    adds a named POSIX ACL entry for every project member, restores the
+    ACL mask, and re-installs the default ACLs so files created later
+    inherit access. Runs as the calling user, so the owner of the files
+    can repair them without administrator help.
+
+    Args:
+        t: Authenticated Tapis client.
+        project_id: Project ID (e.g. "PRJ-6457").
+        path: Path inside the project to repair. Defaults to "/".
+        recursive: Apply to everything under *path*. Defaults to True.
+        dry_run: Report the ACL string without applying it.
+
+    Returns:
+        Dict with the aclString applied (or planned) and the Tapis result.
+    """
+    system_id = resolve_project_uuid(t, project_id)
+    members = get_project_users(t, project_id)
+
+    entries = [f"user:{m['username']}:rwX" for m in members]
+    acl = ",".join(entries + ["mask::rwX"])
+    acl_with_defaults = (
+        acl
+        + ","
+        + ",".join(
+            [f"default:user:{m['username']}:rwX" for m in members]
+            + ["default:mask::rwX"]
+        )
+    )
+    plan = {
+        "system": system_id,
+        "path": path,
+        "aclString": acl_with_defaults,
+        "recursive": recursive,
+        "members": [m["username"] for m in members],
+    }
+    if dry_run:
+        plan["applied"] = False
+        return plan
+
+    result = t.files.setFacl(
+        systemId=system_id,
+        path=path,
+        operation="ADD",
+        recursionMethod="PHYSICAL" if recursive else "NONE",
+        aclString=acl_with_defaults,
+    )
+    plan["applied"] = True
+    plan["exitCode"] = getattr(result, "exitCode", None)
+    plan["stdErr"] = getattr(result, "stdErr", "") or ""
+    logger.info(f"Repaired ACLs on {system_id}:{path} for {len(members)} member(s)")
+    return plan
