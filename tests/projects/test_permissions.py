@@ -221,6 +221,18 @@ class TestFixPermissions(unittest.TestCase):
                 {"/moved.txt": [], "/HEALTHY": HEALTHY},
                 setfacl_fail_paths={"/moved.txt"},
             )
+            # after the local copy-in-place, the backing store reports healthy
+            original_getFacl = files.getFacl
+
+            def getFacl(systemId, path):
+                tier1_tried = any(
+                    c[0] == "setFacl" and c[1] == "/moved.txt" for c in files.calls
+                )
+                if path == "/moved.txt" and tier1_tried:
+                    return HEALTHY
+                return original_getFacl(systemId, path)
+
+            files.getFacl = getFacl
             report = _run_fix(files, local_root=local)
             self.assertEqual(report["fixed"]["/moved.txt"], "local")
             with open(os.path.join(local, "moved.txt")) as f:
