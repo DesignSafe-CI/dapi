@@ -668,12 +668,19 @@ class ParametricSweepMethods:
         queue: Optional[str] = None,
         archive_system: Optional[str] = "designsafe",
         archive_path: Optional[str] = None,
+        staging_destination: str = "/MyData/dapi-staging",
         **kwargs,
     ):
         """Submit a PyLauncher sweep job.
 
         Translates *directory* to a Tapis URI, builds a job request with
         ``call_pylauncher.py`` as the script, and submits it.
+
+        A *directory* that is not a recognizable DesignSafe path (a local
+        folder on a laptop or CI runner, or a temp dir outside the
+        JupyterHub mounts) is uploaded once over the Tapis files API to
+        ``staging_destination`` and submitted from there, matching the
+        ``prepare_inputs`` behavior.
 
         Archives to the user's DesignSafe storage by default (not the
         app's archive path, which may belong to the app owner).
@@ -692,13 +699,23 @@ class ParametricSweepMethods:
                 (the user's own storage).
             archive_path: Archive directory path. If None, uses the
                 default ``tapis-jobs-archive/`` under the user's MyData.
+            staging_destination: DesignSafe path that receives a one-time
+                upload when *directory* is local-only. Defaults to
+                ``/MyData/dapi-staging``.
             **kwargs: Additional arguments passed to
                 ``ds.jobs.generate()``.
 
         Returns:
             SubmittedJob: A job object for monitoring via ``.monitor()``.
         """
-        input_uri = files_module.get_ds_path_uri(self._tapis, directory)
+        import os as _os
+
+        try:
+            input_uri = files_module.get_ds_path_uri(self._tapis, directory)
+        except ValueError:
+            if not _os.path.isdir(directory):
+                raise
+            input_uri = self._upload_local_directory(directory, staging_destination)
         job_request = jobs_module.generate_job_request(
             tapis_client=self._tapis,
             app_id=app_id,
@@ -714,6 +731,43 @@ class ParametricSweepMethods:
             **kwargs,
         )
         return jobs_module.submit_job_request(self._tapis, job_request)
+
+    def _upload_local_directory(self, local_dir: str, staging_destination: str) -> str:
+        """Upload a local-only sweep directory and return its Tapis URI.
+
+        Tapis cannot stage from local disk, so the directory contents are
+        uploaded once over the files API to ``staging_destination`` and the
+        job is submitted from that DesignSafe location instead.
+        """
+        import os as _os
+
+        base = _os.path.basename(local_dir.rstrip("/"))
+        remote_ds_path = f"{staging_destination.rstrip('/')}/{base}"
+        dest_uri = files_module.get_ds_path_uri(self._tapis, remote_ds_path)
+        system_id, dest_root = dest_uri.replace("tapis://", "").split("/", 1)
+        logger.info(f"Uploading sweep inputs to {dest_uri} (Tapis files API)")
+        made_dirs = set()
+        uploaded = 0
+        for walk_root, _dirs, walk_files in _os.walk(local_dir):
+            rel_root = _os.path.relpath(walk_root, local_dir)
+            for name in walk_files:
+                rel = name if rel_root == "." else f"{rel_root}/{name}"
+                dest_path = f"{dest_root}/{rel}"
+                parent = _os.path.dirname(dest_path)
+                if parent not in made_dirs:
+                    try:
+                        self._tapis.files.mkdir(systemId=system_id, path=parent)
+                    except Exception:
+                        pass  # already exists
+                    made_dirs.add(parent)
+                files_module.upload_file(
+                    self._tapis,
+                    _os.path.join(walk_root, name),
+                    f"tapis://{system_id}/{dest_path}",
+                )
+                uploaded += 1
+        logger.info(f"Uploaded {uploaded} file(s); submitting from {dest_uri}")
+        return dest_uri
 
 
 class JobMethods:
