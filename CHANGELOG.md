@@ -1,10 +1,26 @@
 # Changelog
 
-## v0.5.7
+## v0.5.8 (unreleased)
 
 ### Fixed
 
 - **Staging now guards against running out of disk space, twice**: a pre-write check fails fast with needed-vs-available and the `staged_dir=` override, and a mid-write `ENOSPC` (space can vanish during a long copy, and network mounts misreport free space) is caught, partial staging is removed, and the same clear guidance is raised. Temporary staging often lands on `/tmp`, whose capacity varies widely: containers allot a few GB, and Stampede3 node-local `/tmp` ranges from 90 GB (SKX) through 150 GB (SPR) and 200 GB (ICX) to 3.5 TB (GPU nodes).
+
+### New features
+
+- **`parametric_sweep.submit` accepts local-only input directories**: a sweep directory that is not a recognizable DesignSafe path (laptop, CI, temp dir) is uploaded once over the Tapis files API to `staging_destination` (default `/MyData/dapi-staging`) and submitted from there, matching the `prepare_inputs` behavior. The OpenSees ML notebook now runs end-to-end from any machine.
+- **Project permission check and repair (`ds.projects.permissions` / `ds.projects.fix_permissions`)**: command-line transfers into a My Projects area (scp, mv, rsync) leave files invisible to project members, either missing the named POSIX ACL entries entirely or carrying a clobbered ACL mask, and until now only administrators could fix it. `permissions()` reports every member's effective access on a path (Tapis grant, named ACL, mask, and the computed result); `fix_permissions()` repairs each broken file with the strongest strategy POSIX allows it: direct `setFacl` on service-owned files (covers members added after files existed), Tapis copy-recreate for files the service account can read, an owner tier through the `cloud.data` system (which executes as the calling user on the storage host, so researchers repair their own scp/cp/mv transfers from any machine, no shell or mount needed), and files owned by another member are reported with the exact `fix_permissions` call for that person to run. Every repair is verified against the storage before being reported as fixed. Healthy files are skipped; directory default ACLs are refreshed so future files inherit.
+
+### Documentation and examples
+
+- New docs page for the OpenSees ML example (`docs/examples/opensees_ml.md`), added to the examples TOC and index; the notebook is enriched with a "learning task" section (data, features, target, model, split, and why log space turns the period equation into learnable exponents) and notebook-side plotting cells.
+- The OpenSees ML notebook now ships fully executed, with a live Stampede3 sweep submitted from a laptop through the local-directory sweep upload above (job `f370f8ba`).
+- New `examples/project-permissions.ipynb`: a break-it, see-it, fix-it walkthrough of project file sharing, creating a member-invisible file the way scp does, auditing per-member effective access, and repairing it with one `fix_permissions` call.
+
+## v0.5.7
+
+### Fixed
+
 - **Read-only detection hardened for FUSE/NFS-style mounts** (the JupyterHub CommunityData mount reports writable mode bits while writes fail with `EROFS`): writability is now determined by attempting the operation, not by `os.access`. The workflow-JSON patch writes atomically (temp file + `os.replace`) so a failing mount can never truncate the source, and the staging-directory choice probes with a real write before using the sibling `_staged` location.
 
 ### New features
@@ -12,15 +28,11 @@
 - **Leveled logging with a global verbosity control**: dapi's console output now goes through Python's standard `logging` (`dapi.*` loggers) instead of bare prints. The default `INFO` level reports concise milestones only (staging relocation, bundle built, upload done, job submitted, monitoring start); the step-by-step trace users saw before (path translations, per-file transfers, request construction, profile dispatch) moved to `DEBUG`. Control it with `dapi.set_log_level("DEBUG"|"INFO"|"WARNING"|"ERROR"|"QUIET")` or the `DAPI_LOG_LEVEL` environment variable. The handler writes to stdout so output renders normally in Jupyter (no red stderr boxes) and stays in order with prints and progress bars; applications can silence or reroute the `dapi` logger with standard `logging` configuration. Explicit display functions (`print_runtime_summary`, `interpret_status`, `apps.find(verbose=True)`) still print directly.
 
 - **`ds.jobs.prepare_inputs` always returns a stageable `staged_dir`**: when local staging lands somewhere Tapis cannot see (the temp-dir fallback for read-only sources, or any local-machine path), the staged files are uploaded automatically over the Tapis files API — a remote upload; no MyData mount or Jupyter environment is assumed — and `staged_dir` is returned as the full `tapis://designsafe.storage.default/<username>/...` URL, which `ds.files.to_uri` passes through unchanged. The local copy is reported as `local_staged_dir`.
-- **`parametric_sweep.submit` accepts local-only input directories**: a sweep directory that is not a recognizable DesignSafe path (laptop, CI, temp dir) is uploaded once over the Tapis files API to `staging_destination` (default `/MyData/dapi-staging`) and submitted from there, matching the `prepare_inputs` behavior. The OpenSees ML notebook now runs end-to-end from any machine.
-- **Project permission check and repair (`ds.projects.permissions` / `ds.projects.fix_permissions`)**: command-line transfers into a My Projects area (scp, mv, rsync) leave files invisible to project members, either missing the named POSIX ACL entries entirely or carrying a clobbered ACL mask, and until now only administrators could fix it. `permissions()` reports every member's effective access on a path (Tapis grant, named ACL, mask, and the computed result); `fix_permissions()` repairs each broken file with the strongest strategy POSIX allows it: direct `setFacl` on service-owned files (covers members added after files existed), Tapis copy-recreate for files the service account can read, an owner tier through the `cloud.data` system (which executes as the calling user on the storage host, so researchers repair their own scp/cp/mv transfers from any machine, no shell or mount needed), and files owned by another member are reported with the exact `fix_permissions` call for that person to run. Every repair is verified against the storage before being reported as fixed. Healthy files are skipped; directory default ACLs are refreshed so future files inherit.
 - New `staging_destination` parameter on `ds.jobs.prepare_inputs` (default `/MyData/dapi-staging`): any translatable DesignSafe path, e.g. a project path, receives the auto-upload instead.
 
 ### Documentation and examples
 
 - quoFEM notebook and docs pass `bundle=True` explicitly (the default is unchanged; bundling only ever applies to SimCenter-profile apps whose wrapper unpacks natively — it is a no-op for MPM, OpenSees, and all other app ids).
-- OpenSees ML notebook enriched: a "learning task" section states the data, features, target, model, and split, and why log space turns the period equation into learnable exponents; new notebook-side plotting cells recreate predicted-vs-truth and coefficient comparisons from the predictions CSV.
-- New docs page for the OpenSees ML example (`docs/examples/opensees_ml.md`), added to the examples TOC and index; the notebook existed since v0.5.6 but had no documentation page.
 - All four migrated example notebooks executed cell-by-cell (`python-s3-pi` end-to-end including a live Stampede3 job; `pylauncher_sweep` and `pylauncher_opensees` fully; `opensees_ml` client-side cells — submission requires the JupyterHub MyData mount).
 
 ## v0.5.6
