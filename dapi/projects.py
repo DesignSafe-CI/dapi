@@ -331,6 +331,7 @@ def get_permissions(t: Tapis, project_id: str, path: str = "/") -> List[Dict]:
     acl_entries = t.files.getFacl(systemId=system_id, path=path)
     named = {}
     mask = None
+    other = None
     for e in acl_entries:
         if getattr(e, "defaultAcl", False):
             continue
@@ -338,13 +339,25 @@ def get_permissions(t: Tapis, project_id: str, path: str = "/") -> List[Dict]:
             named[str(e.principal)] = e.permissions
         elif e.type == "mask":
             mask = e.permissions
+        elif e.type == "other":
+            other = e.permissions
 
     def effective(entry: Optional[str]) -> str:
-        if entry is None:
-            return "none"
-        if mask is None:
-            return entry
-        eff = "".join(c if c != "-" and m != "-" else "-" for c, m in zip(entry, mask))
+        # named ACL entry filtered through the mask, with the file's
+        # world bits as a floor: a world-readable file stays readable
+        # by members (who can traverse the project directory) even
+        # when their ACL entry is missing or masked out.
+        acl_part = "---"
+        if entry is not None:
+            acl_part = (
+                entry
+                if mask is None
+                else "".join(
+                    c if c != "-" and m != "-" else "-" for c, m in zip(entry, mask)
+                )
+            )
+        floor = other or "---"
+        eff = "".join(a if a != "-" else o for a, o in zip(acl_part, floor))
         return eff if eff.strip("-") else "none"
 
     report = []
@@ -364,6 +377,7 @@ def get_permissions(t: Tapis, project_id: str, path: str = "/") -> List[Dict]:
                 "tapis": tapis_perm,
                 "posix_acl": entry or "missing",
                 "mask": mask or "-",
+                "other": other or "---",
                 "effective": effective(entry),
             }
         )

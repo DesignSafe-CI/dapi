@@ -76,6 +76,25 @@ class TestGetPermissions(unittest.TestCase):
         self.assertEqual(bob["posix_acl"], "missing")
         self.assertEqual(bob["effective"], "none")
 
+    def test_world_readable_file_is_readable_despite_missing_acl(self):
+        # mv'd file: no named entries, but mode rw-rw-r-- leaves other=r--
+        report = self._run([_acl("other", None, "r--")])
+        bob = next(r for r in report if r["username"] == "bob")
+        self.assertEqual(bob["posix_acl"], "missing")
+        self.assertEqual(bob["effective"], "r--")
+
+    def test_world_bits_floor_combines_with_masked_entry(self):
+        # named entry masked to nothing, but other=r-- still grants read
+        report = self._run(
+            [
+                _acl("user", "bob", "rwx"),
+                _acl("mask", None, "---"),
+                _acl("other", None, "r--"),
+            ]
+        )
+        bob = next(r for r in report if r["username"] == "bob")
+        self.assertEqual(bob["effective"], "r--")
+
 
 class TestFixPermissions(unittest.TestCase):
     def test_acl_string_covers_members_mask_and_defaults(self):
