@@ -590,7 +590,10 @@ def fix_project_permissions(
             report["fixed"][fpath] = "direct"
             continue
 
-        # tier 2: local mount as the calling user
+        # tier 2: local mount as the calling user. Mounted filesystems can
+        # silently drop chmod (returning success while changing nothing on
+        # the backing store), so never trust the local call: re-check the
+        # ACL state through Tapis before claiming the fix.
         if local_root:
             local_path = _os.path.join(
                 _os.path.expanduser(local_root), fpath.lstrip("/")
@@ -603,8 +606,14 @@ def fix_project_permissions(
                     tmp = local_path + ".dapi-tmp"
                     _shutil.copyfile(local_path, tmp)
                     _os.replace(tmp, local_path)
-                report["fixed"][fpath] = "local"
-                continue
+                verified, _n, _m = _acl_state(t, system_id, fpath, names)
+                if verified is None:
+                    report["fixed"][fpath] = "local"
+                    continue
+                logger.debug(
+                    f"local fix had no effect on {fpath} "
+                    f"(mount dropped the change); trying the next tier"
+                )
             except OSError as e:
                 logger.debug(f"local fix failed for {fpath}: {e}")
 

@@ -226,6 +226,25 @@ class TestFixPermissions(unittest.TestCase):
             with open(os.path.join(local, "moved.txt")) as f:
                 self.assertEqual(f.read(), "payload")
 
+    def test_local_fix_without_effect_is_not_reported_fixed(self):
+        import os
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as local:
+            with open(os.path.join(local, "stuck.txt"), "w") as f:
+                f.write("x")
+            # getFacl keeps returning the broken state even after the local
+            # chmod (a mount that silently drops the change), and the copy
+            # tier is also blocked: the file must land in unfixable.
+            files = _FixFiles(
+                {"/stuck.txt": MASKED, "/HEALTHY": HEALTHY},
+                setfacl_fail_paths={"/stuck.txt"},
+                copy_fail=True,
+            )
+            report = _run_fix(files, local_root=local)
+            self.assertEqual(report["fixed"], {})
+            self.assertEqual(report["unfixable"][0]["path"], "/stuck.txt")
+
     def test_dry_run_changes_nothing(self):
         files = _FixFiles({"/bad.txt": MASKED, "/HEALTHY": HEALTHY})
         report = _run_fix(files, dry_run=True)
