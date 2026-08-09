@@ -388,6 +388,7 @@ class ProjectMethods:
         path: str = "/",
         recursive: bool = True,
         dry_run: bool = False,
+        local_root: Optional[str] = None,
     ) -> Dict:
         """Restore project-member access to a path (owner-runnable, no admin).
 
@@ -405,7 +406,12 @@ class ProjectMethods:
             >>> ds.projects.fix_permissions("PRJ-6457", "/results")
         """
         return projects_module.fix_project_permissions(
-            self._tapis, project_id, path, recursive=recursive, dry_run=dry_run
+            self._tapis,
+            project_id,
+            path,
+            recursive=recursive,
+            dry_run=dry_run,
+            local_root=local_root,
         )
 
 
