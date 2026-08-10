@@ -327,18 +327,11 @@ class Workflow:
             compiled[tid] = job
             archives[tid] = f"tapis://designsafe.storage.default/{arch_dir}"
             outputs[tid] = {"archive_uri": archives[tid]}
-        # The Workflows engine unconditionally injects a parent job's
-        # outputs into its children as extra file inputs
-        # ("owe-implicit-input-<parent>"), which strict apps reject. A
-        # no-op function task between two jobs absorbs the injection
-        # while keeping the ordering, so every job that has children
-        # gets one gate, and its children depend on the gate instead.
         parents_with_children = {d for deps in self._deps.values() for d in deps}
         for parent in parents_with_children:
-            gate_id = f"{parent}-gate"
-            if gate_id in self._tasks:
+            if f"{parent}-gate" in self._tasks:
                 raise WorkflowValidationError(
-                    f"Task id '{gate_id}' collides with an internal gate task."
+                    f"Task id '{parent}-gate' collides with an internal gate task."
                 )
 
         tapis_tasks = []
@@ -349,21 +342,7 @@ class Workflow:
                     "type": "tapis_job",
                     "tapis_job_def": _resolve(compiled[tid], outputs),
                     "poll": True,
-                    "depends_on": [
-                        {"id": f"{d}-gate"} for d in sorted(self._deps[tid])
-                    ],
-                }
-            )
-        for parent in sorted(parents_with_children):
-            tapis_tasks.append(
-                {
-                    "id": f"{parent}-gate",
-                    "type": "function",
-                    "runtime": "python:3.11-slim",
-                    "installer": "pip",
-                    "packages": [],
-                    "code": _GATE_CODE,
-                    "depends_on": [{"id": parent}],
+                    "depends_on": [{"id": d} for d in sorted(self._deps[tid])],
                 }
             )
         return tapis_tasks, archives
@@ -409,6 +388,35 @@ class Workflow:
             ds, _TAPIS_GROUP, run_id, poll_interval, timeout_minutes, progress
         )
 
+    @staticmethod
+    def _with_gates(tapis_tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Splice no-op function tasks between dependent jobs.
+
+        The Workflows engine unconditionally injects a parent job's
+        outputs into its children as extra file inputs
+        ("owe-implicit-input-<parent>"), which strict apps reject. A
+        function task between two jobs absorbs the injection while
+        keeping the ordering, so every job that has children gets one
+        gate, and its children depend on the gate instead.
+        """
+        gated = copy.deepcopy(tapis_tasks)
+        parents = {d["id"] for t in gated for d in t["depends_on"]}
+        for t in gated:
+            t["depends_on"] = [{"id": f"{d['id']}-gate"} for d in t["depends_on"]]
+        for parent in sorted(parents):
+            gated.append(
+                {
+                    "id": f"{parent}-gate",
+                    "type": "function",
+                    "runtime": "python:3.11-slim",
+                    "installer": "pip",
+                    "packages": [],
+                    "code": _GATE_CODE,
+                    "depends_on": [{"id": parent}],
+                }
+            )
+        return gated
+
     def _run_tapis(
         self,
         ds,
@@ -433,7 +441,10 @@ class Workflow:
 
         pipeline_id = f"{self.name}-{run_id}".lower()
         wfapi.createPipeline(
-            group_id=group_id, id=pipeline_id, type="workflow", tasks=tapis_tasks
+            group_id=group_id,
+            id=pipeline_id,
+            type="workflow",
+            tasks=self._with_gates(tapis_tasks),
         )
         wfapi.runPipeline(group_id=group_id, pipeline_id=pipeline_id)
         logger.info(

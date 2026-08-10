@@ -81,10 +81,12 @@ class TestCompile(unittest.TestCase):
             by_id["train"]["tapis_job_def"]["fileInputs"][0]["sourceUrl"],
             "tapis://designsafe.storage.default/user1/dapi-workflows/ml/r1/sweep/inputDirectory",
         )
-        self.assertEqual(by_id["train"]["depends_on"], [{"id": "sweep-gate"}])
-        self.assertEqual(by_id["sweep-gate"]["type"], "function")
-        self.assertEqual(by_id["sweep-gate"]["depends_on"], [{"id": "sweep"}])
+        self.assertEqual(by_id["train"]["depends_on"], [{"id": "sweep"}])
         self.assertEqual(by_id["sweep"]["type"], "tapis_job")
+        gated = {t["id"]: t for t in Workflow._with_gates(tasks)}
+        self.assertEqual(gated["train"]["depends_on"], [{"id": "sweep-gate"}])
+        self.assertEqual(gated["sweep-gate"]["type"], "function")
+        self.assertEqual(gated["sweep-gate"]["depends_on"], [{"id": "sweep"}])
         self.assertEqual(
             archives["train"],
             "tapis://designsafe.storage.default/user1/dapi-workflows/ml/r1/train",
@@ -102,6 +104,7 @@ class TestCompile(unittest.TestCase):
         wf.add(JobTask("only", _job("only")))
         tasks, _ = wf.compile("user1", "r1")
         self.assertEqual([t["id"] for t in tasks], ["only"])
+        self.assertEqual([t["id"] for t in Workflow._with_gates(tasks)], ["only"])
 
     def test_gate_id_collision_rejected(self):
         wf = Workflow("w")
