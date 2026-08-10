@@ -94,7 +94,7 @@ After the first build, make the package public once (repository page, Packages, 
 docker://ghcr.io/<owner>/<repo>:latest
 ```
 
-**Without a registry.** Save the image as a tarball and upload it once with dapi; it stages to jobs like any input file. Recent Docker writes OCI layout, so the on-node conversion uses `oci-archive:`.
+**Without a registry.** Save the image as a tarball and upload it once with dapi; it stages to jobs like any input file. Recent Docker writes OCI layout, so the app converts the tarball on the node with `oci-archive:`.
 
 ```bash
 docker save site-response -o site-response.tar

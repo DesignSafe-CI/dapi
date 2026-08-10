@@ -7,9 +7,9 @@ The [custom-app notebook](https://jupyter.designsafe-ci.org/hub/user-redirect/la
 ## From scaffold to archived results
 
 1. **Scaffold.** `ds.apps.scaffold("my-first-app", template="zip")` writes `app.json` and `tapisjob_app.sh`, then the notebook prints both so every field is visible.
-2. **Edit.** The definition gets a description and small serial defaults (`skx-dev`, one core, ten minutes), edited as JSON in place.
+2. **Edit.** The notebook edits the JSON in place, adding a description and small serial defaults (`skx-dev`, one core, ten minutes).
 3. **Deploy.** `ds.apps.deploy("my-first-app")` zips the wrapper, uploads it to MyData, and registers version 0.1.0 under your ownership. Rerunning updates the app in place.
-4. **Run.** A pure-stdlib analysis script and its data are uploaded as job inputs, and a job against the new app runs `COMMAND="python3 analyze.py example_input.txt"` on one skx-dev core.
+4. **Run.** The notebook uploads a pure-stdlib analysis script and its data as job inputs, and a job against the new app runs `COMMAND="python3 analyze.py example_input.txt"` on one skx-dev core.
 5. **Results.** The archived `summary.json` comes back through `get_output_content`, and the closing cells show sharing (`shareApp`) and cleanup (`deleteApp`).
 
 The analysis script travels with the job, not with the app, which is the pattern that lets one registered app serve every variation of an analysis.

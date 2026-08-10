@@ -94,7 +94,7 @@ Both `/MyProjects/PRJ-XXXX/` and `/projects/PRJ-XXXX/` are accepted.
 
 ## Check who can see a file
 
-Project sharing rides on POSIX access control lists. Every member has a named ACL entry on each file, and an ACL *mask* caps what those entries grant. `permissions()` reads all of it and computes each member's real access:
+POSIX access control lists on the storage host decide who can open each project file. Every member has a named ACL entry on each file, and an ACL *mask* caps what those entries grant. `permissions()` reads all of it and computes each member's real access:
 
 ```python
 ds.projects.permissions("PRJ-1234", "/results/run1.out")
@@ -109,7 +109,7 @@ In the table, `tapis` is the Tapis-layer grant from project membership. `posix_a
 
 ## Fix broken file sharing
 
-Files transferred into a project from the command line break sharing in two ways: `scp` and `cp` cap the mask with the source file's mode, while `mv`, `cp -p`, and `rsync -a` wipe the member entries entirely. `fix_permissions()` repairs each broken file with the strongest strategy it allows:
+Files transferred into a project from the command line break sharing in two ways: `scp` and `cp` cap the mask with the source file's mode, while `mv`, `cp -p`, and `rsync -a` wipe the member entries entirely. `fix_permissions()` repairs each broken file with the strongest strategy the file's ownership allows:
 
 ```python
 ds.projects.fix_permissions("PRJ-1234")  # whole project
@@ -124,7 +124,7 @@ The report maps each repaired path to its strategy:
 - **copy**: the service account can read the file, so it is recreated with healthy ACLs and swapped over the original (the owner becomes the service account).
 - **unfixable**: the file belongs to another member; the report includes the exact `fix_permissions` call for that person to run.
 
-Healthy files are skipped, directory default ACLs are refreshed so future files inherit access for all current members, and every repair is verified against the storage before being reported.
+`fix_permissions()` skips healthy files, refreshes each directory's default ACLs so future files inherit access for all current members, and verifies every repair against the storage before reporting it.
 
 Prevention beats repair. Transfer into projects through Tapis (portal, dapi, or job archiving into the project system), or finish command-line copies with `chmod -R g+rwX` on the destination. Never `mv`, `cp -p`, or `rsync -a` into a project.
 
@@ -136,7 +136,7 @@ The [project permissions example](examples/project-permissions.md) breaks a file
 
 2. **PRJ-to-UUID resolution**: Each project's Tapis storage system ID is `project-<uuid>`. When you use a PRJ number (e.g., `PRJ-6270`), dapi looks up the UUID via the portal API.
 
-3. **File operations**: File listings use the standard Tapis Files API (`t.files.listFiles`) against the resolved `project-<uuid>` system.
+3. **File operations**: dapi lists files with the standard Tapis Files API (`t.files.listFiles`) against the resolved `project-<uuid>` system.
 
 ## Error handling
 

@@ -1,12 +1,11 @@
 # Workflows
 
-`dapi.workflows` runs a multi-stage study as a directed acyclic graph of Tapis jobs, with each job a node and each dependency an edge. A sweep that feeds a training job is the typical shape; the training job consumes the sweep's archived output.
+`dapi.workflows` chains Tapis jobs. You define each stage as a normal job and declare which stage needs the results of which; `run()` then submits every job the moment the jobs it depends on finish. In the example on this page, a 48-core sweep runs first, and the one-core training job that reads its results is submitted automatically when the sweep completes. Stages that do not depend on each other run at the same time. Every job is a real Tapis job, on the same queues and against the same allocation as a job you submit by hand.
 
 ![A two-node workflow. An output reference connects the sweep job to the train job, and the referenced archive path is known before either job is submitted.](images/workflow-dag.png)
 
 The concepts behind the design, and an interactive view of the scheduler, live in the [DesignSafe Workflows book](https://designsafe-ci.github.io/ds-workflows/dag-workflows).
 
-Every task runs as a real Tapis job on HPC, on the same queues and against the same allocation as a job submitted by hand. `run()` coordinates the graph from your notebook or script, submitting each job with your credentials the moment its dependencies finish and running independent branches in parallel.
 
 ## Step 1. Generate the job requests
 
@@ -42,7 +41,7 @@ train_job = ds.jobs.generate(
 
 ## Step 2. Add the tasks to a workflow
 
-Dependencies are always declared, never inferred from the order you add tasks.
+You declare every dependency yourself; dapi never infers one from the order you add tasks.
 
 ```python
 from dapi.workflows import Workflow, JobTask
@@ -54,7 +53,7 @@ train = wf.add(JobTask("train", job_dict=train_job), depends_on=["sweep"])
 
 ## Step 3. Wire outputs between tasks
 
-A task references an upstream task's archive with `task.output()`. The reference does two things at once. It wires the data flow, and it declares the dependency edge, so the explicit `depends_on` above becomes optional.
+A task references an upstream task's archive with `task.output()`. The reference does two things at once. dapi fills the train job's `sourceUrl` with the sweep's archive path, and it makes the train job wait for the sweep to finish, so the explicit `depends_on` above becomes optional.
 
 ```python
 train_job["fileInputs"][0]["sourceUrl"] = sweep.output(
@@ -63,7 +62,7 @@ train_job["fileInputs"][0]["sourceUrl"] = sweep.output(
 train = wf.add(JobTask("train", job_dict=train_job))
 ```
 
-References resolve before anything is submitted. Each run assigns every task a deterministic archive directory under `MyData/dapi-workflows/<workflow>/<run_id>/<task>`, so at compile time the reference becomes a concrete `tapis://` path. The `suffix` selects a subfolder of the upstream archive, for example the `inputDirectory` a `python-s3` job archives its results into.
+dapi replaces the reference with a real path before it submits anything. Each run gives every task a fixed archive directory, `MyData/dapi-workflows/<workflow>/<run_id>/<task>`, so the sweep's archive location is known before the sweep ever runs, and the train job's `sourceUrl` is a concrete `tapis://` path from the start. The `suffix` selects a subfolder of the upstream archive, for example the `inputDirectory` a `python-s3` job archives its results into.
 
 Only `archive_uri` can be referenced. A job's UUID or status does not exist before the run, so referencing them raises a validation error.
 
@@ -123,11 +122,11 @@ ds.files.download(
 
 ## Failure semantics
 
-Tasks whose upstream failed are never submitted. They are reported as `blocked`, and the raised `WorkflowExecutionError` carries the per-task detail. A failed branch never cancels its siblings; independent branches run to completion, and their archives survive for a fixed rerun. A kernel that dies mid-run does not stop already-submitted jobs, and `ds.jobs.job(uuid)` re-attaches to them. Tasks not yet submitted when the coordinator dies stay unsubmitted; rerunning the workflow starts a fresh `run_id`.
+`run()` never submits a task whose upstream failed. It reports the task as `blocked`, and the `WorkflowExecutionError` it raises lists the detail for each task. A failed branch never cancels its siblings; independent branches run to completion, and their archives survive for a fixed rerun. A kernel that dies mid-run does not stop already-submitted jobs, and `ds.jobs.job(uuid)` re-attaches to them. A kernel that dies before submitting a task leaves it unsubmitted; rerunning the workflow starts a fresh `run_id`.
 
 ## Parallel branches and fan-in
 
-Tasks with no edges between them are submitted together and polled together, each as its own job with its own resources. A downstream task that depends on all of them becomes the fan-in.
+`run()` submits tasks with no edges between them at the same time and polls them together, each as its own job with its own resources. A downstream task that depends on all of them becomes the fan-in.
 
 ```python
 wf = Workflow("regional-study")
@@ -139,7 +138,7 @@ wf.add(JobTask("aggregate", agg_job), depends_on=["shard-a", "shard-b", "shard-c
 
 ![Three shards fan in to one aggregate task whose single input directory is the run root holding every shard's archive.](images/workflow-fanin.png)
 
-Most DesignSafe apps, `python-s3` included, accept exactly one input directory (`strictFileInputs`), yet a fan-in needs every parent's output. All tasks of a run archive under one run root, so the aggregator's single input directory is the run root itself, and DAG ordering guarantees it stages only after every parent has archived. The app never changes. This is the **run-root pattern**. Choose the `run_id` yourself so the run root is known up front, and upload the aggregator's script into it before running.
+Most DesignSafe apps, `python-s3` included, accept exactly one input directory (`strictFileInputs`), yet a fan-in needs every parent's output. All tasks of a run archive under one run root, so the aggregator's single input directory is the run root itself, and because `run()` submits the aggregator only after every parent has archived, Tapis stages that directory with every shard's results already in it. The app never changes. This is the **run-root pattern**. Choose the `run_id` yourself so the run root is known up front, and upload the aggregator's script into it before running.
 
 ```python
 run_id = time.strftime("%Y%m%d-%H%M%S")
@@ -164,7 +163,7 @@ job["parameterSet"]["archiveFilter"] = {
 }
 ```
 
-On the pi workflow, the filter cut the aggregator's archiving from 11.2 minutes to 41 seconds and the whole workflow from 27 to 16 minutes. Staging time did not shrink with volume, so directory staging carries a roughly fixed Tapis transfer latency regardless of size; budget for it when sizing many-node graphs.
+On the pi workflow, the filter cut the aggregator's archiving from 11.2 minutes to 41 seconds and the whole workflow from 27 to 16 minutes. Staging time did not shrink with volume; Tapis spends roughly the same time staging a directory whatever its size, so budget for that fixed cost when sizing many-node graphs.
 
 ## Fuse sequential steps into one job
 
@@ -190,7 +189,7 @@ Choose the graph when stages need different resources or fan out; choose the fus
 
 ## Containers as workflow nodes
 
-Tools that need their own software stack run as containers inside ordinary `python-s3` jobs, so they drop into a graph unchanged. Compute nodes pull registry images directly (`apptainer exec docker://usgs/gmprocess ...`), and unpublished images travel as `docker save` tarballs staged like any input file, converted to SIF on the node. The [container-demo example](https://github.com/DesignSafe-CI/dapi/tree/main/examples/workflows/container-demo) is the working reference, including the driver script and its two sharp edges (load `tacc-apptainer` with `set -u` relaxed; recent Docker saves OCI layout, so convert with `oci-archive:`).
+Tools that need their own software stack run as containers inside ordinary `python-s3` jobs, so they drop into a graph unchanged. Compute nodes pull registry images directly (`apptainer exec docker://usgs/gmprocess ...`), and you ship an unpublished image as a `docker save` tarball that Tapis stages like any input file and the driver script converts to SIF on the node. The [container-demo example](https://github.com/DesignSafe-CI/dapi/tree/main/examples/workflows/container-demo) is the working reference, including the driver script and its two sharp edges (load `tacc-apptainer` with `set -u` relaxed; recent Docker saves OCI layout, so convert with `oci-archive:`).
 
 ## Full example
 

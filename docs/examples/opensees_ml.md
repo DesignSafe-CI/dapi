@@ -18,7 +18,7 @@ so in log space the exponents are known exactly, 0.5 on mass, 1.5 on length, and
 
 ## How one job does all of it
 
-Every stage of the `python-s3` lifecycle carries part of the workflow.
+Each stage of the `python-s3` job does one piece of the work.
 
 | Stage | Setting | What it does here |
 |---|---|---|
@@ -58,7 +58,7 @@ On Stampede3, the 75 tasks take about 42 seconds of task time, and the regressio
 
 ## The same study as a DAG workflow
 
-`DS_OpenSees_ML_Workflow_DAG.ipynb` splits the pipeline into two jobs, a 48-core sweep and a one-core training task, connected as an explicit graph with `dapi.workflows`. The sweep's archive flows into the training job through an output reference, retraining costs one core instead of a resweep, and the run streams live per-task progress in the notebook. The [Workflows guide](../workflows.md) covers the API.
+`DS_OpenSees_ML_Workflow_DAG.ipynb` splits the pipeline into two jobs, a 48-core sweep and a one-core training task, connected as an explicit graph with `dapi.workflows`. dapi points the training job's input at the sweep's archive through an output reference and resolves it to the real path before submitting, retraining costs one core instead of a resweep, and the run streams live per-task progress in the notebook. The [Workflows guide](../workflows.md) covers the API.
 
 ## Files
 
