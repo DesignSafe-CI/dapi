@@ -59,6 +59,8 @@ logger = logging.getLogger(__name__)
 # Workflows service for job submission in the designsafe tenant.
 _BACKEND = "dapi"
 _TAPIS_GROUP = "dapi-workflows"
+# Base64 of the no-op the gate tasks run (see compile()).
+_GATE_CODE = "cHJpbnQoImdhdGU6IHVwc3RyZWFtIGZpbmlzaGVkIik="
 
 __all__ = [
     "Workflow",
@@ -335,6 +337,20 @@ class Workflow:
             compiled[tid] = job
             archives[tid] = f"tapis://designsafe.storage.default/{arch_dir}"
             outputs[tid] = {"archive_uri": archives[tid]}
+        # The Workflows engine unconditionally injects a parent job's
+        # outputs into its children as extra file inputs
+        # ("owe-implicit-input-<parent>"), which strict apps reject. A
+        # no-op function task between two jobs absorbs the injection
+        # while keeping the ordering, so every job that has children
+        # gets one gate, and its children depend on the gate instead.
+        parents_with_children = {d for deps in self._deps.values() for d in deps}
+        for parent in parents_with_children:
+            gate_id = f"{parent}-gate"
+            if gate_id in self._tasks:
+                raise WorkflowValidationError(
+                    f"Task id '{gate_id}' collides with an internal gate task."
+                )
+
         tapis_tasks = []
         for tid in self._tasks:
             tapis_tasks.append(
@@ -343,7 +359,21 @@ class Workflow:
                     "type": "tapis_job",
                     "tapis_job_def": _resolve(compiled[tid], outputs),
                     "poll": True,
-                    "depends_on": [{"id": d} for d in sorted(self._deps[tid])],
+                    "depends_on": [
+                        {"id": f"{d}-gate"} for d in sorted(self._deps[tid])
+                    ],
+                }
+            )
+        for parent in sorted(parents_with_children):
+            tapis_tasks.append(
+                {
+                    "id": f"{parent}-gate",
+                    "type": "function",
+                    "runtime": "python:3.11-slim",
+                    "installer": "pip",
+                    "packages": [],
+                    "code": _GATE_CODE,
+                    "depends_on": [{"id": parent}],
                 }
             )
         return tapis_tasks, archives
@@ -402,7 +432,9 @@ class Workflow:
         if not username:
             raise WorkflowExecutionError("Cannot determine Tapis username.")
         tapis_tasks, archives = self.compile(username, run_id)
-        job_defs = {t["id"]: t["tapis_job_def"] for t in tapis_tasks}
+        job_defs = {
+            t["id"]: t["tapis_job_def"] for t in tapis_tasks if t["type"] == "tapis_job"
+        }
 
         def _say(msg: str) -> None:
             if progress:
@@ -554,6 +586,8 @@ class Workflow:
                         pipeline_run_uuid=run.uuid,
                     ):
                         tid = getattr(te, "task_id", "?")
+                        if tid not in self._tasks:
+                            continue  # internal gate tasks stay invisible
                         status = getattr(te, "status", None)
                         if last_task_status.get(tid) != status:
                             msg = getattr(te, "last_message", None)
