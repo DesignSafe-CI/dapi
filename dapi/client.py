@@ -160,6 +160,36 @@ class AppMethods:
         """
         return apps_module.get_app_details(self._tapis, *args, **kwargs)
 
+    def templates(self) -> List[str]:
+        """Names of the app templates that ship with dapi."""
+        return apps_module.list_app_templates()
+
+    def scaffold(self, *args, **kwargs) -> str:
+        """Write the files for a new Tapis app from a dapi template.
+
+        Convenience wrapper around apps_module.scaffold_app(). Creates
+        ``<target_dir>/<app_id>/`` with ``app.json`` and
+        ``tapisjob_app.sh`` ready to edit, then register with
+        ``ds.apps.deploy()``.
+
+        Returns:
+            str: Path of the created app directory.
+        """
+        return apps_module.scaffold_app(*args, **kwargs)
+
+    def deploy(self, *args, **kwargs) -> dict:
+        """Register (or update) a user-owned Tapis app from an app directory.
+
+        Convenience wrapper around apps_module.deploy_app(): zips the
+        wrapper, uploads it to your storage, and registers the app
+        version under your ownership. Rerunning with the same version
+        updates the app in place.
+
+        Returns:
+            dict: ``app_id``, ``version``, and ``container_image``.
+        """
+        return apps_module.deploy_app(self._tapis, *args, **kwargs)
+
 
 class FileMethods:
     """Interface for file operations on Tapis storage systems.

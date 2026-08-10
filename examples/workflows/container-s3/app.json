@@ -1,0 +1,65 @@
+{
+  "id": "container-s3",
+  "version": "0.1.0",
+  "description": "DRAFT: run any container image (docker:// or staged .sif) as a Tapis job on Stampede3 via apptainer. The image and command are job parameters, so one app serves gmprocess, custom research codes, and registry images without redeployment.",
+  "owner": "${apiUserId}",
+  "runtime": "ZIP",
+  "runtimeVersion": null,
+  "containerImage": "tapis://designsafe.storage.default/REPLACE-USER/apps/container-s3/container-s3.zip",
+  "jobType": "BATCH",
+  "strictFileInputs": true,
+  "jobAttributes": {
+    "execSystemId": "stampede3",
+    "execSystemLogicalQueue": "skx",
+    "archiveSystemId": "designsafe.storage.default",
+    "archiveSystemDir": "${JobOwner}/tapis-jobs-archive/${JobCreateDate}/${JobName}-${JobUUID}",
+    "archiveOnAppError": true,
+    "isMpi": false,
+    "nodeCount": 1,
+    "coresPerNode": 48,
+    "maxMinutes": 60,
+    "fileInputs": [
+      {
+        "name": "Input Directory",
+        "description": "Directory staged to the job and bind-mounted at /data inside the container; outputs written there are archived.",
+        "inputMode": "REQUIRED",
+        "autoMountLocal": true,
+        "targetPath": "inputDirectory"
+      }
+    ],
+    "parameterSet": {
+      "appArgs": [],
+      "schedulerOptions": [
+        {
+          "name": "TACC Allocation",
+          "description": "The TACC allocation associated with this job execution",
+          "inputMode": "REQUIRED",
+          "arg": "-A ${allocation}"
+        }
+      ],
+      "envVariables": [
+        {
+          "key": "CONTAINER_IMAGE",
+          "value": "",
+          "description": "docker://<registry image:tag> pulled at job start, or the filename of a .sif staged in the Input Directory.",
+          "inputMode": "REQUIRED"
+        },
+        {
+          "key": "COMMAND",
+          "value": "",
+          "description": "Shell command executed inside the container with cwd /data (the Input Directory).",
+          "inputMode": "REQUIRED"
+        }
+      ],
+      "archiveFilter": {
+        "includeLaunchFiles": true
+      }
+    },
+    "execSystemExecDir": "${JobWorkingDir}",
+    "execSystemInputDir": "${JobWorkingDir}",
+    "execSystemOutputDir": "${JobWorkingDir}"
+  },
+  "tags": [
+    "portalName: DesignSafe"
+  ]
+}

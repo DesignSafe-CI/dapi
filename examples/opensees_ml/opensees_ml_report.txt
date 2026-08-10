@@ -1,0 +1,12 @@
+n_total:  75
+n_train:  60
+n_test:   15
+target:   period (log space)
+R2 train: 1.0000
+R2 test:  1.0000
+fitter:   sklearn
+
+coef_bias: -5.657665
+coef_log_NodalMass: 0.500000
+coef_log_LCol: 1.500000
+coef_log_E: -0.500000

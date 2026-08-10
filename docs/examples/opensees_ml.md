@@ -6,7 +6,7 @@ An end-to-end machine learning workflow on DesignSafe. A PyLauncher sweep runs a
 
 For PyLauncher basics, see [PyLauncher Parameter Sweeps](pylauncher.md). For the app settings used here, see the [Generic Python App](python.md).
 
-## The idea
+## The period equation as ground truth
 
 The natural period of a cantilever with tip mass follows
 
@@ -54,13 +54,18 @@ job.download_output(
 )
 ```
 
-Verified on Stampede3: 75 tasks completed in 42 seconds of task time, and the regression recovered `[0.500, 1.500, -0.500]` with `R² = 1.0`.
+On Stampede3, the 75 tasks take about 42 seconds of task time, and the regression recovers `[0.500, 1.500, -0.500]` with `R² = 1.0`.
+
+## The same study as a DAG workflow
+
+`DS_OpenSees_ML_Workflow_DAG.ipynb` splits the pipeline into two jobs, a 48-core sweep and a one-core training task, connected as an explicit graph with `dapi.workflows`. The sweep's archive flows into the training job through an output reference, retraining costs one core instead of a resweep, and the run streams live per-task progress in the notebook. The [Workflows guide](../workflows.md) covers the API.
 
 ## Files
 
 | File | Role |
 |---|---|
 | `DS_OpenSees_ML_Example.ipynb` | Defines the sweep, bundles inputs, submits, inspects outputs |
+| `DS_OpenSees_ML_Workflow_DAG.ipynb` | The same study as a two-job DAG via `dapi.workflows` |
 | `cantilever.py` | One task, an OpenSeesPy pushover that writes `metrics.json` |
 | `aggregate_and_train.py` | Collects all `metrics.json` and fits the regression |
 | `postprocess.py` | Renders the diagnostics PDF and PNG |

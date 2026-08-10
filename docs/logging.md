@@ -7,7 +7,7 @@ dapi reports what it is doing through Python's standard `logging` module, under 
 ```python
 import dapi
 
-dapi.set_log_level("DEBUG")  # full step-by-step trace
+dapi.set_log_level("DEBUG")  # full trace of every operation
 dapi.set_log_level("INFO")  # default: concise milestones
 dapi.set_log_level("WARNING")  # problems only
 dapi.set_log_level("QUIET")  # silence dapi entirely

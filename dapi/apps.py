@@ -1,7 +1,130 @@
-from tapipy.tapis import Tapis
+import json
+import logging
+import os
+import stat
+import tempfile
+import zipfile
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from tapipy.errors import BaseTapyException
-from typing import List, Optional
+from tapipy.tapis import Tapis
+
 from .exceptions import AppDiscoveryError
+
+logger = logging.getLogger(__name__)
+
+_TEMPLATES_DIR = Path(__file__).parent / "templates" / "apps"
+
+
+def list_app_templates() -> List[str]:
+    """Names of the app templates that ship with dapi."""
+    return sorted(p.name for p in _TEMPLATES_DIR.iterdir() if p.is_dir())
+
+
+def scaffold_app(
+    app_id: str, target_dir: str = ".", template: str = "container"
+) -> str:
+    """Write the files for a new Tapis app from a dapi template.
+
+    Creates ``<target_dir>/<app_id>/`` containing ``app.json`` (the app
+    definition) and ``tapisjob_app.sh`` (the wrapper the job executes).
+    Edit them as needed, then register the app with :func:`deploy_app`.
+
+    Args:
+        app_id: Id for the new app (also the directory name).
+        target_dir: Where to create the app directory.
+        template: One of :func:`list_app_templates`. The ``container``
+            template runs any image (``docker://`` or staged ``.sif``)
+            via apptainer, with CONTAINER_IMAGE and COMMAND as job
+            parameters.
+
+    Returns:
+        Path of the created app directory.
+    """
+    src = _TEMPLATES_DIR / template
+    if not src.is_dir():
+        raise AppDiscoveryError(
+            f"Unknown app template '{template}'. Available: {list_app_templates()}"
+        )
+    dest = Path(target_dir) / app_id
+    dest.mkdir(parents=True, exist_ok=True)
+    for f in sorted(src.iterdir()):
+        out = dest / f.name
+        if out.exists():
+            raise AppDiscoveryError(f"{out} already exists; not overwriting.")
+        out.write_text(f.read_text().replace("__APP_ID__", app_id))
+        if f.suffix == ".sh":
+            out.chmod(out.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    logger.info(f"Scaffolded app '{app_id}' from template '{template}' at {dest}")
+    return str(dest)
+
+
+def deploy_app(
+    t: Tapis,
+    app_dir: str,
+    version: Optional[str] = None,
+    assets_system: str = "designsafe.storage.default",
+    assets_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Register (or update) a user-owned Tapis app from an app directory.
+
+    Zips every file in *app_dir* except ``app.json`` (the wrapper script
+    plus any helpers), uploads the zip to your storage, points the app
+    definition's ``containerImage`` at it, and registers the version
+    with the Tapis apps service. Rerunning with the same version updates
+    the existing app in place, so iterate freely.
+
+    Args:
+        t: Authenticated Tapis client.
+        app_dir: Directory containing ``app.json`` and the wrapper.
+        version: Override the version in ``app.json``.
+        assets_system: Storage system for the zip.
+        assets_path: Path for the zip on *assets_system*. Defaults to
+            ``<username>/apps/<app_id>/<version>``.
+
+    Returns:
+        Dict with ``app_id``, ``version``, and ``container_image``.
+    """
+    app_dir_path = Path(app_dir)
+    spec = json.loads((app_dir_path / "app.json").read_text())
+    spec.pop("owner", None)  # the caller owns the app
+    app_id = spec["id"]
+    version = version or spec["version"]
+    spec["version"] = version
+
+    username = t.username
+    assets_path = assets_path or f"{username}/apps/{app_id}/{version}"
+
+    tmp = tempfile.mkdtemp(prefix="dapi-app-")
+    zip_path = os.path.join(tmp, f"{app_id}.zip")
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for f in sorted(app_dir_path.iterdir()):
+            if f.is_file() and f.name != "app.json":
+                info = zipfile.ZipInfo(f.name)
+                info.external_attr = 0o755 << 16  # keep scripts executable
+                zf.writestr(info, f.read_bytes())
+    t.upload(
+        system_id=assets_system,
+        source_file_path=zip_path,
+        dest_file_path=f"{assets_path}/{app_id}.zip",
+    )
+    spec["containerImage"] = f"tapis://{assets_system}/{assets_path}/{app_id}.zip"
+
+    try:
+        t.apps.createAppVersion(**spec)
+        logger.info(f"Registered app {app_id} v{version}")
+    except BaseTapyException as e:
+        if "APPAPI_APP_EXISTS" not in str(e) and "already exists" not in str(e):
+            raise
+        t.apps.putApp(appId=app_id, appVersion=version, **spec)
+        logger.info(f"Updated existing app {app_id} v{version}")
+
+    return {
+        "app_id": app_id,
+        "version": version,
+        "container_image": spec["containerImage"],
+    }
 
 
 def find_apps(

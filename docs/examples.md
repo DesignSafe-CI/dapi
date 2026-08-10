@@ -56,7 +56,7 @@ Access DesignSafe research databases (NGL, Earthquake Recovery, Vp).
 ---
 
 ### Generic Python on HPC
-Run any Python script (or executable) on Stampede3 with the general-purpose `python-s3` app — Monte Carlo pi across all 48 cores of a node.
+Run any Python script (or executable) on Stampede3 with the general-purpose `python-s3` app, shown here as Monte Carlo pi across all 48 cores of a node.
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/python/python-s3-pi.ipynb)
 
@@ -115,6 +115,15 @@ Sweep an OpenSeesPy cantilever with PyLauncher, then fit a regression that recov
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees_ml/DS_OpenSees_ML_Example.ipynb)
 
 [Full documentation](examples/opensees_ml.md)
+
+---
+
+### Build Your Own Tapis App
+Scaffold, register, and run a custom app with two dapi calls.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/custom-app.ipynb)
+
+[Full documentation](examples/custom-app.md)
 
 ---
 

@@ -15,6 +15,8 @@ project:
     - title: User Guide
       children:
         - file: docs/jobs.md
+        - file: docs/workflows.md
+        - file: docs/containers.md
         - file: docs/apps.md
         - file: docs/files.md
         - file: docs/projects.md
@@ -34,6 +36,7 @@ project:
         - file: docs/examples/opensees_ml.md
         - file: docs/examples/database.md
         - file: docs/examples/apps.md
+        - file: docs/examples/custom-app.md
         - file: docs/examples/tms_credentials.md
         - file: docs/examples/project-permissions.md
     - url: /dapi/api/

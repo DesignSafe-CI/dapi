@@ -111,7 +111,7 @@ job = ds.jobs.parametric_sweep.submit(
 job.monitor()
 ```
 
-Verified on `python-s3` v1.0.0 (Stampede3, job `4e8f5689-d193-49c9-afd2-2f2fe55b9d35-007`): 9 tasks in 7 s, all `out_*/result.json` produced.
+On Stampede3 (`python-s3` v1.0.0), the 9 tasks completed in 7 seconds, each producing its `out_*/result.json`.
 
 ## Output Directory Pattern
 

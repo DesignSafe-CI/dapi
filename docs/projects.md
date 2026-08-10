@@ -1,8 +1,6 @@
 # Projects
 
-DesignSafe projects are collaborative workspaces where team members share files, curate datasets, and publish research. Projects include both your own projects (MyProjects) and published projects (NHERI-Published). Each project has a PRJ number (e.g., PRJ-6270), a UUID, and a corresponding Tapis storage system.
-
-Project metadata is fetched from the [DesignSafe portal API](https://designsafe-ci.org) (`/api/projects/v2/`), which provides project details, team information, and DOIs. File listings use the Tapis Files API against the project's storage system (`project-<uuid>`).
+A DesignSafe project is the workspace a team shares files in, curates datasets in, and publishes from. `ds.projects` lists yours (MyProjects) and published ones (NHERI-Published), reads their metadata, and lists their files, all addressed by a PRJ number such as PRJ-6270.
 
 ## List your projects
 
@@ -26,7 +24,7 @@ Pagination:
 ds.projects.list(limit=100, offset=100)
 ```
 
-DataFrame columns: `projectId`, `title`, `pi`, `type`, `created`, `lastUpdated`, `uuid`.
+The DataFrame has columns `projectId`, `title`, `pi`, `type`, `created`, `lastUpdated`, and `uuid`.
 
 ## Get project details
 
@@ -79,7 +77,7 @@ ds.projects.files("PRJ-1305", path="/Training/")
 files = ds.projects.files("PRJ-6270", output="raw")
 ```
 
-DataFrame columns: `name`, `type`, `size`, `lastModified`, `path`.
+The DataFrame has columns `name`, `type`, `size`, `lastModified`, and `path`.
 
 ## Projects and file path translation
 
@@ -107,7 +105,7 @@ ds.projects.permissions("PRJ-1234", "/results/run1.out")
 | user1 | pi | MODIFY | rwx | --- | --- | none |
 | user2 | team_member | MODIFY | rwx | --- | --- | none |
 
-Column meanings. `tapis` is the Tapis-layer grant from project membership. `posix_acl` is the member's named ACL entry on the file (`missing` means it was wiped). `mask` caps every entry; `other` is the file's world bits, which act as a floor. `effective` combines them into the truth. In the table above, membership looks fine, yet nobody can read the file, its mask vetoes everything.
+In the table, `tapis` is the Tapis-layer grant from project membership. `posix_acl` is the member's named ACL entry on the file (`missing` means it was wiped). `mask` caps every entry; `other` is the file's world bits, which act as a floor. `effective` combines them into the truth. In the table above, membership looks fine, yet nobody can read the file, because its mask vetoes everything.
 
 ## Fix broken file sharing
 
@@ -130,9 +128,9 @@ Healthy files are skipped, directory default ACLs are refreshed so future files 
 
 Prevention beats repair. Transfer into projects through Tapis (portal, dapi, or job archiving into the project system), or finish command-line copies with `chmod -R g+rwX` on the destination. Never `mv`, `cp -p`, or `rsync -a` into a project.
 
-See the [project permissions walkthrough](examples/project-permissions.md) for a live break-and-fix demonstration.
+The [project permissions example](examples/project-permissions.md) breaks a file the way scp does and repairs it.
 
-## How it works
+## The APIs behind project access
 
 1. **Project listing and metadata**: dapi queries the DesignSafe portal API (`https://designsafe-ci.org/api/projects/v2/`) using your Tapis authentication token. This API returns project metadata including the project UUID.
 

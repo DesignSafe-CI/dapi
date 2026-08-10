@@ -340,7 +340,7 @@ final_status = job.monitor()
 (pylauncher)=
 ## Parameter Sweeps with PyLauncher
 
-See the [PyLauncher example](examples/pylauncher.md) for a full walkthrough, or the [PyLauncher OpenSees example](examples/pylauncher_opensees.md) for a structural engineering use case.
+The [PyLauncher example](examples/pylauncher.md) runs a complete sweep, and the [PyLauncher OpenSees example](examples/pylauncher_opensees.md) applies it to a structural model.
 
 ## Bulk Operations
 

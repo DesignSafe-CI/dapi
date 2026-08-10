@@ -105,7 +105,7 @@ def set_log_level(level="INFO") -> None:
 set_log_level(_os.environ.get("DAPI_LOG_LEVEL", "INFO"))
 
 
-__version__ = "0.5.8"
+__version__ = "0.6.0"
 
 __all__ = [
     "DSClient",

@@ -82,7 +82,7 @@ done
 echo "ERROR: no OpenSeesPy library in ${TACC_OPENSEES_BIN}" >&2; exit 1
 ```
 
-Verified on `python-s3` v1.0.0 (Stampede3, job `4362db11-bf97-4948-9b2d-251e94ac31ba-007`): 15 pushover tasks in 11 s, all `out_*` recorder outputs produced.
+On Stampede3 (`python-s3` v1.0.0), the 15 pushover tasks completed in 11 seconds, each producing its `out_*` recorder outputs.
 
 ## Output
 

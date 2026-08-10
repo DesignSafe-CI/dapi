@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.5.8 (unreleased)
+## v0.6.0 (unreleased)
 
 ### Fixed
 
@@ -9,14 +9,21 @@
 ### New features
 
 - **`parametric_sweep.submit` accepts local-only input directories**: a sweep directory that is not a recognizable DesignSafe path (laptop, CI, temp dir) is uploaded once over the Tapis files API to `staging_destination` (default `/MyData/dapi-staging`) and submitted from there, matching the `prepare_inputs` behavior. The OpenSees ML notebook now runs end-to-end from any machine.
+- **DAG workflows (`dapi.workflows`)**: compose Tapis jobs into an explicit directed acyclic graph. `Workflow`/`JobTask` with declared `depends_on` edges (referencing a task's output also declares the edge), validation that rejects cycles and unknown references, and `Workflow.visualize()` drawing the DAG with edges labeled by the output flowing across them. Each task gets a deterministic per-run archive directory, so `OutputRef("archive_uri", suffix=...)` resolves to a concrete path at compile time (one directory input per edge). `run()` coordinates the graph, submitting each job with the user's credentials when its dependencies finish, running independent branches in parallel, streaming live per-task status transitions, and blocking dependents of failed tasks; already-submitted jobs survive the coordinating process and re-attach via `ds.jobs.job(uuid)`. Verified end to end on Stampede3 with the OpenSees ML pipeline (75-run sweep feeding a training job).
+- **`workflows.sequence_job()` packs sequential steps into one job on one node**: a generated fail-fast driver runs the steps in order inside a single `python-s3` allocation (one queue wait, shared working directory, no archive hop between steps).
 - **Project permission check and repair (`ds.projects.permissions` / `ds.projects.fix_permissions`)**: command-line transfers into a My Projects area (scp, mv, rsync) leave files invisible to project members, either missing the named POSIX ACL entries entirely or carrying a clobbered ACL mask, and until now only administrators could fix it. `permissions()` reports every member's effective access on a path (Tapis grant, named ACL, mask, and the computed result); `fix_permissions()` repairs each broken file with the strongest strategy POSIX allows it: direct `setFacl` on service-owned files (covers members added after files existed), Tapis copy-recreate for files the service account can read, an owner tier through the `cloud.data` system (which executes as the calling user on the storage host, so researchers repair their own scp/cp/mv transfers from any machine, no shell or mount needed), and files owned by another member are reported with the exact `fix_permissions` call for that person to run. Every repair is verified against the storage before being reported as fixed. Healthy files are skipped; directory default ACLs are refreshed so future files inherit.
+
+- **App scaffolding and deployment (`ds.apps.scaffold` / `ds.apps.deploy`)**: build a user-owned Tapis app in two calls. `scaffold()` writes `app.json` and `tapisjob_app.sh` from a template shipped with dapi (`ds.apps.templates()`); `deploy()` zips the wrapper, uploads it to MyData, and registers the version under the caller's ownership, updating in place on redeploy. The `container` template runs any image (`docker://` or staged `.sif`) via apptainer with `CONTAINER_IMAGE` and `COMMAND` as job parameters, one deployed app for every image a group builds.
 
 ### Documentation and examples
 
+- New `examples/custom-app.ipynb`: develops a Tapis app end to end, scaffold from the `zip` template, edit the definition, `deploy()`, submit a job against it, and read the archived results, with a docs page (`docs/examples/custom-app.md`) on the examples index.
+- New Workflows page in the user guide (`docs/workflows.md`): building a graph, passing outputs with `OutputRef`, live progress, failure semantics, parallel fan-in via the run-root pattern, archive filters with measured timings, and `sequence_job`.
+- New Custom Containers page in the user guide (`docs/containers.md`): build on a TACC base image, deliver by registry pull (verified working from Stampede3 compute nodes) or by `docker save` tarball staged as job input, run via a `python-s3` driver, no Tapis registration anywhere; working demo in `examples/workflows/container-demo/`.
 - New docs page for the OpenSees ML example (`docs/examples/opensees_ml.md`), added to the examples TOC and index; the notebook is enriched with a "learning task" section (data, features, target, model, split, and why log space turns the period equation into learnable exponents) and notebook-side plotting cells.
 - The OpenSees ML notebook now ships fully executed, with a live Stampede3 sweep submitted from a laptop through the local-directory sweep upload above (job `f370f8ba`).
-- New documentation for project file sharing: a permissions section on the Projects page (column meanings, repair strategies, prevention rules) and a walkthrough page wired to the examples index.
-- New `examples/project-permissions.ipynb`: a break-it, see-it, fix-it walkthrough of project file sharing, creating a member-invisible file the way scp does, auditing per-member effective access, and repairing it with one `fix_permissions` call.
+- New documentation for project file sharing: a permissions section on the Projects page (column meanings, repair strategies, prevention rules) and an example page wired to the examples index.
+- New `examples/project-permissions.ipynb`: breaks, audits, and repairs project file sharing, creating a member-invisible file the way scp does, auditing per-member effective access, and repairing it with one `fix_permissions` call.
 
 ## v0.5.7
 

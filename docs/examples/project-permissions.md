@@ -1,12 +1,12 @@
-# Project Permissions: Break It, See It, Fix It
+# Breaking and Repairing Project File Permissions
 
-A live walkthrough of the My Projects file-sharing problem and its one-call repair.
+The notebook breaks file sharing in a real My Projects folder, shows members what they can no longer see, and repairs the damage with one dapi call.
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/project-permissions.ipynb)
 
 For the reference documentation, see [Projects](../projects.md).
 
-## The problem
+## How command-line copies break sharing
 
 A researcher runs a job on Stampede3, then copies results into a shared project from a login-node terminal. The files arrive, the portal lists them, and the other project members see nothing, or an empty preview, or read-only files. No error appeared anywhere, and historically only an administrator with sudo could put it right.
 
@@ -18,7 +18,7 @@ The mechanism is POSIX. Project sharing works through a named ACL entry per memb
 | `mv`, `cp -p`, `rsync -a` | replicate the source's ACL wholesale, **wiping member entries** | invisible, and `chmod` cannot help |
 | Tapis (portal, dapi, job archiving) | service account writes, ACLs inherited intact | healthy |
 
-## The walkthrough
+## Break, audit, and repair in the notebook
 
 The [notebook](https://github.com/DesignSafe-CI/dapi/blob/main/examples/project-permissions.ipynb) runs the full lifecycle against a real project:
 
@@ -28,7 +28,7 @@ The [notebook](https://github.com/DesignSafe-CI/dapi/blob/main/examples/project-
 4. **Fix** with `ds.projects.fix_permissions()`: the report shows the repair strategy used, here `owner (via cloud.data)`, because a file's owner may always repair its ACLs, from any machine.
 5. **Verify**, then audit and repair the whole project in one call.
 
-## The three lines that matter
+## The audit and repair calls
 
 ```python
 ds.projects.permissions("PRJ-1234", "/results/run1.out")  # who can actually see it
