@@ -106,10 +106,10 @@ ds.files.upload("site-response.tar", f"{inputs_uri}/site-response.tar")
 
 ## Step 4. Register a container app, once
 
-dapi ships the app as a template. `scaffold` writes the two app files, `deploy` uploads the wrapper and registers the app under your account. [Build your own app](apps.md#build-your-own-app) documents every field of both files.
+dapi ships the app as a template. `new` writes the two app files, `deploy` uploads the wrapper and registers the app under your account. [Build your own app](apps.md#build-your-own-app) documents every field of both files.
 
 ```python
-ds.apps.scaffold("my-container", template="container")
+ds.apps.new("my-container", template="container")
 ds.apps.deploy("./my-container")
 ```
 

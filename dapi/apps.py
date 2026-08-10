@@ -22,9 +22,7 @@ def list_app_templates() -> List[str]:
     return sorted(p.name for p in _TEMPLATES_DIR.iterdir() if p.is_dir())
 
 
-def scaffold_app(
-    app_id: str, target_dir: str = ".", template: str = "container"
-) -> str:
+def new_app(app_id: str, target_dir: str = ".", template: str = "container") -> str:
     """Write the files for a new Tapis app from a dapi template.
 
     Creates ``<target_dir>/<app_id>/`` containing ``app.json`` (the app
@@ -56,7 +54,7 @@ def scaffold_app(
         out.write_text(f.read_text().replace("__APP_ID__", app_id))
         if f.suffix == ".sh":
             out.chmod(out.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
-    logger.info(f"Scaffolded app '{app_id}' from template '{template}' at {dest}")
+    logger.info(f"Created app '{app_id}' from template '{template}' at {dest}")
     return str(dest)
 
 

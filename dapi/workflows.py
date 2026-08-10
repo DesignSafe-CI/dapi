@@ -329,6 +329,9 @@ class Workflow:
             job = copy.deepcopy(task.job_dict)
             job["archiveSystemId"] = "designsafe.storage.default"
             job["archiveSystemDir"] = arch_dir
+            # The Workflows engine serializes absent job fields as null,
+            # which the Jobs schema rejects; pin the input dir explicitly.
+            job.setdefault("execSystemInputDir", "${JobWorkingDir}")
             compiled[tid] = job
             archives[tid] = f"tapis://designsafe.storage.default/{arch_dir}"
             outputs[tid] = {"archive_uri": archives[tid]}

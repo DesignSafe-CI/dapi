@@ -88,7 +88,7 @@ Registering an app requires no administrator. You own the record, the wrapper as
 **Step 1. Scaffold.** Pick a template (decision table below) and write the two app files.
 
 ```python
-ds.apps.scaffold("my-opensees", template="zip")  # writes ./my-opensees/
+ds.apps.new("my-opensees", template="zip")  # writes ./my-opensees/
 ```
 
 **Step 2. Edit `app.json`.** Set the target system, queue, default resources, and one `envVariables` entry per parameter your app takes. [App Definition - app.json](#app-json-fields) below covers every field and whether to touch it.
@@ -171,7 +171,7 @@ Both templates stage one input directory, run inside it so outputs archive, and 
 
 | Field | Meaning | Edit it? |
 |---|---|---|
-| `id`, `version` | The app's identity. Jobs reference both. | Set by `scaffold()`. Bump `version` when a change should not overwrite what collaborators use; same version redeploys in place. |
+| `id`, `version` | The app's identity. Jobs reference both. | Set by `new()`. Bump `version` when a change should not overwrite what collaborators use; same version redeploys in place. |
 | `description` | Shown by `ds.apps.find()` and the portal. | Yes, describe your app. |
 | `runtime: ZIP` | The app's executable is a zip of scripts that Tapis unpacks on the node. | No. `deploy()` builds the zip for you. |
 | `containerImage` | For ZIP apps, the path of that zip on storage. | No. `deploy()` overwrites it with the uploaded location. |

@@ -164,10 +164,10 @@ class AppMethods:
         """Names of the app templates that ship with dapi."""
         return apps_module.list_app_templates()
 
-    def scaffold(self, *args, **kwargs) -> str:
+    def new(self, *args, **kwargs) -> str:
         """Write the files for a new Tapis app from a dapi template.
 
-        Convenience wrapper around apps_module.scaffold_app(). Creates
+        Convenience wrapper around apps_module.new_app(). Creates
         ``<target_dir>/<app_id>/`` with ``app.json`` and
         ``tapisjob_app.sh`` ready to edit, then register with
         ``ds.apps.deploy()``.
@@ -175,7 +175,7 @@ class AppMethods:
         Returns:
             str: Path of the created app directory.
         """
-        return apps_module.scaffold_app(*args, **kwargs)
+        return apps_module.new_app(*args, **kwargs)
 
     def deploy(self, *args, **kwargs) -> dict:
         """Register (or update) a user-owned Tapis app from an app directory.

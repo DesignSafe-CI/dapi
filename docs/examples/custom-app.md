@@ -1,12 +1,12 @@
 # Build Your Own Tapis App
 
-The [custom-app notebook](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/custom-app.ipynb) develops a Tapis app end to end with dapi: scaffold app.json and the wrapper from a template, edit the definition, register the app under your own account, submit a job against it, and read the results.
+The [custom-app notebook](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/custom-app.ipynb) develops a Tapis app end to end with dapi: create app.json and the wrapper from a template, edit the definition, register the app under your own account, submit a job against it, and read the results.
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/custom-app.ipynb)
 
-## From scaffold to archived results
+## From two calls to archived results
 
-1. **Scaffold.** `ds.apps.scaffold("my-first-app", template="zip")` writes `app.json` and `tapisjob_app.sh`, then the notebook prints both so every field is visible.
+1. **Scaffold.** `ds.apps.new("my-first-app", template="zip")` writes `app.json` and `tapisjob_app.sh`, then the notebook prints both so every field is visible.
 2. **Edit.** The notebook edits the JSON in place, adding a description and small serial defaults (`skx-dev`, one core, ten minutes).
 3. **Deploy.** `ds.apps.deploy("my-first-app")` zips the wrapper, uploads it to MyData, and registers version 0.1.0 under your ownership. Rerunning updates the app in place.
 4. **Run.** The notebook uploads a pure-stdlib analysis script and its data as job inputs, and a job against the new app runs `COMMAND="python3 analyze.py example_input.txt"` on one skx-dev core.

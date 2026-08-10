@@ -4,27 +4,27 @@ import tempfile
 import unittest
 import zipfile
 
-from dapi.apps import deploy_app, list_app_templates, scaffold_app
+from dapi.apps import deploy_app, list_app_templates, new_app
 from dapi.exceptions import AppDiscoveryError
 
 
-class TestScaffold(unittest.TestCase):
+class TestNew(unittest.TestCase):
     def test_container_and_zip_templates_ship(self):
         self.assertIn("container", list_app_templates())
         self.assertIn("zip", list_app_templates())
 
-    def test_scaffold_zip_template(self):
+    def test_new_zip_template(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = scaffold_app("my-app", target_dir=tmp, template="zip")
+            path = new_app("my-app", target_dir=tmp, template="zip")
             spec = json.load(open(os.path.join(path, "app.json")))
             self.assertEqual(spec["id"], "my-app")
             body = open(os.path.join(path, "tapisjob_app.sh")).read()
             self.assertIn("my-app: EDIT THIS WRAPPER", body)
             self.assertIn("COMMAND", body)
 
-    def test_scaffold_substitutes_app_id_and_is_executable(self):
+    def test_new_substitutes_app_id_and_is_executable(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = scaffold_app("my-container", target_dir=tmp)
+            path = new_app("my-container", target_dir=tmp)
             spec = json.load(open(os.path.join(path, "app.json")))
             self.assertEqual(spec["id"], "my-container")
             wrapper = os.path.join(path, "tapisjob_app.sh")
@@ -35,13 +35,13 @@ class TestScaffold(unittest.TestCase):
 
     def test_unknown_template_rejected(self):
         with self.assertRaises(AppDiscoveryError):
-            scaffold_app("x", template="elyra")
+            new_app("x", template="elyra")
 
     def test_existing_files_not_overwritten(self):
         with tempfile.TemporaryDirectory() as tmp:
-            scaffold_app("my-app", target_dir=tmp)
+            new_app("my-app", target_dir=tmp)
             with self.assertRaises(AppDiscoveryError):
-                scaffold_app("my-app", target_dir=tmp)
+                new_app("my-app", target_dir=tmp)
 
 
 class _StubApps:
@@ -73,7 +73,7 @@ class _StubTapis:
 
 class TestDeploy(unittest.TestCase):
     def _app_dir(self, tmp):
-        return scaffold_app("my-container", target_dir=tmp)
+        return new_app("my-container", target_dir=tmp)
 
     def test_deploy_zips_uploads_and_registers(self):
         with tempfile.TemporaryDirectory() as tmp:
