@@ -494,9 +494,9 @@ eval "recorder Node -file ProfileC_acc$motionID.out -time -dT 0.010 -node 55 94 
 
 
 # Creating Force Load Pattern
-set mSeries "Path -dt $motionDT -filePath $velocityFile -factor 885.202"
+timeSeries Path 100 -dt $motionDT -filePath $velocityFile -factor 885.202
 
-pattern Plain 10 $mSeries {load 1 1.000 0.000 0.000}
+pattern Plain 10 100 {load 1 1.000 0.000 0.000}
 
 # Analysis Time Step
 set dT $motionDT

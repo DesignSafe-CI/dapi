@@ -17,6 +17,8 @@
 
 ### Documentation and examples
 
+- **OpenSeesMP example repaired and made portable**: the four `Profile*.tcl` inputs used the legacy inline TimeSeries form (`pattern Plain 10 "Path -dt ..."`), which current OpenSees rejects with `tag is not specified`, so the dynamic stage never ran and the acceleration recorders archived empty files; they now declare `timeSeries Path 100` explicitly. `OpenSeesMP-dapi.ipynb` now runs from any machine (inputs auto-upload via `prepare_inputs` off JupyterHub, recorder outputs download before plotting), uses the standard allocation placeholder, and ships executed with the response-spectra figure.
+
 - New `examples/custom-app.ipynb`: develops a Tapis app end to end, scaffold from the `zip` template, edit the definition, `deploy()`, submit a job against it, and read the archived results, with a docs page (`docs/examples/custom-app.md`) on the examples index.
 - New Workflows page in the user guide (`docs/workflows.md`): building a graph, passing outputs with `OutputRef`, live progress, failure semantics, parallel fan-in via the run-root pattern, archive filters with measured timings, and `sequence_job`.
 - New Custom Containers page in the user guide (`docs/containers.md`): build on a TACC base image, deliver by registry pull (verified working from Stampede3 compute nodes) or by `docker save` tarball staged as job input, run via a `python-s3` driver, no Tapis registration anywhere; working demo in `examples/workflows/container-demo/`.
