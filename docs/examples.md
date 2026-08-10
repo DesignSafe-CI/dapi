@@ -85,7 +85,7 @@ Computational fluid dynamics with OpenFOAM.
 ### OpenSees Structural Analysis
 Earthquake engineering simulations with OpenSees.
 
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/opensees-mp/OpenSeesMP-dapi.ipynb)
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/OpenSeesMP-dapi.ipynb)
 
 [Full documentation](examples/opensees.md)
 

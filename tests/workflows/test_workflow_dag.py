@@ -116,9 +116,8 @@ class TestCompile(unittest.TestCase):
         self.assertNotIn("archiveSystemDir", wf._tasks["sweep"].job_dict)
 
 
-class TestRunTapisBackend(unittest.TestCase):
-    """The internal server-side executor (_run_tapis), kept ready for the
-    silent flip to the Tapis Workflows engine once the tenant allows it."""
+class TestRun(unittest.TestCase):
+    """run() hands the compiled pipeline to the Tapis Workflows service."""
 
     def _make_ds(self, run_statuses=("completed",), exec_statuses=None):
         calls = {}
@@ -168,7 +167,7 @@ class TestRunTapisBackend(unittest.TestCase):
             "train", src=sweep.output("archive_uri", suffix="/inputDirectory")
         )
         wf.add(JobTask("train", job_dict=train_job))
-        results = wf._run_tapis(ds, "g", "r1", 0, 240, False)
+        results = wf.run(ds, run_id="r1", poll_interval=0, progress=False)
         self.assertEqual(results["train"]["status"], "completed")
         self.assertEqual(
             results["sweep"]["archive_uri"],
@@ -183,122 +182,8 @@ class TestRunTapisBackend(unittest.TestCase):
         wf = Workflow("f")
         wf.add(JobTask("sweep", _job("sweep")))
         with self.assertRaises(WorkflowExecutionError) as ctx:
-            wf._run_tapis(ds, "g", "r", 0, 240, False)
+            wf.run(ds, run_id="r", poll_interval=0, progress=False)
         self.assertIn("sweep=failed", str(ctx.exception))
-
-
-class _StubJob:
-    """A SubmittedJob stand-in that walks a scripted status sequence."""
-
-    TERMINAL_STATES = ["FINISHED", "FAILED", "CANCELLED", "STOPPED"]
-
-    def __init__(self, uuid, statuses, last_message=None):
-        self.uuid = uuid
-        self._seq = list(statuses)
-        self.last_message = last_message
-
-    def get_status(self, force_refresh=True):
-        return self._seq.pop(0) if len(self._seq) > 1 else self._seq[0]
-
-
-class _StubJobs:
-    """Records submissions; hands each task its scripted status sequence."""
-
-    def __init__(self, statuses_by_name, fail_submit=()):
-        self.statuses = statuses_by_name
-        self.fail_submit = set(fail_submit)
-        self.submitted = []  # (name, job_def) in submission order
-
-    def submit(self, job_def):
-        name = job_def["name"]
-        if name in self.fail_submit:
-            raise RuntimeError("allocation not active")
-        self.submitted.append((name, job_def))
-        return _StubJob(
-            f"uuid-{name}", self.statuses[name], last_message=f"{name} says boom"
-        )
-
-
-def _dapi_ds(statuses_by_name, fail_submit=()):
-    ds = SimpleNamespace()
-    ds.tapis = SimpleNamespace(username="user1")
-    ds.jobs = _StubJobs(statuses_by_name, fail_submit)
-    return ds
-
-
-class TestRun(unittest.TestCase):
-    """The public run() path: dapi coordinates, jobs submitted directly."""
-
-    def _ml_graph(self):
-        wf = Workflow("ml")
-        sweep = wf.add(JobTask("sweep", _job("sweep")))
-        train_job = _job("train")
-        train_job["fileInputs"] = [
-            {
-                "name": "Input Directory",
-                "sourceUrl": sweep.output("archive_uri", suffix="/inputDirectory"),
-            }
-        ]
-        wf.add(JobTask("train", job_dict=train_job))
-        return wf
-
-    def test_dependent_submits_only_after_upstream_finishes(self):
-        ds = _dapi_ds(
-            {"sweep": ["QUEUED", "RUNNING", "FINISHED"], "train": ["FINISHED"]}
-        )
-        results = self._ml_graph().run(ds, run_id="r1", poll_interval=0)
-        self.assertEqual([n for n, _ in ds.jobs.submitted], ["sweep", "train"])
-        self.assertEqual(results["sweep"]["status"], "completed")
-        self.assertEqual(results["train"]["uuid"], "uuid-train")
-
-    def test_compiled_defs_submitted_with_resolved_refs(self):
-        ds = _dapi_ds({"sweep": ["FINISHED"], "train": ["FINISHED"]})
-        self._ml_graph().run(ds, run_id="r1", poll_interval=0)
-        defs = dict(ds.jobs.submitted)
-        self.assertEqual(
-            defs["sweep"]["archiveSystemDir"], "user1/dapi-workflows/ml/r1/sweep"
-        )
-        self.assertEqual(
-            defs["train"]["fileInputs"][0]["sourceUrl"],
-            "tapis://designsafe.storage.default/user1/dapi-workflows/ml/r1/sweep/inputDirectory",
-        )
-
-    def test_failed_upstream_blocks_dependent(self):
-        ds = _dapi_ds({"sweep": ["FAILED"], "train": ["FINISHED"]})
-        with self.assertRaises(WorkflowExecutionError) as ctx:
-            self._ml_graph().run(ds, run_id="r1", poll_interval=0)
-        self.assertEqual([n for n, _ in ds.jobs.submitted], ["sweep"])
-        self.assertIn("sweep=failed", str(ctx.exception))
-        self.assertIn("sweep says boom", str(ctx.exception))
-        self.assertIn("train=blocked", str(ctx.exception))
-
-    def test_submission_failure_fails_task_and_blocks_dependent(self):
-        ds = _dapi_ds({"train": ["FINISHED"]}, fail_submit={"sweep"})
-        with self.assertRaises(WorkflowExecutionError) as ctx:
-            self._ml_graph().run(ds, run_id="r1", poll_interval=0)
-        self.assertEqual(ds.jobs.submitted, [])
-        self.assertIn("allocation not active", str(ctx.exception))
-        self.assertIn("train=blocked", str(ctx.exception))
-
-    def test_independent_tasks_run_concurrently(self):
-        # both roots must be submitted before either finishes
-        wf = Workflow("par")
-        wf.add(JobTask("a", _job("a")))
-        wf.add(JobTask("b", _job("b")))
-        ds = _dapi_ds({"a": ["RUNNING", "FINISHED"], "b": ["RUNNING", "FINISHED"]})
-        wf.run(ds, run_id="r1", poll_interval=0)
-        self.assertEqual({n for n, _ in ds.jobs.submitted}, {"a", "b"})
-
-    def test_results_shape_matches_tapis_backend(self):
-        ds = _dapi_ds({"sweep": ["FINISHED"], "train": ["FINISHED"]})
-        results = self._ml_graph().run(ds, run_id="r1", poll_interval=0)
-        self.assertEqual(
-            set(results["sweep"]), {"status", "message", "archive_uri", "uuid"}
-        )
-        self.assertEqual(
-            results["sweep"]["archive_uri"],
-            "tapis://designsafe.storage.default/user1/dapi-workflows/ml/r1/sweep",
-        )
 
 
 class TestVisualize(unittest.TestCase):

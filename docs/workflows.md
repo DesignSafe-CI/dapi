@@ -1,6 +1,6 @@
 # Workflows
 
-`dapi.workflows` chains Tapis jobs. You define each stage as a normal job and declare which stage needs the results of which; `run()` then submits every job the moment the jobs it depends on finish. In the example on this page, a 48-core sweep runs first, and the one-core training job that reads its results is submitted automatically when the sweep completes. Stages that do not depend on each other run at the same time. Every job is a real Tapis job, on the same queues and against the same allocation as a job you submit by hand.
+`dapi.workflows` chains Tapis jobs. You define each stage as a normal job and declare which stage needs the results of which; `run()` hands the graph to DesignSafe's workflow service, which submits every job on your behalf the moment the jobs it depends on finish. In the example on this page, a 48-core sweep runs first, and the one-core training job that reads its results is submitted automatically when the sweep completes. Stages that do not depend on each other run at the same time, and closing your notebook does not stop the run. Every job is a real Tapis job, on the same queues and against the same allocation as a job you submit by hand.
 
 ![A two-node workflow. An output reference connects the sweep job to the train job, and the referenced archive path is known before either job is submitted.](images/workflow-dag.png)
 
@@ -94,24 +94,24 @@ results = wf.run(ds)
 While the run is active, `run()` streams timestamped status transitions for every task, so a notebook shows each node advance from submission through completion.
 
 ```
-[10:32:01] workflow 'opensees-ml-20260809-103201': 2 tasks
-[10:32:04]   task sweep: submitted (job 8f2c...-007)
-[10:32:35]   task sweep: SUBMITTED -> QUEUED
-[10:41:12]   task sweep: QUEUED -> RUNNING
-[10:58:44]   task sweep: RUNNING -> FINISHED
-[10:58:45]   task train: submitted (job a41d...-007)
+[18:12:10] pipeline 'opensees-ml-20260810-181209': submitted (2 tasks)
+[18:12:41]   task sweep: created -> active
+[18:12:41]   task train: created -> pending
+[18:19:19]   task sweep: active -> completed
+[18:19:19]   task train: pending -> active
+[18:33:05]   task train: active -> completed
 ```
 
 | Parameter | Default | Meaning |
 |---|---|---|
 | `run_id` | timestamp | Names this run's archive tree; pass one explicitly when a task needs the run root before `run()` |
 | `poll_interval` | 30 | Seconds between status polls |
-| `timeout_minutes` | 240 | Stop waiting after this long |
+| `timeout_minutes` | 240 | Stop waiting after this long; the pipeline itself keeps running server-side |
 | `progress` | `True` | Stream per-task transitions |
 
 ## Step 6. Collect results
 
-`run()` returns a mapping from task id to `status`, `message`, `archive_uri`, and `uuid`. Every task's outputs sit at its deterministic archive path.
+`run()` returns a mapping from task id to `status`, `message`, and `archive_uri`. Every task's outputs sit at its deterministic archive path.
 
 ```python
 ds.files.download(
@@ -122,11 +122,11 @@ ds.files.download(
 
 ## Failure semantics
 
-`run()` never submits a task whose upstream failed. It reports the task as `blocked`, and the `WorkflowExecutionError` it raises lists the detail for each task. A failed branch never cancels its siblings; independent branches run to completion, and their archives survive for a fixed rerun. A kernel that dies mid-run does not stop already-submitted jobs, and `ds.jobs.job(uuid)` re-attaches to them. A kernel that dies before submitting a task leaves it unsubmitted; rerunning the workflow starts a fresh `run_id`.
+The service never submits a task whose upstream failed, and the `WorkflowExecutionError` that `run()` raises lists each task's state. A failed branch never cancels its siblings; independent branches run to completion, and their archives survive for a fixed rerun. Closing the notebook changes nothing; the service keeps executing the pipeline, and interrupting `run()` only stops the progress stream.
 
 ## Parallel branches and fan-in
 
-`run()` submits tasks with no edges between them at the same time and polls them together, each as its own job with its own resources. A downstream task that depends on all of them becomes the fan-in.
+The service submits tasks with no edges between them at the same time, each as its own job with its own resources. A downstream task that depends on all of them becomes the fan-in.
 
 ```python
 wf = Workflow("regional-study")

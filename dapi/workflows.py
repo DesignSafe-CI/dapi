@@ -7,23 +7,15 @@ another task's output also declares the edge. ``validate()`` rejects
 cycles, duplicate ids, and references to unknown tasks before anything
 is submitted.
 
-Every task runs as a real Tapis job on HPC. ``run()`` coordinates the
-graph, submitting each job with the user's credentials when its
-dependencies finish and running independent branches in parallel. Each
-task receives a deterministic archive directory at compile time, which
-lets ``OutputRef("archive_uri", suffix=...)`` resolve to a concrete
-``tapis://`` path before submission: one recursive directory input per
-edge.
-
-How the coordination executes is an internal detail. The graph compiles
-to the Tapis Workflows pipeline task format, and the module carries two
-interchangeable executors over that same compiled pipeline: the current
-default drives the DAG from the calling process via direct Jobs-API
-submissions, and ``_run_tapis`` hands the pipeline to the Tapis
-Workflows engine for server-side orchestration. The private ``_BACKEND``
-switch flips to the engine once TACC authorizes the Workflows service in
-the designsafe tenant; users never select this, and ``run()``'s API does
-not change.
+Every task runs as a real Tapis job on HPC. ``run()`` compiles the
+graph to a Tapis Workflows pipeline and the Workflows service executes
+it server-side, submitting each job on the user's behalf the moment the
+jobs it depends on finish and running independent branches in parallel.
+The submitting notebook or script may exit; the campaign keeps running.
+Each task receives a deterministic archive directory at compile time,
+which lets ``OutputRef("archive_uri", suffix=...)`` resolve to a
+concrete ``tapis://`` path before submission: one recursive directory
+input per edge.
 
 For a linear sequence of steps that should share one node and one queue
 wait, see :func:`sequence_job`, which packs the steps into a single job
@@ -54,10 +46,8 @@ from .exceptions import DapiException
 
 logger = logging.getLogger(__name__)
 
-# Internal execution switch, never user-facing. Flips to "tapis" (the
-# Tapis Workflows engine, via _run_tapis) once TACC authorizes the
-# Workflows service for job submission in the designsafe tenant.
-_BACKEND = "dapi"
+# The Tapis Workflows group that owns dapi-compiled pipelines; created
+# on first use.
 _TAPIS_GROUP = "dapi-workflows"
 # Base64 of the no-op the gate tasks run (see compile()).
 _GATE_CODE = "cHJpbnQoImdhdGU6IHVwc3RyZWFtIGZpbmlzaGVkIik="
@@ -388,148 +378,36 @@ class Workflow:
     ) -> Dict[str, Dict[str, Any]]:
         """Execute the workflow. Every task runs as a real Tapis job.
 
-        Each job is submitted with your credentials when its
-        dependencies finish; independent branches run in parallel, and
-        tasks whose upstream failed are never submitted (reported as
-        ``blocked``). Already-submitted jobs keep running on Tapis even
-        if this process dies; reattach with ``ds.jobs.job(uuid)``.
+        The Tapis Workflows service executes the graph server-side,
+        submitting each job on your behalf the moment the jobs it
+        depends on finish; independent branches run in parallel, and a
+        task whose upstream failed is never submitted. Closing the
+        notebook does not stop the run; the service keeps executing the
+        pipeline.
 
         Args:
             ds: An authenticated ``DSClient``.
             run_id: Distinguishes this run's archive paths. Defaults to
                 a timestamp.
             poll_interval: Seconds between status polls.
-            timeout_minutes: Stop waiting after this long.
+            timeout_minutes: Stop waiting after this long (the pipeline
+                itself keeps running server-side).
             progress: Print timestamped per-task status transitions
                 while polling, so a notebook shows each task advancing
                 live. Defaults to True.
 
         Returns:
-            Mapping of task id to ``status``, ``message``,
-            ``archive_uri``, and ``uuid``.
+            Mapping of task id to ``status``, ``message``, and
+            ``archive_uri``.
 
         Raises:
             WorkflowExecutionError: If the run ends in a failed state,
                 with per-task detail.
         """
         run_id = run_id or time.strftime("%Y%m%d-%H%M%S")
-        if _BACKEND == "tapis":
-            return self._run_tapis(
-                ds, _TAPIS_GROUP, run_id, poll_interval, timeout_minutes, progress
-            )
-        return self._run_dapi(ds, run_id, poll_interval, timeout_minutes, progress)
-
-    def _run_dapi(
-        self,
-        ds,
-        run_id: str,
-        poll_interval: int,
-        timeout_minutes: int,
-        progress: bool,
-    ) -> Dict[str, Dict[str, Any]]:
-        """Drive the DAG from this process, one direct job submission per task."""
-        username = getattr(ds.tapis, "username", None)
-        if not username:
-            raise WorkflowExecutionError("Cannot determine Tapis username.")
-        tapis_tasks, archives = self.compile(username, run_id)
-        job_defs = {
-            t["id"]: t["tapis_job_def"] for t in tapis_tasks if t["type"] == "tapis_job"
-        }
-
-        def _say(msg: str) -> None:
-            if progress:
-                print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
-
-        results: Dict[str, Dict[str, Any]] = {
-            tid: {
-                "status": None,
-                "message": None,
-                "archive_uri": archives[tid],
-                "uuid": None,
-            }
-            for tid in self._tasks
-        }
-        sorter = TopologicalSorter(self._deps)
-        sorter.prepare()
-        active: Dict[str, Any] = {}
-        last_seen: Dict[str, str] = {}
-        failed: set = set()
-        _say(f"workflow '{self.name}-{run_id}': {len(job_defs)} tasks")
-        deadline = time.time() + timeout_minutes * 60
-        while sorter.is_active():
-            advanced = False
-            for tid in sorter.get_ready():
-                upstream_failed = self._deps[tid] & failed
-                if upstream_failed:
-                    results[tid]["status"] = "blocked"
-                    results[tid]["message"] = (
-                        f"not submitted; upstream {sorted(upstream_failed)} failed"
-                    )
-                    failed.add(tid)
-                    _say(f"  task {tid}: blocked ({results[tid]['message']})")
-                    sorter.done(tid)
-                    advanced = True
-                    continue
-                try:
-                    job = ds.jobs.submit(job_defs[tid])
-                except Exception as e:  # noqa: BLE001 - any submit failure fails the task
-                    results[tid]["status"] = "failed"
-                    results[tid]["message"] = str(e)
-                    failed.add(tid)
-                    _say(f"  task {tid}: submission failed ({str(e)[:100]})")
-                    sorter.done(tid)
-                    advanced = True
-                    continue
-                active[tid] = job
-                results[tid]["uuid"] = job.uuid
-                _say(f"  task {tid}: submitted (job {job.uuid})")
-
-            for tid in list(active):
-                job = active[tid]
-                try:
-                    status = job.get_status()
-                except Exception as e:  # noqa: BLE001 - transient poll errors retry
-                    logger.debug(f"Status poll for task {tid} failed: {e}")
-                    continue
-                if last_seen.get(tid) != status:
-                    _say(f"  task {tid}: {last_seen.get(tid, 'SUBMITTED')} -> {status}")
-                    last_seen[tid] = status
-                if status in job.TERMINAL_STATES:
-                    if status == "FINISHED":
-                        results[tid]["status"] = "completed"
-                    else:
-                        results[tid]["status"] = "failed"
-                        results[tid]["message"] = job.last_message
-                        failed.add(tid)
-                    sorter.done(tid)
-                    del active[tid]
-                    advanced = True
-
-            if not sorter.is_active():
-                break
-            if advanced:
-                continue  # newly ready dependents submit without waiting
-            if time.time() > deadline:
-                running = {t: j.uuid for t, j in active.items()}
-                raise WorkflowExecutionError(
-                    f"Workflow '{self.name}-{run_id}' still running after "
-                    f"{timeout_minutes} minutes. Submitted jobs continue on "
-                    f"Tapis (reattach with ds.jobs.job(uuid): {running}); "
-                    f"tasks not yet submitted will not start."
-                )
-            time.sleep(poll_interval)
-
-        if failed:
-            raise WorkflowExecutionError(
-                f"Workflow '{self.name}-{run_id}' ended failed: "
-                + "; ".join(
-                    f"{tid}={r['status']} ({str(r['message'])[:120]})"
-                    for tid, r in results.items()
-                )
-            )
-        _say(f"workflow '{self.name}-{run_id}': completed")
-        logger.info(f"[{self.name}] workflow completed")
-        return results
+        return self._run_tapis(
+            ds, _TAPIS_GROUP, run_id, poll_interval, timeout_minutes, progress
+        )
 
     def _run_tapis(
         self,
@@ -630,7 +508,6 @@ class Workflow:
                 "status": ex.get("status"),
                 "message": ex.get("message"),
                 "archive_uri": archives[tid],
-                "uuid": None,  # the engine submits; job uuids stay server-side
             }
         if str(run.status).lower() != "completed":
             raise WorkflowExecutionError(
