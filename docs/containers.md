@@ -113,7 +113,7 @@ ds.apps.new("my-container", template="container")
 ds.apps.deploy("./my-container")
 ```
 
-Skipping this step is fine for one-off runs. The [container-demo example](https://github.com/DesignSafe-CI/dapi/tree/main/examples/workflows/container-demo) runs the same image through the generic `python-s3` app with a short driver script instead; the app just removes that boilerplate.
+The [custom-container-app notebook](examples/custom-container-app.md) runs this step and the next two live. Skipping this step is fine for one-off runs. The [container-demo example](https://github.com/DesignSafe-CI/dapi/tree/main/examples/workflows/container-demo) runs the same image through the generic `python-s3` app with a short driver script instead; the app just removes that boilerplate.
 
 ## Step 5. Submit a job
 

@@ -11,4 +11,4 @@ The [pi fan-out notebook](https://jupyter.designsafe-ci.org/hub/user-redirect/la
 3. **Archive filters.** Every job archives only its result file. On this workflow the filters cut the aggregator's archiving from minutes to seconds.
 4. **The estimate.** Six million samples land within about a thousandth of pi, so a wrong wiring cannot produce a right answer.
 
-The [Workflows guide](../workflows.md) documents the API, and the [OpenSees ML workflow](opensees_ml.md) runs the sequential counterpart, a sweep feeding a training job.
+The folder also holds `DS_Pi_Fanout_Exercise.ipynb`, the same build posed as four TODOs with hints. The [Workflows guide](../workflows.md) documents the API, and the [OpenSees ML workflow](opensees_ml.md) runs the sequential counterpart, a sweep feeding a training job.

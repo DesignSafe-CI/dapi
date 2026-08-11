@@ -118,6 +118,24 @@ Sweep an OpenSeesPy cantilever with PyLauncher, then fit a regression that recov
 
 ---
 
+### PM4Sand Free-Field Site Response
+Exercise and solution: a liquefiable soil column runs as an OpenSees job and the plots find the liquefying layer.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/pm4sand/DS_PM4Sand_FreeField_Exercise.ipynb)
+
+[Full documentation](examples/pm4sand.md)
+
+---
+
+### Run Your Own Container
+Register a container app in two calls and run a GitHub-published image on a compute node.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/custom-container-app.ipynb)
+
+[Full documentation](examples/custom-container-app.md)
+
+---
+
 ### Parallel Fan-Out and Fan-In
 Three Monte-Carlo jobs run at once and an aggregator combines them, the workflow shape behind most many-job studies.
 
