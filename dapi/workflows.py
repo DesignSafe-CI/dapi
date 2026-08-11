@@ -46,9 +46,9 @@ from .exceptions import DapiException
 
 logger = logging.getLogger(__name__)
 
-# The Tapis Workflows group that owns dapi-compiled pipelines; created
-# on first use.
-_TAPIS_GROUP = "dapi-workflows"
+# Prefix for the per-user Tapis Workflows group that owns dapi-compiled
+# pipelines; group ids are tenant-global, so the username is appended.
+_TAPIS_GROUP_PREFIX = "dapi-workflows"
 # Base64 of the no-op the gate tasks run (see compile()).
 _GATE_CODE = "cHJpbnQoImdhdGU6IHVwc3RyZWFtIGZpbmlzaGVkIik="
 
@@ -385,7 +385,7 @@ class Workflow:
         """
         run_id = run_id or time.strftime("%Y%m%d-%H%M%S")
         return self._run_tapis(
-            ds, _TAPIS_GROUP, run_id, poll_interval, timeout_minutes, progress
+            ds, None, run_id, poll_interval, timeout_minutes, progress
         )
 
     @staticmethod
@@ -430,14 +430,26 @@ class Workflow:
         username = getattr(ds.tapis, "username", None)
         if not username:
             raise WorkflowExecutionError("Cannot determine Tapis username.")
+        # Group ids are tenant-global, so each user gets their own group.
+        group_id = group_id or f"{_TAPIS_GROUP_PREFIX}-{username}"
         tapis_tasks, archives = self.compile(username, run_id)
 
         wfapi = ds.tapis.workflows
         try:
             wfapi.getGroup(group_id=group_id)
         except Exception:
-            wfapi.createGroup(id=group_id)
-            logger.info(f"Created Tapis Workflows group '{group_id}'")
+            try:
+                wfapi.createGroup(id=group_id)
+                logger.info(f"Created Tapis Workflows group '{group_id}'")
+            except Exception as e:
+                if "already exists" in str(e):
+                    raise WorkflowExecutionError(
+                        f"Workflow group '{group_id}' exists but is not "
+                        f"accessible to '{username}'. Group ids are shared "
+                        f"across the tenant; ask the group's owner to add "
+                        f"you, or contact DesignSafe support."
+                    ) from e
+                raise
 
         pipeline_id = f"{self.name}-{run_id}".lower()
         wfapi.createPipeline(
