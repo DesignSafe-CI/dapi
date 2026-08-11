@@ -1,5 +1,3 @@
-"""One Monte-Carlo pi shard. SEED and N_SAMPLES arrive as job env vars."""
-
 import json
 import os
 import random

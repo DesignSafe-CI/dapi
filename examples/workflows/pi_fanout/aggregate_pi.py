@@ -1,6 +1,3 @@
-"""Fan-in aggregator. Its Input Directory is the run root, so every
-parent task's archive is a subdirectory of the current working dir."""
-
 import glob
 import json
 

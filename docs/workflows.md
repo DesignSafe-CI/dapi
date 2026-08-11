@@ -150,7 +150,7 @@ agg_job = ds.jobs.generate(app_id="python-s3", input_dir_uri=run_root,
 results = wf.run(ds, run_id=run_id)
 ```
 
-Inside the aggregator, each parent's outputs sit at `<task_id>/inputDirectory/`. The [pi fan-out example](https://github.com/DesignSafe-CI/dapi/tree/main/examples/workflows/pi_fanout) runs this exact shape on Stampede3. Three Monte-Carlo shards run in parallel, and the aggregator submits the moment the last shard finishes.
+Inside the aggregator, each parent's outputs sit at `<task_id>/inputDirectory/`. The [pi fan-out notebook](examples/pi-fanout.md) runs this exact shape on Stampede3. Three Monte-Carlo shards run in parallel, and the aggregator submits the moment the last shard finishes.
 
 ## Archive filters
 

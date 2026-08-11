@@ -118,6 +118,15 @@ Sweep an OpenSeesPy cantilever with PyLauncher, then fit a regression that recov
 
 ---
 
+### Parallel Fan-Out and Fan-In
+Three Monte-Carlo jobs run at once and an aggregator combines them, the workflow shape behind most many-job studies.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/workflows/pi_fanout/DS_Pi_Fanout_Workflow.ipynb)
+
+[Full documentation](examples/pi-fanout.md)
+
+---
+
 ### Build Your Own Tapis App
 Scaffold, register, and run a custom app with two dapi calls.
 

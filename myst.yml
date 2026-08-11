@@ -37,6 +37,7 @@ project:
         - file: docs/examples/database.md
         - file: docs/examples/apps.md
         - file: docs/examples/custom-app.md
+        - file: docs/examples/pi-fanout.md
         - file: docs/examples/tms_credentials.md
         - file: docs/examples/project-permissions.md
     - url: /dapi/api/
