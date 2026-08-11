@@ -4,9 +4,9 @@ A layered liquefiable soil column on an elastic half-space, shaken from below. T
 
 The example ships as a pair. The **exercise** poses the run as four TODOs with hints, translate the inputs, submit and monitor, collect the recorders, plot, and the **solution** is the executed answer.
 
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/pm4sand/DS_PM4Sand_FreeField_Exercise.ipynb)
+Exercise: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/pm4sand/DS_PM4Sand_FreeField_Exercise.ipynb)
 
-[Solution notebook](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/pm4sand/DS_PM4Sand_FreeField_Solution.ipynb)
+Solution: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/pm4sand/DS_PM4Sand_FreeField_Solution.ipynb)
 
 ## Files
 

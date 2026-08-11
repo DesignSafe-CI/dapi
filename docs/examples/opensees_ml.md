@@ -58,6 +58,8 @@ On Stampede3, the 75 tasks take about 42 seconds of task time, and the regressio
 
 ## The same study as a DAG workflow
 
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees_ml/DS_OpenSees_ML_Workflow_DAG.ipynb)
+
 `DS_OpenSees_ML_Workflow_DAG.ipynb` splits the pipeline into two jobs, a 48-core sweep and a one-core training task, connected as an explicit graph with `dapi.workflows`. dapi points the training job's input at the sweep's archive through an output reference and resolves it to the real path before submitting, retraining costs one core instead of a resweep, and the run streams live per-task progress in the notebook. The [Workflows guide](../workflows.md) covers the API.
 
 ## Files

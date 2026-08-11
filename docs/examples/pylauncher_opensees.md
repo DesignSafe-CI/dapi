@@ -2,7 +2,9 @@
 
 A parameter sweep over a 2D cantilever pushover analysis using PyLauncher.
 
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_opensees.ipynb)
+Solution: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_opensees.ipynb)
+
+Exercise: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_opensees_exercise.ipynb)
 
 For PyLauncher basics, see [PyLauncher Parameter Sweeps](pylauncher.md).
 

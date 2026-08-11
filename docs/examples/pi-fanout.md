@@ -2,7 +2,9 @@
 
 The [pi fan-out notebook](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/workflows/pi_fanout/DS_Pi_Fanout_Workflow.ipynb) runs the workflow shape behind most many-job studies. Three Monte-Carlo jobs estimate pi from different seeds at the same time, and an aggregator combines their counts, self-checking against pi itself.
 
-[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/workflows/pi_fanout/DS_Pi_Fanout_Workflow.ipynb)
+Solution: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/workflows/pi_fanout/DS_Pi_Fanout_Workflow.ipynb)
+
+Exercise: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/workflows/pi_fanout/DS_Pi_Fanout_Exercise.ipynb)
 
 ## What the notebook shows
 

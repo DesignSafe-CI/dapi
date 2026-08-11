@@ -109,6 +109,17 @@ Run many independent tasks within a single SLURM allocation.
 
 ---
 
+### PyLauncher: OpenSees Cantilever Sweep
+Fifteen pushover analyses in one job, and the pushover curves plotted from the archived recorders.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_opensees.ipynb)
+
+Exercise: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_opensees_exercise.ipynb)
+
+[Full documentation](examples/pylauncher_opensees.md)
+
+---
+
 ### OpenSees ML Sweep
 Sweep an OpenSeesPy cantilever with PyLauncher, then fit a regression that recovers the physics, one job end to end.
 
@@ -122,6 +133,8 @@ Sweep an OpenSeesPy cantilever with PyLauncher, then fit a regression that recov
 Exercise and solution: a liquefiable soil column runs as an OpenSees job and the plots find the liquefying layer.
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/pm4sand/DS_PM4Sand_FreeField_Exercise.ipynb)
+
+Solution: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/opensees/pm4sand/DS_PM4Sand_FreeField_Solution.ipynb)
 
 [Full documentation](examples/pm4sand.md)
 
@@ -140,6 +153,8 @@ Register a container app in two calls and run a GitHub-published image on a comp
 Three Monte-Carlo jobs run at once and an aggregator combines them, the workflow shape behind most many-job studies.
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/workflows/pi_fanout/DS_Pi_Fanout_Workflow.ipynb)
+
+Exercise: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/workflows/pi_fanout/DS_Pi_Fanout_Exercise.ipynb)
 
 [Full documentation](examples/pi-fanout.md)
 
