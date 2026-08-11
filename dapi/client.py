@@ -800,6 +800,16 @@ class ParametricSweepMethods:
 
         try:
             input_uri = files_module.get_ds_path_uri(self._tapis, directory)
+            # A local folder whose path merely contains a DesignSafe
+            # segment (a laptop's ~/MyData) translates but points at
+            # nothing remote; verify, and fall back to the upload path.
+            if _os.path.isdir(directory):
+                try:
+                    files_module.list_files(self._tapis, input_uri)
+                except Exception:
+                    input_uri = self._upload_local_directory(
+                        directory, staging_destination
+                    )
         except ValueError:
             if not _os.path.isdir(directory):
                 raise

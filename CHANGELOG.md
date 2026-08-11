@@ -9,6 +9,7 @@
 
 ### Fixed
 
+- **`parametric_sweep.submit` verifies a translated path before staging from it**: a local folder whose path merely contains a DesignSafe segment (a laptop's `~/MyData`) used to translate to a remote URI that pointed at nothing, and the job failed at input staging; the translated location is now checked and, when it does not exist while the local folder does, the sweep uploads the folder instead.
 - **OpenSeesMP example repaired for current OpenSees**: the four `Profile*.tcl` inputs used the legacy inline TimeSeries form (`pattern Plain 10 "Path -dt ..."`), which current OpenSees rejects with `tag is not specified`, so the dynamic stage never ran and the acceleration recorders archived empty files; they now declare `timeSeries Path 100` explicitly. `OpenSeesMP-dapi.ipynb` runs from any machine (inputs auto-upload off JupyterHub, recorder outputs download before plotting), uses the standard allocation placeholder, and ships executed with the response-spectra figure.
 - The OpenSees example links on the examples index point at the notebook's actual CommunityData path.
 
