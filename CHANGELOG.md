@@ -15,6 +15,7 @@
 
 ### Documentation and examples
 
+- New `examples/pylauncher/pylauncher_opensees_exercise.ipynb`: the OpenSees PyLauncher sweep posed as four TODOs with hints; the solution notebook now submits the sweep live (a local folder uploads automatically), monitors it, and plots the family of pushover curves from the archived recorders.
 - New PM4Sand free-field exercise and solution (`examples/opensees/pm4sand/`): the University of Washington freeFieldJupyterPM4Sand example rebuilt on dapi, an executed solution and a four-TODO exercise, with the model's input motion declared in the modern `timeSeries` form (current OpenSees rejects the original inline form, leaving recorders empty) and plotting scripts that take the results folder as an argument.
 - New `examples/custom-container-app.ipynb`: registers a container app with `ds.apps.new`/`deploy` and runs the GitHub-published site-response image on a compute node.
 - New `examples/workflows/pi_fanout/DS_Pi_Fanout_Exercise.ipynb`: the fan-out/fan-in build posed as four TODOs with hints, paired with the executed solution.

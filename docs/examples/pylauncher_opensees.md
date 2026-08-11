@@ -91,3 +91,5 @@ Each run writes to its own directory (`out_4.19_100`, `out_4.19_200`, etc.) cont
 - `DFree.out` — free node displacements
 - `RBase.out` — base reactions
 - `FCol.out` — column element forces
+
+The folder also holds `pylauncher_opensees_exercise.ipynb`, the sweep posed as four TODOs with hints, from defining the parameter grid to plotting the pushover curves.
