@@ -17,5 +17,6 @@ Solution: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/
 | `N10_T3.tcl` | The soil column model, gravity stages then dynamic analysis |
 | `velocity.input` | The input motion |
 | `plotAcc.py`, `plotProfile.py`, `plotPorepressure.py`, `respSpectra.py` | Plotting, each taking the results folder as its argument |
+| `interactiveplot.py` | Time-slider widgets for pore pressure and the deforming profile, on a live kernel |
 
 The tcl declares its input motion with the modern explicit `timeSeries` form; the legacy inline form in the original is rejected by current OpenSees, which left recorders empty.
