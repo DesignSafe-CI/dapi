@@ -101,7 +101,7 @@ Global sensitivity analysis with the SimCenter UQ engine (quoFEM) on Stampede3, 
 ---
 
 ### PyLauncher Parameter Sweeps
-Run many independent tasks within a single SLURM allocation.
+Sweep the forcing frequency of a damped oscillator, one task per frequency, and reassemble the resonance curve from the archive.
 
 [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/pylauncher/pylauncher_sweep.ipynb)
 

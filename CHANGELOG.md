@@ -15,6 +15,7 @@
 
 ### Documentation and examples
 
+- **`pylauncher_sweep.ipynb` sweeps something real**: the placeholder `alpha * beta` task is replaced by a one-parameter resonance study, each task integrates a 5%-damped oscillator at one forcing frequency, and the notebook reassembles the resonance curve from the archived results over the closed-form amplification it must match, executed end to end with a live sweep.
 - New `examples/pylauncher/pylauncher_opensees_exercise.ipynb`: the OpenSees PyLauncher sweep posed as four TODOs with hints; the solution notebook now submits the sweep live (a local folder uploads automatically), monitors it, and plots the family of pushover curves from the archived recorders.
 - New PM4Sand free-field exercise and solution (`examples/opensees/pm4sand/`), superseding the `jupyter-templates/opensees` notebook's pre-DSClient API and carrying over its interactive time-slider plots (`interactiveplot.py`, now taking a results directory): the University of Washington freeFieldJupyterPM4Sand example rebuilt on dapi, an executed solution and a four-TODO exercise, with the model's input motion declared in the modern `timeSeries` form (current OpenSees rejects the original inline form, leaving recorders empty) and plotting scripts that take the results folder as an argument.
 - New `examples/custom-container-app.ipynb`: registers a container app with `ds.apps.new`/`deploy` and runs the GitHub-published site-response image on a compute node.
