@@ -1,6 +1,6 @@
 # PM4Sand Free-Field Site Response
 
-A layered liquefiable soil column on an elastic half-space, shaken from below. The OpenSees model uses SSPquadUP elements for coupled soil and pore water and the PM4Sand constitutive model for the liquefiable layers, and the notebooks run it as a DesignSafe job and plot accelerations, response spectra, peak-response profiles, and the excess pore pressures that signal liquefaction. The model and plotting scripts come from the University of Washington's freeFieldJupyterPM4Sand example by the Arduino group; the dapi version runs from any machine and needs no allocation, since `opensees-express` executes on a DesignSafe virtual machine.
+A layered liquefiable soil column on an elastic half-space, shaken from below. The OpenSees model uses SSPquadUP elements for coupled soil and pore water and the PM4Sand constitutive model for the liquefiable layers, and the notebooks run it as a DesignSafe job and plot accelerations, response spectra, peak-response profiles, and the excess pore pressures that signal liquefaction. The model and plotting scripts come from the University of Washington's freeFieldJupyterPM4Sand example by the Arduino group; the dapi version runs from any machine through the `opensees-s3` app on Stampede3, one core of one node on the `skx-dev` queue.
 
 The example ships as a pair. The **exercise** poses the run as four TODOs with hints, translate the inputs, submit and monitor, collect the recorders, plot, and the **solution** is the executed answer.
 
