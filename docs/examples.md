@@ -2,6 +2,17 @@
 
 Complete worked examples showing dapi workflows. Each links to a runnable notebook on DesignSafe JupyterHub.
 
+### Your First dapi Job
+One calculation, every dapi step: authenticate, stage, generate, submit, monitor, and read the result from the archive.
+
+[![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/python/first-dapi-job-exercise.ipynb)
+
+Solution: [![Try on DesignSafe](https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/DesignSafe-Badge.svg)](https://jupyter.designsafe-ci.org/hub/user-redirect/lab/tree/CommunityData/dapi/python/first-dapi-job.ipynb)
+
+[Full documentation](examples/first-job.md)
+
+---
+
 ### File Access
 Access files across all DesignSafe storage systems (MyData, CommunityData, NHERI-Published, NEES, MyProjects).
 

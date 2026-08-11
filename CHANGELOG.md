@@ -15,6 +15,7 @@
 
 ### Documentation and examples
 
+- New first-job pair (`examples/python/first-dapi-job.ipynb` and `first-dapi-job-exercise.ipynb`): one oscillator calculation at resonance with every dapi step explicit, authenticate, stage, generate, submit, monitor, read the archive, executed end to end and self-checked against `1/(2*damping)`, with a docs page (`docs/examples/first-job.md`) opening the examples index.
 - New `examples/pylauncher/pylauncher_sweep_exercise.ipynb`: the resonance sweep posed as four TODOs with hints, define the sweep, preview, submit, and reassemble the curve.
 - **`pylauncher_sweep.ipynb` sweeps something real**: the placeholder `alpha * beta` task is replaced by a one-parameter resonance study, each task integrates a 5%-damped oscillator at one forcing frequency, and the notebook reassembles the resonance curve from the archived results over the closed-form amplification it must match, executed end to end with a live sweep.
 - New `examples/pylauncher/pylauncher_opensees_exercise.ipynb`: the OpenSees PyLauncher sweep posed as four TODOs with hints; the solution notebook now submits the sweep live (a local folder uploads automatically), monitors it, and plots the family of pushover curves from the archived recorders.
