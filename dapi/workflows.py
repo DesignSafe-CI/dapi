@@ -473,8 +473,26 @@ class Workflow:
         run = None
         last_run_status = None
         last_task_status: Dict[str, Any] = {}
+        poll_failures = 0
         while time.time() < deadline:
-            runs = wfapi.listPipelineRuns(group_id=group_id, pipeline_id=pipeline_id)
+            # A dropped request must not kill a long poll; the pipeline
+            # keeps running server-side, so retry until a bound.
+            try:
+                runs = wfapi.listPipelineRuns(
+                    group_id=group_id, pipeline_id=pipeline_id
+                )
+            except Exception as e:  # noqa: BLE001 - transient network errors
+                poll_failures += 1
+                if poll_failures >= 20:
+                    raise WorkflowExecutionError(
+                        f"Lost contact with Tapis while polling pipeline "
+                        f"'{pipeline_id}' ({e}). The pipeline keeps running "
+                        f"server-side; check the group '{group_id}' later."
+                    ) from e
+                logger.debug(f"Pipeline poll failed ({e}); retrying")
+                time.sleep(poll_interval)
+                continue
+            poll_failures = 0
             if runs:
                 run = runs[0]
                 if str(run.status) != last_run_status:

@@ -936,6 +936,9 @@ class SubmittedJob:
                 "STAGING_JOB",
                 "SUBMITTING_JOB",
                 "QUEUED",
+                # Tapis pauses a job on transient trouble (a slow transfer,
+                # a busy host) and resumes it; still pre-run, keep waiting.
+                "BLOCKED",
             ]
             running_states = [
                 "RUNNING",
@@ -955,7 +958,18 @@ class SubmittedJob:
                         f"Status: {current_status}", refresh=True
                     )
                     time.sleep(interval)
-                    current_status = self.get_status(force_refresh=True)
+                    try:
+                        current_status = self.get_status(force_refresh=True)
+                        self._poll_failures = 0
+                    except JobMonitorError as e:
+                        # A dropped request must not kill a long poll; the
+                        # job keeps running, so retry until a bound.
+                        poll_failures = getattr(self, "_poll_failures", 0) + 1
+                        self._poll_failures = poll_failures
+                        if poll_failures >= 20:
+                            raise
+                        logger.debug(f"Status poll failed ({e}); retrying")
+                        continue
                     pbar_waiting.update(1)
                     if time.time() - start_time > timeout_seconds:
                         tqdm.write(
@@ -1012,7 +1026,16 @@ class SubmittedJob:
                         return STATUS_TIMEOUT
 
                     time.sleep(interval)
-                    current_status = self.get_status(force_refresh=True)
+                    try:
+                        current_status = self.get_status(force_refresh=True)
+                        self._poll_failures = 0
+                    except JobMonitorError as e:
+                        poll_failures = getattr(self, "_poll_failures", 0) + 1
+                        self._poll_failures = poll_failures
+                        if poll_failures >= 20:
+                            raise
+                        logger.debug(f"Status poll failed ({e}); retrying")
+                        continue
 
                     if current_status in self.TERMINAL_STATES:
                         tqdm.write(f"\tStatus: {current_status}")  # Write final status
