@@ -1,6 +1,9 @@
 # Changelog
 
 ## v0.6.1 (unreleased)
+### Added
+- skills/: agent playbooks for the dapi mechanics (submit a job, stage inputs, run a parameter sweep, debug a failed job, build a DAG workflow), markdown with frontmatter, versioned next to the code they describe and served by designsafe-mcp as MCP prompts.
+
 
 ### Changed
 
