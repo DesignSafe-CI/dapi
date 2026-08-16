@@ -1,8 +1,10 @@
 # Changelog
 
-## v0.6.1 (unreleased)
+## v0.6.2
 ### Added
 - skills/: agent playbooks for the dapi mechanics (submit a job, stage inputs, run a parameter sweep, debug a failed job, build a DAG workflow), markdown with frontmatter, versioned next to the code they describe and served by designsafe-mcp as MCP prompts.
+- skills/drop-to-tapipy.md: when and how to use the raw Tapis client under dapi (ds.tapis) — sanctioned drop-downs (binary output download, job history, app schema introspection, Tapis search grammar, full system definitions) and the boundaries (no raw submission, no hand-built job JSON, no second client).
+- .gitignore: `*_staged/` — `prepare_inputs` writes its bundle to a sibling `<input_dir>_staged/` directory, which pollutes the work tree when inputs live inside the repo (e.g. examples/); staging artifacts are regenerable and never committed.
 
 
 ### Changed
@@ -12,6 +14,7 @@
 
 ### Fixed
 
+- **`to_path` keeps the project identity**: `tapis://project-<uuid>/path` used to translate to `/home/jupyter/MyProjects/path`, dropping the project directory. `ds.files.to_path` now resolves the uuid to the PRJ id JupyterHub mounts (`MyProjects/<PRJ-...>/path`) via the new `projects.resolve_project_id`, which reads `notes.projectId` from the project system definition with the projects API as fallback. The module-level translation helper is now private (`_tapis_uri_to_local_path`); `ds.files.to_path` is the one public call. Without a client the private helper keeps the uuid as the directory name (round-trip safe) and logs a warning.
 - **Polling survives dropped connections**: one failed request used to kill `monitor()` or a workflow's `run()` mid-poll even though the job or pipeline kept running; both pollers now retry through transient network errors (DNS drops, SSL hiccups) and give up only after twenty consecutive failures, with the workflow error naming the group to check later.
 - **`monitor()` waits through BLOCKED**: Tapis pauses a job on transient trouble (a slow transfer, a busy host) and resumes it, but the paused status fell outside the monitor's known pre-run states, so monitoring returned early and notebooks read archives that did not exist yet; BLOCKED now counts as waiting.
 - **Each user gets their own workflow group**: Tapis Workflows group ids are shared across the tenant, so the fixed `dapi-workflows` group failed for every user after the first with `A Group already exists with the id 'dapi-workflows'`; `run()` now uses `dapi-workflows-<username>`, and a residual collision raises a clear message instead of the raw Tapis error.

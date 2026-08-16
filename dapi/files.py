@@ -5,7 +5,7 @@ import urllib.parse
 from tapipy.tapis import Tapis
 from tapipy.errors import BaseTapyException
 from .exceptions import FileOperationError, AuthenticationError
-from typing import List
+from typing import List, Optional
 
 import logging
 
@@ -75,7 +75,7 @@ def _parse_tapis_uri(tapis_uri: str) -> (str, str):
         raise ValueError(f"Could not parse Tapis URI '{tapis_uri}': {e}") from e
 
 
-def tapis_uri_to_local_path(tapis_uri: str) -> str:
+def _tapis_uri_to_local_path(tapis_uri: str, t: Optional[Tapis] = None) -> str:
     """Convert a Tapis URI to the corresponding DesignSafe local path.
 
     Converts Tapis system URIs back to their equivalent DesignSafe local paths
@@ -86,7 +86,13 @@ def tapis_uri_to_local_path(tapis_uri: str) -> str:
         tapis_uri (str): The Tapis URI to convert. Supported formats:
             - "tapis://designsafe.storage.default/username/path" -> "/home/jupyter/MyData/path"
             - "tapis://designsafe.storage.community/path" -> "/home/jupyter/CommunityData/path"
-            - "tapis://project-*/path" -> "/home/jupyter/MyProjects/path"
+            - "tapis://project-<uuid>/path" -> "/home/jupyter/MyProjects/<PRJ-...>/path"
+        t (Tapis, optional): Authenticated client, used to resolve a project
+            system's uuid to its DesignSafe project ID (PRJ-...), which is the
+            directory name JupyterHub mounts under MyProjects. Without a
+            client (or if resolution fails) the uuid itself is used as the
+            directory name; get_ds_path_uri() accepts that form too, so the
+            round trip is preserved either way.
 
     Returns:
         str: The corresponding DesignSafe local path, or the original URI if
@@ -96,12 +102,12 @@ def tapis_uri_to_local_path(tapis_uri: str) -> str:
         ValueError: If the Tapis URI format is invalid.
 
     Example:
-        >>> local_path = tapis_uri_to_local_path(
+        >>> local_path = ds.files.to_path(
         ...     "tapis://designsafe.storage.default/user/data/file.txt"
         ... )
         >>> print(local_path)  # "/home/jupyter/MyData/data/file.txt"
 
-        >>> local_path = tapis_uri_to_local_path(
+        >>> local_path = ds.files.to_path(
         ...     "tapis://designsafe.storage.community/datasets/earthquake.csv"
         ... )
         >>> print(local_path)  # "/home/jupyter/CommunityData/datasets/earthquake.csv"
@@ -144,12 +150,32 @@ def tapis_uri_to_local_path(tapis_uri: str) -> str:
             return f"/home/jupyter/NEES/{path}" if path else "/home/jupyter/NEES/"
 
         elif system_id.startswith("project-"):
-            # For Projects: tapis://project-*/path -> /home/jupyter/MyProjects/path
-            return (
-                f"/home/jupyter/MyProjects/{path}"
-                if path
-                else "/home/jupyter/MyProjects/"
-            )
+            # JupyterHub mounts each project at MyProjects/<projectId>
+            # (PRJ-...), but the Tapis system id only carries the uuid.
+            # Resolve uuid -> projectId when a client is available; fall
+            # back to the uuid as the directory name otherwise, which
+            # get_ds_path_uri() also accepts, so a round trip through
+            # both functions still lands on the same project.
+            project_dir = system_id[len("project-") :]
+            if t is None:
+                logger.warning(
+                    f"Translating '{tapis_uri}' without a Tapis client: "
+                    f"using the project uuid as the MyProjects directory "
+                    f"name. JupyterHub mounts projects by PRJ id; use "
+                    f"ds.files.to_path(...) or pass t= to resolve it."
+                )
+            if t is not None:
+                from . import projects as projects_module
+
+                try:
+                    project_dir = projects_module.resolve_project_id(t, project_dir)
+                except Exception as e:
+                    logger.warning(
+                        f"Could not resolve project uuid '{project_dir}' to a "
+                        f"PRJ id ({e}); using the uuid as the directory name."
+                    )
+            base = f"/home/jupyter/MyProjects/{project_dir}"
+            return f"{base}/{path}" if path else f"{base}/"
 
         else:
             # Unknown system type, return original URI

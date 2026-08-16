@@ -9,6 +9,8 @@
 
 <img src="https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png" alt="dapi" width="300">
 
+> [Why is a panda the logo for dapi?](https://www.youtube.com/watch?v=N2zK3sAtr-4)
+
 ## Features
 
 ### Jobs

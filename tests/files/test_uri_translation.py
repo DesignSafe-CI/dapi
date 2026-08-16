@@ -1,5 +1,5 @@
 import unittest
-from dapi.files import tapis_uri_to_local_path
+from dapi.files import _tapis_uri_to_local_path as tapis_uri_to_local_path
 
 
 class TestTapisUriToLocalPath(unittest.TestCase):
@@ -33,12 +33,51 @@ class TestTapisUriToLocalPath(unittest.TestCase):
         result = tapis_uri_to_local_path(input_uri)
         self.assertEqual(result, expected)
 
-    def test_project_system(self):
-        """Test translation of project system URI"""
+    def test_project_system_keeps_uuid_without_client(self):
+        """Without a client the project uuid is the directory name, so the
+        project identity survives the round trip (the old behavior dropped
+        it entirely, pointing every project URI at MyProjects/ itself),
+        and a warning states how to get the PRJ directory instead."""
         input_uri = "tapis://project-1234-abcd/analysis/results.txt"
-        expected = "/home/jupyter/MyProjects/analysis/results.txt"
-        result = tapis_uri_to_local_path(input_uri)
+        expected = "/home/jupyter/MyProjects/1234-abcd/analysis/results.txt"
+        with self.assertLogs("dapi.files", level="WARNING") as logs:
+            result = tapis_uri_to_local_path(input_uri)
         self.assertEqual(result, expected)
+        self.assertIn("ds.files.to_path", logs.output[0])
+
+    def test_project_system_resolves_prj_with_client(self):
+        """With a client the uuid resolves to the PRJ directory JupyterHub
+        actually mounts under MyProjects."""
+        from unittest.mock import patch
+
+        with patch(
+            "dapi.projects.resolve_project_id", return_value="PRJ-6379"
+        ) as resolver:
+            result = tapis_uri_to_local_path(
+                "tapis://project-cb94947f-5d05-4df5-9587-ffe89ea427b6/inputs/model.tcl",
+                t=object(),
+            )
+        self.assertEqual(result, "/home/jupyter/MyProjects/PRJ-6379/inputs/model.tcl")
+        resolver.assert_called_once()
+
+    def test_project_system_falls_back_when_resolution_fails(self):
+        """A failed uuid->PRJ lookup degrades to the uuid directory instead
+        of raising: path translation must not hard-fail when a usable
+        fallback exists."""
+        from unittest.mock import patch
+
+        from dapi.exceptions import FileOperationError
+
+        with patch(
+            "dapi.projects.resolve_project_id",
+            side_effect=FileOperationError("not found"),
+        ):
+            result = tapis_uri_to_local_path(
+                "tapis://project-1234-abcd/analysis/results.txt", t=object()
+            )
+        self.assertEqual(
+            result, "/home/jupyter/MyProjects/1234-abcd/analysis/results.txt"
+        )
 
     def test_designsafe_storage_published(self):
         """Test translation of designsafe.storage.published URI"""
@@ -106,7 +145,7 @@ class TestTapisUriToLocalPath(unittest.TestCase):
     def test_project_path_with_spaces(self):
         """Test handling of project paths with spaces"""
         input_uri = "tapis://project-1234-abcd/simulation results/output.txt"
-        expected = "/home/jupyter/MyProjects/simulation results/output.txt"
+        expected = "/home/jupyter/MyProjects/1234-abcd/simulation results/output.txt"
         result = tapis_uri_to_local_path(input_uri)
         self.assertEqual(result, expected)
 

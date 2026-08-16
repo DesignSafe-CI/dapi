@@ -181,3 +181,4 @@ cython_debug/
 
 .aider*
 uv.lock
+*_staged/

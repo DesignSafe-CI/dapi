@@ -307,6 +307,64 @@ def resolve_project_uuid(t: Tapis, project_id: str) -> str:
     )
 
 
+def resolve_project_id(t: Tapis, system_or_uuid: str) -> str:
+    """Resolve a Tapis project system ID or bare uuid to the DesignSafe
+    project ID (e.g., PRJ-1305). The reverse of resolve_project_uuid().
+
+    The project system's own definition carries the answer: DesignSafe
+    stamps ``notes.projectId`` on every project-* system, so one
+    ``getSystem`` call resolves it without listing projects. The
+    DesignSafe projects API remains as a fallback.
+
+    Args:
+        t (Tapis): Authenticated Tapis client instance.
+        system_or_uuid (str): The Tapis system ID
+            (e.g., "project-cb94947f-5d05-4df5-9587-ffe89ea427b6") or the
+            bare project uuid.
+
+    Returns:
+        str: The DesignSafe project ID (e.g., "PRJ-6379").
+
+    Raises:
+        FileOperationError: If the project cannot be found.
+    """
+    uuid = system_or_uuid
+    if uuid.startswith("project-"):
+        uuid = uuid[len("project-") :]
+
+    # Authoritative and cheap: the system definition's notes.projectId.
+    try:
+        sysdef = t.systems.getSystem(systemId=f"project-{uuid}")
+        project_id = getattr(getattr(sysdef, "notes", None), "projectId", None)
+        if project_id:
+            return str(project_id)
+    except BaseTapyException:
+        pass  # system not visible this way; try the projects API
+
+    headers = _get_auth_headers(t)
+    try:
+        resp = requests.get(
+            _DS_PROJECTS_API,
+            headers=headers,
+            params={"limit": 100},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        for p in resp.json().get("result", []):
+            if p.get("uuid") == uuid:
+                project_id = p.get("value", {}).get("projectId")
+                if project_id:
+                    return str(project_id)
+    except requests.RequestException as e:
+        raise FileOperationError(
+            f"Failed to query DesignSafe projects API for uuid '{uuid}': {e}"
+        ) from e
+
+    raise FileOperationError(
+        f"Project with uuid '{uuid}' not found. Ensure you have access to this project."
+    )
+
+
 def get_permissions(t: Tapis, project_id: str, path: str = "/") -> List[Dict]:
     """Report who can actually see *path* in a project, member by member.
 
