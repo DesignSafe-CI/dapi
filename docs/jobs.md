@@ -247,6 +247,17 @@ if last_message:
 
 ## Output Management
 
+### Locating the Archive
+
+```python
+job.archive_uri  # tapis://project-<uuid>/quoFEM_jobs/...
+job.archive_path  # /home/jupyter/MyProjects/PRJ-1234/quoFEM_jobs/...
+```
+
+`archive_path` is the Jupyter mount of `archive_uri` (MyData,
+MyProjects/PRJ-..., CommunityData), so on JupyterHub outputs can be read
+straight from disk.
+
 ### Listing Outputs
 
 ```python

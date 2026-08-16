@@ -1177,6 +1177,30 @@ class SubmittedJob:
             return f"tapis://{details.archiveSystemId}/{archive_path}"
         return None
 
+    @property
+    def archive_path(self) -> Optional[str]:
+        """Local DesignSafe path of the job's archive directory.
+
+        The archive_uri translated to the path a JupyterHub session
+        mounts (MyData, MyProjects/<PRJ-...>, ...), so outputs can be
+        read directly.
+
+        Returns:
+            str or None: Local path if archive information is available,
+                otherwise None.
+
+        Example:
+            >>> job = ds.jobs.job(job_uuid)
+            >>> job.archive_path
+            '/home/jupyter/MyProjects/PRJ-1234/quoFEM_jobs/...'
+        """
+        uri = self.archive_uri
+        if uri is None:
+            return None
+        from . import files as files_module
+
+        return files_module._tapis_uri_to_local_path(uri, t=self._tapis)
+
     def list_outputs(
         self, path: str = "/", limit: int = 100, offset: int = 0
     ) -> List[Tapis]:

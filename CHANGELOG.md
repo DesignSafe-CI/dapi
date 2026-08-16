@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.3
+### Added
+- **`job.archive_path`**: local Jupyter mount of `job.archive_uri` (MyData, MyProjects/PRJ-..., CommunityData) as a property, so a finished job's outputs can be read straight from disk; documented in jobs.md and files.md with the project round trip in examples/files.ipynb.
+
 ## v0.6.2
 ### Added
 - skills/: agent playbooks for the dapi mechanics (submit a job, stage inputs, run a parameter sweep, debug a failed job, build a DAG workflow), markdown with frontmatter, versioned next to the code they describe and served by designsafe-mcp as MCP prompts.

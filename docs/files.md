@@ -39,7 +39,13 @@ ds.files.to_path("tapis://designsafe.storage.default/<username>/data/file.txt")
 
 ds.files.to_path("tapis://designsafe.storage.community/datasets/eq.csv")
 # ~/CommunityData/datasets/eq.csv
+
+ds.files.to_path("tapis://project-<uuid>/inputs/model.tcl")
+# ~/MyProjects/PRJ-1234/inputs/model.tcl
 ```
+
+Project URIs resolve to the PRJ directory JupyterHub mounts; for a
+finished job, `job.archive_path` returns this directly.
 
 ### Supported path formats
 
