@@ -31,5 +31,18 @@ html_theme_options = {
     "navigation_with_keys": True,
 }
 
+# Google Analytics (GA4). Furo has no analytics option, so load gtag.js
+# directly. The measurement ID also appears in _static/ga4.js and in
+# myst.yml (the narrative docs); keep all three in sync.
+ga_measurement_id = "G-D96RT1T24K"
+html_static_path = ["_static"]
+html_js_files = [
+    (
+        f"https://www.googletagmanager.com/gtag/js?id={ga_measurement_id}",
+        {"async": "async"},
+    ),
+    "ga4.js",
+]
+
 # Suppress warnings for missing type stubs
 nitpicky = False

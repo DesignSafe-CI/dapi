@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Added
+- Google Analytics (GA4) on the docs site: `analytics_google` in myst.yml for the narrative docs, and a gtag loader in docs-api/conf.py plus docs-api/_static/ga4.js for the Sphinx API reference (furo has no analytics option). One measurement ID covers both; the URL path separates the sections in reports.
+
 ## v0.6.3
 ### Added
 - **`job.archive_path`**: local Jupyter mount of `job.archive_uri` (MyData, MyProjects/PRJ-..., CommunityData) as a property, so a finished job's outputs can be read straight from disk; documented in jobs.md and files.md with the project round trip in examples/files.ipynb.

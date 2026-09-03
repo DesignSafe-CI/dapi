@@ -58,6 +58,7 @@ site:
   template: book-theme
   options:
     base_url: /dapi
+    analytics_google: G-D96RT1T24K  # GA4 measurement ID; also set in docs-api/conf.py
     logo: docs/nheri.png
     favicon: docs/favicon.ico
     hide_footer_text: true
