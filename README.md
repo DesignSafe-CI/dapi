@@ -5,6 +5,10 @@
 [![PyPI version](https://badge.fury.io/py/dapi.svg)](https://badge.fury.io/py/dapi)
 [![Docs](https://img.shields.io/badge/view-docs-8A2BE2?color=8A2BE2)](https://designsafe-ci.github.io/dapi/)
 
+[![Open in DesignSafe](https://img.shields.io/badge/Open%20in%20DesignSafe-clone%20%2B%20open-006FBA?style=for-the-badge&logo=jupyter&logoColor=white)](https://jupyter.designsafe-ci.org/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FDesignSafe-CI%2Fdapi&branch=main&targetpath=MyData%2Fdapi&urlpath=lab%2Ftree%2FMyData%2Fdapi%2Fexamples%2F)
+
+One click clones this repository, with its `examples/` notebooks, into `MyData/dapi` on DesignSafe JupyterHub and opens the examples folder. Click it again later to pull updates.
+
 `dapi` is a Python library for submitting, running, and monitoring [TAPIS v3](https://tapis.readthedocs.io/en/latest/) jobs on [DesignSafe](https://designsafe-ci.org) via [Jupyter Notebooks](https://jupyter.designsafe-ci.org) or the command line.
 
 <img src="https://raw.githubusercontent.com/DesignSafe-CI/dapi/main/dapi.png" alt="dapi" width="300">
